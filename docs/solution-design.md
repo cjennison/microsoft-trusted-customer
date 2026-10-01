@@ -1,6 +1,9 @@
 # Incoming email qualification: solution design
 
-**Status:** Proposed architecture, not an implemented or tenant-validated system.
+**Status:** Proposed product architecture with an implemented development
+registry/schema foundation. No operational email qualification, onboarding app,
+or production deployment has been validated. See the
+[replication pattern](replication-pattern.md) for the exact implementation status.
 **Design date:** September 30, 2026.
 
 ## 1. Product purpose and existing solutions
@@ -134,7 +137,11 @@ first-day dependency.
 
 ## 4. Proposed Dataverse records and onboarding
 
-These are logical record types, not a deployed schema. A licensing-constrained
+These are the target logical record types. The development foundation deploys
+basic columns and relationships for all seven, but approval enforcement,
+role/authority controls, restricted callback details, and the operational
+workflows remain unimplemented. Schema fields alone do not establish trust.
+A licensing-constrained
 discovery prototype could use restricted SharePoint lists, but that is not an
 assumption of equivalent governance or a production commitment.
 

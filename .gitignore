@@ -1,0 +1,12 @@
+.local/
+artifacts/
+*.local.json
+*.local.md
+.env
+.env.*
+!.env.template
+auth.json
+browser-state*.json
+node_modules/
+bin/
+obj/

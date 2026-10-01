@@ -1,0 +1,13 @@
+<environmentvariabledefinition schemaname="mtc_OperatorAlertDestination">
+  <description default="Tenant-local restricted operator destination. Required before automation activation.">
+    <label description="Tenant-local restricted operator destination. Required before automation activation." languagecode="1033" />
+  </description>
+  <displayname default="MTC operator alert destination">
+    <label description="MTC operator alert destination" languagecode="1033" />
+  </displayname>
+  <introducedversion>0.1.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>

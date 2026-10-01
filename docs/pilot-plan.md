@@ -1,7 +1,10 @@
 # Client pilot: October 1, 2026
 
 **Status:** Planned work; no access, configuration, implementation, or test
-results are assumed complete.
+results for the customer pilot are assumed complete. A separate development
+schema foundation was built October 1; see the
+[replication pattern](replication-pattern.md). This does not satisfy the message
+path, security, manual acceptance, or production gates below.
 
 **First-day goal:** Understand the actual attack, improve the native Microsoft
 baseline where authorized, and establish a bounded qualification proof of

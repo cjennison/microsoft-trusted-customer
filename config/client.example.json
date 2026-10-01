@@ -1,0 +1,40 @@
+{
+  "clientReference": "example-client",
+  "discovery": {
+    "tenantIdentity": "unknown",
+    "administratorAuthorization": "unknown",
+    "exchangeAndDefenderEntitlements": "unknown",
+    "recipientServicePlanAssignments": "unknown",
+    "powerAppsProductionEntitlements": "unknown",
+    "flowOwnerEntitlements": "unknown",
+    "trialExpiry": "unknown",
+    "dataverseCapacity": "unknown",
+    "environmentRegionAndType": "unknown",
+    "dataPolicies": "unknown",
+    "auditingAndRetention": "unknown",
+    "nativeMailSecurityBaseline": "unknown",
+    "trustedAuthenticationEvidenceBoundary": "unknown",
+    "pilotAndExcludedMailboxPermissions": "unknown",
+    "operationalOwnerAndAlerts": "unknown"
+  },
+  "decisions": {
+    "route": "not-selected",
+    "productionCostDelta": "not-confirmed",
+    "processingMode": "Disabled",
+    "mailboxScope": [],
+    "unsupportedClients": [],
+    "approvedChanges": []
+  },
+  "gates": {
+    "developmentProvisioning": "not-started",
+    "approvalAndSecurityEnforcement": "not-started",
+    "messagePathSpike": "not-started",
+    "deterministicPolicy": "not-started",
+    "solutionPortability": "not-started",
+    "manualAcceptanceScenarios": "not-started",
+    "shadowPilotAuthorization": "not-approved",
+    "visibleLabelsAuthorization": "not-approved",
+    "productionAuthorization": "not-approved",
+    "rollbackEvidence": "not-started"
+  }
+}

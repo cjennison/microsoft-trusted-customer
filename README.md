@@ -4,11 +4,12 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Discovery and pilot design only. No application, mail flow changes,
-or client deployment exists in this repository yet.
+**Status:** Reusable development foundation, version 0.1.0.0. Seven Dataverse
+tables, relationships, and disabled-by-default configuration have been
+provisioned in an authorized sandbox. No onboarding/review application, email
+classifier, mail flow change, or production/client deployment exists yet.
 
-**Documented:** September 30, 2026. Initial client discovery and pilot work is
-planned for October 1, 2026.
+**Documented:** September 30, 2026. Development foundation added October 1, 2026.
 
 ## The opportunity
 
@@ -39,6 +40,25 @@ can be compromised, and a genuine email can contain a malicious link.
   data model, qualification rules, limitations, and Microsoft sources.
 - [Client pilot plan](docs/pilot-plan.md): first-day checklist, decisions,
   phased delivery, acceptance scenarios, and rollback.
+- [Replication pattern](docs/replication-pattern.md): tenant discovery,
+  development bootstrap, portable solutions, export/build/deployment, and gates.
+- [Deployment skill](.github/skills/deploy-email-qualification/SKILL.md):
+  repeatable assistant instructions for onboarding another customer.
+
+## Reusable implementation
+
+`src\provisioning\dataverse.js` defines and verifies the shared development
+schema; `solutions\MicrosoftTrustedCustomer` contains the reviewed dual-format
+solution export. PowerShell scripts bootstrap/export through an isolated,
+human-authenticated `agent-browser`, and build managed/unmanaged packages using
+the repository-pinned Power Platform CLI.
+
+Use the same managed release across customers with private per-tenant settings,
+not client-specific code branches. Bicep is reserved for Azure resources if a
+later Graph worker requires them; it does not package Dataverse solutions.
+Follow the replication guide before provisioning anything. Customer records,
+current environment variable values, credentials, and browser state stay out
+of this public repository.
 
 ## Initial scope
 

@@ -1,0 +1,14 @@
+<environmentvariabledefinition schemaname="mtc_ProcessingMode">
+  <defaultvalue>Disabled</defaultvalue>
+  <description default="Disabled, Shadow, or Label. Keep Disabled until explicit acceptance and activation approval.">
+    <label description="Disabled, Shadow, or Label. Keep Disabled until explicit acceptance and activation approval." languagecode="1033" />
+  </description>
+  <displayname default="MTC processing mode">
+    <label description="MTC processing mode" languagecode="1033" />
+  </displayname>
+  <introducedversion>0.1.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>
