@@ -1,7 +1,7 @@
 # Reusable deployment pattern
 
-**Implemented development proof:** version 0.2.0.0 contains the seven-table
-foundation plus a disabled manual synthetic message-runtime flow and portable
+**Implemented development proof:** version 0.3.0.0 contains the seven-table
+foundation plus two disabled manual synthetic message-runtime flows and portable
 Outlook/Dataverse connection references. The repository contains the
 deterministic schema bootstrap, reviewed managed/unmanaged solution source,
 export/build scripts, tests, CI, configuration examples, and an agent skill.
@@ -9,7 +9,7 @@ export/build scripts, tests, CI, configuration examples, and an agent skill.
 **Not implemented:** the onboarding/review app, independent approval enforcement,
 custom security roles, operational mailbox processor/classifier, labels,
 reconciliation, monitoring, or production deployment. No live email is being
-qualified by this release.
+qualified by this release; the visible category is a bounded proof label.
 
 **Development proof:** the offline synthetic policy and negative scenario tests
 are supplemented by a saved manual solution flow. In an authorized customer
@@ -21,10 +21,18 @@ assessment state in Dataverse. A second run succeeded and updated the same
 assessment row rather than creating a duplicate. A self-addressed message had
 already produced two distinct mailbox item IDs with the same Internet Message
 ID, demonstrating why processing must key individual messages rather than
-conversations. The flow is Off and has no automatic trigger. This is still not
-a complete message path or cross-tenant deployment test: the receiving
-authentication boundary, shared/all-mailbox access, excluded-mailbox denial,
-automatic triggering, and positive qualification remain unproven.
+conversations. A second manual flow then found exactly one synthetic external
+Inbox message, retrieved headers without body or attachments, required exactly
+one Microsoft `Authentication-Results` header containing SPF, DKIM, DMARC, and
+composite-authentication pass, and confirmed there was no active approved exact
+contact. It applied and verified `MTC Proof - unrecognized sender`, displayed
+the category in Outlook web, and persisted one Unrecognized/Aligned
+pass/Incomplete assessment. A repeat run reused the same row. Both flows are Off
+and have no automatic triggers. This is still not a complete message path or
+cross-tenant deployment test: the current trusted-header match is bounded to the
+observed Microsoft header shape, and shared/all-mailbox access,
+excluded-mailbox denial, automatic triggering, reconciliation, and positive
+qualification remain unproven.
 
 The live new-designer attempt to compose the second request from the first
 action's response was discarded because the expression editor rejected even
@@ -44,8 +52,8 @@ rights were purchased and assigned after exact-order approval, a restricted
 Sandbox with Dataverse was created, and the reviewed unmanaged foundation was
 imported into the separately authorized commercial-cloud target. The seven
 custom tables and four definitions were inspected; processing remains Disabled
-and mailbox/alert settings remain empty. The target now also contains one
-disabled manual synthetic proof flow and two tenant-bound connection references.
+and mailbox/alert settings remain empty. The target now also contains two
+disabled manual synthetic proof flows and two tenant-bound connection references.
 This verifies development behavior, not the managed product, live
 classification, or production readiness. Tenant identities, assignments,
 hashes, assessment data, and observations are retained privately.
@@ -82,7 +90,7 @@ They can be used for another customer without re-designing the product.
 | Layer | Portable artifact | Tenant-local work |
 | --- | --- | --- |
 | Registry | Dataverse table/column/relationship metadata in the solution | Independently verified business records, access teams, evidence and retention |
-| Apps/automation | Disabled manual synthetic proof flow, portable connection references, and variable definitions; operational app/processor still unbuilt | OAuth connections, operational owner, role assignments, mailbox scope, alert destination |
+| Apps/automation | Disabled manual synthetic proof flows, portable connection references, and variable definitions; operational app/processor still unbuilt | OAuth connections, operational owner, role assignments, mailbox scope, alert destination |
 | Deployment | The same reviewed managed ZIP and version | Verified target, private PAC deployment settings and approval evidence |
 | Microsoft security | A reviewed baseline/configuration procedure | Recipient entitlement, policy precedence, mailbox topology, authorized policy changes |
 | Optional Azure | Bicep only if an Azure worker is justified | Subscription/region, scoped identities, monitoring, cost approval |
@@ -293,13 +301,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.2.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.3.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.2.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.3.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -360,8 +368,8 @@ live acceptance or production gates.
 
 ## Manual synthetic runtime proof
 
-The version 0.2.0.0 solution includes one Off, manual-only flow for synthetic
-development evidence. It:
+The version 0.3.0.0 solution includes two Off, manual-only flows for synthetic
+development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with
   the unrelated `Personal` category and subject marker.
@@ -374,14 +382,33 @@ development evidence. It:
 - Records processing and presentation success separately; message bodies,
   attachments, sender addresses, and customer records are not persisted.
 
-Two consecutive observed runs reused one assessment row. A Dataverse connection
+Two consecutive observed runs reused one assessment row. The external
+authentication/unrecognized-presentation flow:
+
+- Requires exactly one Inbox message with the synthetic external subject and
+  retrieves its immutable ID, categories, sender metadata, and internet headers
+  without requesting body or attachments.
+- Requires exactly one Microsoft `Authentication-Results` header beginning with
+  the observed `mx.microsoft.com` auth service marker and containing SPF, DKIM,
+  DMARC, and composite-authentication pass.
+- Lists active approved contacts, matches the exact sender in-flow, and proceeds
+  only when no unexpired approved exact contact exists.
+- Applies and verifies `MTC Proof - unrecognized sender` while preserving other
+  categories, then persists Unrecognized relationship, Aligned pass
+  authentication, and Incomplete risk as separate dimensions.
+- Fails closed on message, trusted-header, registry, assessment, or category
+  readback ambiguity. Two observed runs reused one assessment row, and Outlook
+  web visibly displayed the category.
+
+A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;
-the reviewed flow therefore uses the tenant-bound Dataverse connection reference
+the reviewed flows therefore use the tenant-bound Dataverse connection reference
 in embedded owner context while retaining the Outlook run-only connection for
-the manual proof. This does not establish the future operational ownership
-model. Automatic triggering, shared mailboxes, excluded-mailbox denial,
-receiving-system authentication, failure reconciliation, and positive
-qualification remain blocked.
+manual proof execution. This does not establish the future operational ownership
+model. The current header match and 100-row contact listing are bounded proof
+logic, not the final parser/query design. Automatic triggering, shared mailboxes,
+excluded-mailbox denial, failure reconciliation, and positive qualification
+remain blocked.
 
 ## Official platform references
 

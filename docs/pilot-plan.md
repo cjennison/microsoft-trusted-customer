@@ -5,8 +5,12 @@ October 1; see the [replication pattern](replication-pattern.md). A later bounde
 own-mailbox synthetic proof dynamically selected one exact immutable message,
 preserved an unrelated category, applied and verified one non-positive category,
 and persisted one reusable metadata-only incomplete assessment across repeated
-runs. The manual flow remains Off. This evidence does not satisfy trusted
-authentication, shared/all-mailbox scope, excluded-mailbox denial, automatic
+runs. A second bounded external-message proof observed one Microsoft receiving
+authentication header with SPF/DKIM/DMARC/composite-authentication pass, found
+no approved exact contact, applied and verified the neutral unrecognized-sender
+category, displayed it in Outlook web, and reused one assessment row. Both
+manual flows remain Off. This evidence does not establish a general trusted
+header parser, shared/all-mailbox scope, excluded-mailbox denial, automatic
 triggering, supported-client acceptance, security, or production gates below.
 
 **First-day goal:** Understand the actual attack, improve the native Microsoft

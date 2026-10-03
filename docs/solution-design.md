@@ -1,9 +1,10 @@
 # Incoming email qualification: solution design
 
 **Status:** Proposed product architecture with an implemented development
-registry/schema foundation and disabled manual synthetic message-runtime proof.
-No operational email qualification, onboarding app, automatic processor, or
-production deployment has been validated. See the
+registry/schema foundation and two disabled manual synthetic message-runtime
+proofs, including a visible unrecognized-sender category on one authenticated
+external message. No operational email qualification, onboarding app, automatic
+processor, or production deployment has been validated. See the
 [replication pattern](replication-pattern.md) for the exact implementation status.
 **Design date:** September 30, 2026.
 

@@ -28,9 +28,14 @@ if (Compare-Object $expectedTables $actualTables) {
     throw 'The solution must contain exactly the seven reviewed custom table roots.'
 }
 $workflowRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '29' })
-if ($workflowRoots.Count -ne 1 -or $workflowRoots[0].id -ne '{be76ff86-2bbf-f111-aaaf-000d3a31bda5}' -or
-    $workflowRoots[0].behavior -ne '0') {
-    throw 'Expected exactly the reviewed manual proof workflow root.'
+$expectedWorkflowIds = @(
+    '{4de55d19-e43c-44ba-be99-856d9a672e88}',
+    '{be76ff86-2bbf-f111-aaaf-000d3a31bda5}'
+)
+$workflowDifference = Compare-Object $expectedWorkflowIds @($workflowRoots.id)
+if ($workflowDifference -or
+    @($workflowRoots | Where-Object { $_.behavior -ne '0' }).Count) {
+    throw 'Expected exactly the two reviewed manual proof workflow roots.'
 }
 $unexpectedRoots = @($solution.RootComponents.RootComponent | Where-Object {
     ($_.type -eq '1' -and $_.schemaName -eq 'systemuser' -and $_.behavior -ne '1') -or
@@ -93,16 +98,23 @@ foreach ($reference in $connectionReferences) {
 }
 $workflowDirectory = Join-Path $source 'Workflows'
 $workflowFiles = @(Get-ChildItem -LiteralPath $workflowDirectory -Filter '*.json' -File)
-if ($workflowFiles.Count -ne 1) {
-    throw 'Expected exactly one reviewed cloud-flow definition.'
+if ($workflowFiles.Count -ne 2) {
+    throw 'Expected exactly two reviewed cloud-flow definitions.'
 }
-$workflowFile = $workflowFiles[0]
+foreach ($workflowFile in $workflowFiles) {
+    $workflowText = Get-Content -LiteralPath $workflowFile.FullName -Raw
+    if ($workflowText -match '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -or
+        $workflowText -match 'graph\.microsoft\.com/v1\.0/users/' -or
+        $workflowText -match '"connectionId"\s*:') {
+        throw "Tenant-local mailbox or connection data was found in workflow: $($workflowFile.Name)"
+    }
+    $workflowMetadata = [xml](Get-Content -LiteralPath ($workflowFile.FullName + '.data.xml') -Raw)
+    if ($workflowMetadata.Workflow.StateCode -ne '0' -or $workflowMetadata.Workflow.StatusCode -ne '1') {
+        throw "The portable proof flow must remain Off: $($workflowFile.Name)"
+    }
+}
+$workflowFile = $workflowFiles | Where-Object { $_.Name -like 'MTCProcessor-manualimmutablecategoryproof-*' }
 $workflowText = Get-Content -LiteralPath $workflowFile.FullName -Raw
-if ($workflowText -match '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -or
-    $workflowText -match 'graph\.microsoft\.com/v1\.0/users/' -or
-    $workflowText -match '"connectionId"\s*:') {
-    throw 'Tenant-local mailbox or connection data was found in the workflow.'
-}
 $workflow = $workflowText | ConvertFrom-Json
 $flowConnections = $workflow.properties.connectionReferences
 if ($flowConnections.shared_office365.runtimeSource -ne 'invoker' -or
@@ -132,9 +144,41 @@ if ($workflowText -notmatch 'Prefer: IdType=\\"ImmutableId\\"' -or
     $workflowText -notmatch '"item/mtc_mailboxreference"\s*:\s*"me"') {
     throw 'The proof flow lost an immutable-ID, concurrency, or fail-closed persistence safeguard.'
 }
-$workflowMetadata = [xml](Get-Content -LiteralPath ($workflowFile.FullName + '.data.xml') -Raw)
-if ($workflowMetadata.Workflow.StateCode -ne '0' -or $workflowMetadata.Workflow.StatusCode -ne '1') {
-    throw 'The portable proof flow must remain Off.'
+$authWorkflowFile = $workflowFiles | Where-Object { $_.Name -like 'MTCProof-externalauthenticationheaders-*' }
+$authWorkflowText = Get-Content -LiteralPath $authWorkflowFile.FullName -Raw
+$authWorkflow = $authWorkflowText | ConvertFrom-Json
+$authConnections = $authWorkflow.properties.connectionReferences
+if ($authConnections.shared_office365.runtimeSource -ne 'invoker' -or
+    $authConnections.shared_office365.connection.connectionReferenceLogicalName -ne 'mtc_MTCOffice365Outlook' -or
+    $authConnections.shared_commondataserviceforapps.runtimeSource -ne 'embedded' -or
+    $authConnections.shared_commondataserviceforapps.connection.connectionReferenceLogicalName -ne 'mtc_MTCMicrosoftDataverse') {
+    throw 'Unexpected authentication-proof connection-reference binding.'
+}
+$authTriggers = @($authWorkflow.properties.definition.triggers.PSObject.Properties)
+if ($authTriggers.Count -ne 1 -or $authTriggers[0].Name -ne 'manual' -or
+    $authTriggers[0].Value.type -ne 'Request' -or $authTriggers[0].Value.kind -ne 'Button') {
+    throw 'The authentication proof must remain manual-only.'
+}
+$authActions = $authWorkflow.properties.definition.actions
+$externalScope = $authActions.Require_exactly_one_external_message
+$unrecognizedScope = $externalScope.actions.Require_unrecognized_trusted_sender
+$assessmentScope = $unrecognizedScope.actions.Require_at_most_one_unrecognized_assessment
+if (-not $authActions.List_external_auth_candidates -or -not $externalScope -or
+    -not $externalScope.actions.Get_message_authentication_headers -or
+    -not $externalScope.actions.Filter_trusted_microsoft_authentication_results -or
+    -not $externalScope.actions.Filter_matching_approved_contacts -or -not $unrecognizedScope -or
+    -not $assessmentScope -or -not $assessmentScope.actions.Apply_unrecognized_category -or
+    -not $assessmentScope.actions.Verify_unrecognized_category -or
+    -not $assessmentScope.actions.Require_unrecognized_category_readback) {
+    throw 'The reviewed authentication-boundary and unrecognized-presentation actions are incomplete.'
+}
+if ($authWorkflowText -notmatch 'Prefer: IdType=\\"ImmutableId\\"' -or
+    $authWorkflowText -notmatch 'If-Match:' -or
+    $authWorkflowText -notmatch 'startsWith\(toLower\(trim\(string\(item\(\)\?\[''value''\]\)\)\), ''mx\.microsoft\.com''\)' -or
+    $authWorkflowText -notmatch 'MTC Proof - unrecognized sender' -or
+    $authWorkflowText -notmatch 'MTC_REGISTRY_NO_MATCH' -or
+    $authWorkflowText -notmatch '"item/mtc_mailboxreference"\s*:\s*"me"') {
+    throw 'The authentication proof lost a trusted-boundary, registry, concurrency, or persistence safeguard.'
 }
 $userPath = Join-Path $source 'Entities\systemuser\Entity.xml'
 if (Test-Path -LiteralPath $userPath) {
@@ -143,4 +187,4 @@ if (Test-Path -LiteralPath $userPath) {
         throw 'The built-in User dependency must be a reference-only shell.'
     }
 }
-Write-Output "Reviewed solution source: $($solution.UniqueName) $($solution.Version); manual proof Off and tenant-local values absent."
+Write-Output "Reviewed solution source: $($solution.UniqueName) $($solution.Version); manual proofs Off and tenant-local values absent."

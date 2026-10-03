@@ -1,0 +1,445 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCOffice365Outlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCMicrosoftDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          }
+        }
+      },
+      "actions": {
+        "List_external_auth_candidates": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "Uri": "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$filter=subject%20eq%20%27%5BMTC-AUTH-PROOF%5D%20External%20unrecognized%20sender%20test%27&$select=id,subject,categories,receivedDateTime,internetMessageId,parentFolderId,from,sender,replyTo&$top=10",
+              "Method": "GET",
+              "CustomHeader1": "Prefer: IdType=\"ImmutableId\"",
+              "ContentType": "application/json"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_office365"
+            }
+          }
+        },
+        "Require_exactly_one_external_message": {
+          "runAfter": {
+            "List_external_auth_candidates": [
+              "Succeeded"
+            ]
+          },
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@length(body('List_external_auth_candidates')?['value'])",
+                  1
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Get_message_authentication_headers": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "Uri": "@concat('https://graph.microsoft.com/v1.0/me/messages/', encodeUriComponent(first(body('List_external_auth_candidates')?['value'])?['id']), '?$select=id,subject,categories,receivedDateTime,internetMessageId,parentFolderId,from,sender,replyTo,internetMessageHeaders')",
+                  "Method": "GET",
+                  "CustomHeader1": "Prefer: IdType=\"ImmutableId\"",
+                  "ContentType": "application/json"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_office365"
+                }
+              }
+            },
+            "Filter_receiving_authentication_headers": {
+              "runAfter": {
+                "Get_message_authentication_headers": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@coalesce(body('Get_message_authentication_headers')?['internetMessageHeaders'], createArray())",
+                "where": "@or(equals(toLower(item()?['name']), 'authentication-results'), equals(toLower(item()?['name']), 'arc-authentication-results'), equals(toLower(item()?['name']), 'received-spf'), equals(toLower(item()?['name']), 'x-ms-exchange-authentication-results'))"
+              }
+            },
+            "Filter_trusted_microsoft_authentication_results": {
+              "runAfter": {
+                "Get_message_authentication_headers": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@coalesce(body('Get_message_authentication_headers')?['internetMessageHeaders'], createArray())",
+                "where": "@and(equals(toLower(item()?['name']), 'authentication-results'), startsWith(toLower(trim(string(item()?['value']))), 'mx.microsoft.com'), contains(toLower(item()?['value']), 'spf=pass'), contains(toLower(item()?['value']), 'dkim=pass'), contains(toLower(item()?['value']), 'dmarc=pass'), contains(toLower(item()?['value']), 'compauth=pass'))"
+              }
+            },
+            "List_active_approved_contacts": {
+              "runAfter": {
+                "Get_message_authentication_headers": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mtc_approvedcontacts",
+                  "$select": "mtc_approvedcontactid,mtc_emailaddress,mtc_expireson",
+                  "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
+                  "$top": 100
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Filter_matching_approved_contacts": {
+              "runAfter": {
+                "List_active_approved_contacts": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@coalesce(body('List_active_approved_contacts')?['value'], createArray())",
+                "where": "@and(equals(toLower(item()?['mtc_emailaddress']), toLower(body('Get_message_authentication_headers')?['from']?['emailAddress']?['address'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+              }
+            },
+            "Require_unrecognized_trusted_sender": {
+              "runAfter": {
+                "Filter_receiving_authentication_headers": [
+                  "Succeeded"
+                ],
+                "Filter_trusted_microsoft_authentication_results": [
+                  "Succeeded"
+                ],
+                "Filter_matching_approved_contacts": [
+                  "Succeeded"
+                ]
+              },
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@length(body('Filter_trusted_microsoft_authentication_results'))",
+                      1
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@length(body('Filter_matching_approved_contacts'))",
+                      0
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "List_existing_unrecognized_assessments": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "mtc_messageassessments",
+                      "$select": "mtc_messageassessmentid,mtc_processingstatus,mtc_presentationstatus",
+                      "$filter": "@concat('mtc_stablemessageid eq ''', first(body('List_external_auth_candidates')?['value'])?['id'], ''' and mtc_mailboxreference eq ''me''')",
+                      "$top": 2
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  }
+                },
+                "Require_at_most_one_unrecognized_assessment": {
+                  "runAfter": {
+                    "List_existing_unrecognized_assessments": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "lessOrEquals": [
+                          "@length(body('List_existing_unrecognized_assessments')?['value'])",
+                          1
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Unrecognized_assessment_record_exists": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@length(body('List_existing_unrecognized_assessments')?['value'])",
+                              1
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Mark_existing_unrecognized_assessment_pending": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_messageassessments",
+                              "recordId": "@first(body('List_existing_unrecognized_assessments')?['value'])?['mtc_messageassessmentid']",
+                              "item/mtc_name": "@concat('External unrecognized ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24))",
+                              "item/mtc_mailboxreference": "me",
+                              "item/mtc_stablemessageid": "@first(body('List_external_auth_candidates')?['value'])?['id']",
+                              "item/mtc_receivedon": "@first(body('List_external_auth_candidates')?['value'])?['receivedDateTime']",
+                              "item/mtc_assessedon": "@utcNow()",
+                              "item/mtc_registryversion": "approved-contact-registry-v1",
+                              "item/mtc_ruleversion": "message-runtime-2",
+                              "item/mtc_relationshipstate": 100000001,
+                              "item/mtc_authenticationstate": 100000001,
+                              "item/mtc_riskstate": 100000000,
+                              "item/mtc_processingstatus": 100000000,
+                              "item/mtc_presentationstatus": 100000000,
+                              "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "UpdateOnlyRecord",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Create_pending_unrecognized_assessment": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "parameters": {
+                                "entityName": "mtc_messageassessments",
+                                "item/mtc_name": "@concat('External unrecognized ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24))",
+                                "item/mtc_mailboxreference": "me",
+                                "item/mtc_stablemessageid": "@first(body('List_external_auth_candidates')?['value'])?['id']",
+                                "item/mtc_receivedon": "@first(body('List_external_auth_candidates')?['value'])?['receivedDateTime']",
+                                "item/mtc_assessedon": "@utcNow()",
+                                "item/mtc_registryversion": "approved-contact-registry-v1",
+                                "item/mtc_ruleversion": "message-runtime-2",
+                                "item/mtc_relationshipstate": 100000001,
+                                "item/mtc_authenticationstate": 100000001,
+                                "item/mtc_riskstate": 100000000,
+                                "item/mtc_processingstatus": 100000000,
+                                "item/mtc_presentationstatus": 100000000,
+                                "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED"
+                              },
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "operationId": "CreateRecord",
+                                "connectionName": "shared_commondataserviceforapps"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "Apply_unrecognized_category": {
+                      "runAfter": {
+                        "Unrecognized_assessment_record_exists": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "Uri": "@concat('https://graph.microsoft.com/v1.0/me/messages/', encodeUriComponent(first(body('List_external_auth_candidates')?['value'])?['id']))",
+                          "Method": "PATCH",
+                          "CustomHeader1": "@concat('If-Match: ', first(body('List_external_auth_candidates')?['value'])?['@odata.etag'])",
+                          "CustomHeader2": "Prefer: IdType=\"ImmutableId\"",
+                          "Body": {
+                            "categories": "@union(coalesce(body('Get_message_authentication_headers')?['categories'], createArray()), createArray('MTC Proof - unrecognized sender'))"
+                          },
+                          "ContentType": "application/json"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                          "operationId": "HttpRequest",
+                          "connectionName": "shared_office365"
+                        }
+                      }
+                    },
+                    "Verify_unrecognized_category": {
+                      "runAfter": {
+                        "Apply_unrecognized_category": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "Uri": "@concat('https://graph.microsoft.com/v1.0/me/messages/', encodeUriComponent(first(body('List_external_auth_candidates')?['value'])?['id']), '?$select=id,categories,internetMessageId,parentFolderId')",
+                          "Method": "GET",
+                          "CustomHeader1": "Prefer: IdType=\"ImmutableId\"",
+                          "ContentType": "application/json"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                          "operationId": "HttpRequest",
+                          "connectionName": "shared_office365"
+                        }
+                      }
+                    },
+                    "Require_unrecognized_category_readback": {
+                      "runAfter": {
+                        "Verify_unrecognized_category": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "contains": [
+                              "@coalesce(body('Verify_unrecognized_category')?['categories'], createArray())",
+                              "MTC Proof - unrecognized sender"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Complete_unrecognized_assessment": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_messageassessments",
+                              "recordId": "@if(equals(length(body('List_existing_unrecognized_assessments')?['value']), 1), first(body('List_existing_unrecognized_assessments')?['value'])?['mtc_messageassessmentid'], body('Create_pending_unrecognized_assessment')?['mtc_messageassessmentid'])",
+                              "item/mtc_assessedon": "@utcNow()",
+                              "item/mtc_processingstatus": 100000001,
+                              "item/mtc_presentationstatus": 100000001,
+                              "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED;MTC_UNRECOGNIZED_CATEGORY_APPLIED"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "UpdateOnlyRecord",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Fail_unrecognized_category_readback": {
+                            "type": "Terminate",
+                            "inputs": {
+                              "runStatus": "Failed",
+                              "runError": {
+                                "code": "MTC_UNRECOGNIZED_CATEGORY_READBACK",
+                                "message": "The unrecognized-sender category was not present during verification."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Fail_unrecognized_assessment_cardinality": {
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Failed",
+                          "runError": {
+                            "code": "MTC_UNRECOGNIZED_ASSESSMENT_CARDINALITY",
+                            "message": "Expected at most one assessment for the scoped mailbox and immutable message identifier."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Fail_unrecognized_sender_preconditions": {
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "MTC_UNRECOGNIZED_PRECONDITION",
+                        "message": "Expected one trusted Microsoft Authentication-Results header and no active approved exact contact."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Fail_external_auth_scope_cardinality": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "MTC_AUTH_SCOPE_CARDINALITY",
+                    "message": "Expected exactly one Inbox message with the external authentication proof subject."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
