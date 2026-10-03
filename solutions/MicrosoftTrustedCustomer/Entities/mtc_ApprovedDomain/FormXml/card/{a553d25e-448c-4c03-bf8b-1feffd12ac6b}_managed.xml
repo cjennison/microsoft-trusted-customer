@@ -31,7 +31,7 @@
                     <row>
                       <cell id="{aedef9d5-3fa4-4f9f-aa53-fd17f53534eb}" showlabel="true" locklevel="0">
                         <labels>
-                          <label description="" languagecode="1033" />
+                          <label description="Status Reason" languagecode="1033" />
                         </labels>
                         <control id="statuscode" classid="{5D68B988-0661-4db2-BC3E-17598AD3BE6C}" datafieldname="statuscode" disabled="false" />
                       </cell>
@@ -56,7 +56,7 @@
                     <row>
                       <cell id="{0ec74a29-792b-4b8d-9300-7de4c7c142fd}" showlabel="true" locklevel="0">
                         <labels>
-                          <label description="" languagecode="1033" />
+                          <label description="Name" languagecode="1033" />
                         </labels>
                         <control id="mtc_name" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="mtc_name" disabled="false" />
                       </cell>
@@ -71,13 +71,13 @@
                     <row>
                       <cell id="{a92a6ad9-48bd-422e-84f4-4788ab54a0a3}" showlabel="true" locklevel="0">
                         <labels>
-                          <label description="" languagecode="1033" />
+                          <label description="Owner" languagecode="1033" />
                         </labels>
                         <control id="ownerid" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="ownerid" disabled="false" />
                       </cell>
                       <cell id="{79e608b8-96a4-4539-a7b9-7834b3c9721b}" showlabel="true" locklevel="0">
                         <labels>
-                          <label description="" languagecode="1033" />
+                          <label description="Created On" languagecode="1033" />
                         </labels>
                         <control id="createdon" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="createdon" disabled="false" />
                       </cell>

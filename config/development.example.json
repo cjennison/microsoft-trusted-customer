@@ -1,4 +1,5 @@
 {
+  "browserNamespace": "mtc-client-development",
   "browserSession": "mtc-client-development",
   "browserTab": "t1",
   "environmentOrigin": "https://example.crm.dynamics.com",

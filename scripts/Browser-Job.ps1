@@ -1,3 +1,37 @@
+function Invoke-MtcAgentBrowser {
+    param(
+        [Parameter(Mandatory)] [psobject] $Configuration,
+        [string] $StandardInput,
+        [Parameter(ValueFromRemainingArguments)] [string[]] $Arguments
+    )
+
+    $namespaceArguments = @()
+    if ($Configuration.browserNamespace) {
+        if ($Configuration.browserNamespace -notmatch '^[a-zA-Z0-9-]+$') {
+            throw 'The isolated agent-browser namespace is invalid.'
+        }
+        $namespaceArguments = @('--namespace', $Configuration.browserNamespace)
+    }
+    $command = Get-Command agent-browser -ErrorAction SilentlyContinue
+    if ($command) {
+        if ($PSBoundParameters.ContainsKey('StandardInput')) {
+            $StandardInput | & $command.Source @namespaceArguments `
+                --session $Configuration.browserSession @Arguments
+        } else {
+            & $command.Source @namespaceArguments --session $Configuration.browserSession @Arguments
+        }
+        return
+    }
+    Get-Command npx -ErrorAction Stop | Out-Null
+    if ($PSBoundParameters.ContainsKey('StandardInput')) {
+        $StandardInput | & npx --no-install agent-browser@0.38.1 `
+            @namespaceArguments --session $Configuration.browserSession @Arguments
+    } else {
+        & npx --no-install agent-browser@0.38.1 @namespaceArguments `
+            --session $Configuration.browserSession @Arguments
+    }
+}
+
 function Invoke-MtcBrowserJob {
     param(
         [Parameter(Mandatory)] [psobject] $Configuration,
@@ -13,8 +47,8 @@ function Invoke-MtcBrowserJob {
     if ($Configuration.authorizationConfirmed -ne $true -or $Configuration.environmentType -notin @('Sandbox', 'Developer')) {
         throw 'Only explicitly authorized Sandbox or Developer environments are supported.'
     }
-    Get-Command agent-browser -ErrorAction Stop | Out-Null
-    & agent-browser --session $Configuration.browserSession tab $Configuration.browserTab | Out-Null
+    Invoke-MtcAgentBrowser -Configuration $Configuration `
+        -Arguments @('tab', $Configuration.browserTab) | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw 'The approved Dataverse browser tab is unavailable.'
     }
@@ -31,22 +65,21 @@ $JavaScript
 );
 ({status: 'started'});
 "@
-    $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($script))
-    if ($encoded.Length -gt 30000) {
-        throw 'Browser job exceeds the Windows command-line limit. Split the operation before launching it.'
-    }
-    $started = & agent-browser --session $Configuration.browserSession --json eval -b $encoded
+    $started = Invoke-MtcAgentBrowser -Configuration $Configuration `
+        -StandardInput $script -Arguments @('--json', 'eval', '--stdin')
     if ($LASTEXITCODE -ne 0) {
         throw "Could not start development job: $started"
     }
     $deadline = [DateTime]::UtcNow.AddMinutes(10)
     do {
         Start-Sleep -Seconds 2
-        & agent-browser --session $Configuration.browserSession tab $Configuration.browserTab | Out-Null
+        Invoke-MtcAgentBrowser -Configuration $Configuration `
+            -Arguments @('tab', $Configuration.browserTab) | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw 'Cannot select the approved Dataverse tab; the job may still be running.'
         }
-        $output = & agent-browser --session $Configuration.browserSession --json eval 'globalThis.MtcProvisioningJob'
+        $output = Invoke-MtcAgentBrowser -Configuration $Configuration `
+            -Arguments @('--json', 'eval', 'globalThis.MtcProvisioningJob')
         if ($LASTEXITCODE -ne 0) {
             throw 'Cannot read development job status. It may still be running; inspect this browser before retrying.'
         }

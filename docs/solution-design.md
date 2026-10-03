@@ -1,8 +1,9 @@
 # Incoming email qualification: solution design
 
 **Status:** Proposed product architecture with an implemented development
-registry/schema foundation. No operational email qualification, onboarding app,
-or production deployment has been validated. See the
+registry/schema foundation and disabled manual synthetic message-runtime proof.
+No operational email qualification, onboarding app, automatic processor, or
+production deployment has been validated. See the
 [replication pattern](replication-pattern.md) for the exact implementation status.
 **Design date:** September 30, 2026.
 
@@ -33,7 +34,7 @@ Keep these separate rather than assigning one universal trust score:
 
 | Dimension | Evidence | What it does not prove |
 | --- | --- | --- |
-| Business relationship | Independently approved organization, domain, and exact contact record | That the current email came from that contact |
+| Business relationship | Independently verified organization, domain, and exact contact record | That the current email came from that contact |
 | Message authentication | Receiving-system results for SPF, DKIM, DMARC alignment, and Microsoft's composite authentication | That a particular human signed in, or that their account is uncompromised |
 | Message risk | Defender assessment, unexpected Reply-To, lookalike domains, unfamiliar payment links, and requested payment changes | That the absence of a detected signal makes the content safe |
 | Transaction authorization | Separate invoice/payment approval and verified callback or authenticated business workflow | That future requests from the same sender are authorized |
@@ -138,7 +139,7 @@ first-day dependency.
 ## 4. Proposed Dataverse records and onboarding
 
 These are the target logical record types. The development foundation deploys
-basic columns and relationships for all seven, but approval enforcement,
+basic columns and relationships for all seven, but verification-authority enforcement,
 role/authority controls, restricted callback details, and the operational
 workflows remain unimplemented. Schema fields alone do not establish trust.
 A licensing-constrained
@@ -151,7 +152,7 @@ assumption of equivalent governance or a production commitment.
 | ApprovedDomain | Party ID, exact normalized domain, purpose, explicitly approved subdomains, status, verification timestamps |
 | ApprovedContact | Party ID, exact email address, role, authority for payment-related communication, approved Reply-To addresses, status, verification timestamps |
 | ApprovedPortal | Party ID, exact hostname, purpose, third-party provider relationship, status, verification timestamps |
-| VerificationCase | Party/contact reference, pending/approved/rejected/revoked state, requester, independent reviewer, evidence reference, change history |
+| VerificationCase | Party/contact reference, pending/approved/rejected/revoked state, requester, actual verifying registrar, selected approval mode, evidence reference, change history |
 | MessageAssessment | Tenant/mailbox reference, stable message identifier, received/assessed timestamps, registry/rule versions, relationship/authentication states, risk reasons, completeness, processing status, presentation outcome |
 | PaymentVerification | Request/invoice reference, reviewer, callback/portal verification outcome, independent approver, timestamps; reference the financial system rather than copying bank details |
 
@@ -166,7 +167,10 @@ Onboarding:
    addresses, and payment portal hosts. DNS proof can demonstrate domain
    control, but does not alone establish the legal/business relationship.
 3. Verify callback details independently, not using the phone number or link
-   from the suspicious message. Separate the requester and approver.
+   from the suspicious message. In independent-review mode, separate the
+   requester and approver. An explicitly chosen single-registrar mode permits
+   one authorized registrar to create and verify the entry, with the same
+   evidence requirements and a server-stamped verifier/audit trail.
 4. Approve with a documented scope, verification date, and review/expiry date.
 5. Reverify material changes, revoke on suspected compromise or relationship
    termination, and stop using expired/revoked records immediately for new
@@ -176,6 +180,13 @@ Consumer/shared mail domains such as Gmail must never be approved wholesale
 for one vendor. Use exact independently verified addresses, and explain that
 domain-level authentication still does not prove control of that individual
 mailbox. Third-party invoice services require explicit scoped onboarding.
+
+The [email verification workflow](email-verification-workflow.md) defines the
+nontechnical administrator experience and explicit address/domain choices.
+New, unverified customer mail remains delivered under native policy. Registry
+approval must also enqueue reassessment of eligible retained messages, rather
+than requiring the customer to resend them. Revocation and expiry require the
+corresponding presentation reconciliation.
 
 ## 5. Assessment policy
 
@@ -257,7 +268,10 @@ configuration. Category writes require mail-write authority; category/master
 list management may have additional requirements. Do not grant Mail.Send when
 the processor only reads and labels messages. See [4], [7], and [8].
 
-Define registry editor, approver, reviewer, and service roles. Enable appropriate
+Define registrar, reviewer, and service roles, with distinct requester/approver
+roles where independent-review mode is selected. Support multiple authorized
+registrars without sharing credentials or embedding account names in product
+code. Enforce the selected verification mode server-side. Enable appropriate
 audit history, restrict evidence and flow-run output, agree retention, and use
 customer-approved environments and Power Platform data policies. Keep secrets
 out of Git; use approved credential storage and non-personal operational

@@ -1,13 +1,54 @@
 # Reusable deployment pattern
 
-**Implemented foundation:** version 0.1.0.0 was created and published in an
-authorized development sandbox on October 1, 2026. The repository contains
-the deterministic schema bootstrap, reviewed managed/unmanaged solution source,
+**Implemented development proof:** version 0.2.0.0 contains the seven-table
+foundation plus a disabled manual synthetic message-runtime flow and portable
+Outlook/Dataverse connection references. The repository contains the
+deterministic schema bootstrap, reviewed managed/unmanaged solution source,
 export/build scripts, tests, CI, configuration examples, and an agent skill.
 
 **Not implemented:** the onboarding/review app, independent approval enforcement,
-custom security roles, mailbox connectors, classifier, labels, reconciliation,
-monitoring, or production deployment. No email is being qualified by this release.
+custom security roles, operational mailbox processor/classifier, labels,
+reconciliation, monitoring, or production deployment. No live email is being
+qualified by this release.
+
+**Development proof:** the offline synthetic policy and negative scenario tests
+are supplemented by a saved manual solution flow. In an authorized customer
+development Sandbox, the flow dynamically found the named proof folder and
+exactly one `Personal`-categorized synthetic message, requested a Graph
+immutable ID, used the message ETag, preserved `Personal`, added the non-positive
+MTC category, verified the write, and persisted metadata-only incomplete
+assessment state in Dataverse. A second run succeeded and updated the same
+assessment row rather than creating a duplicate. A self-addressed message had
+already produced two distinct mailbox item IDs with the same Internet Message
+ID, demonstrating why processing must key individual messages rather than
+conversations. The flow is Off and has no automatic trigger. This is still not
+a complete message path or cross-tenant deployment test: the receiving
+authentication boundary, shared/all-mailbox access, excluded-mailbox denial,
+automatic triggering, and positive qualification remain unproven.
+
+The live new-designer attempt to compose the second request from the first
+action's response was discarded because the expression editor rejected even
+trivial valid expressions. The temporary invalid flow was deleted and no
+invalid action was saved or run. The portable runtime contract now requires
+`Prefer: IdType="ImmutableId"`, exact scope, exactly one item, and `If-Match`
+before category PATCH planning. The reviewed manual solution flow now implements
+that contract for synthetic proof data; an operational flow or scoped Graph
+worker must retain it rather than reverting to static message IDs.
+Premium asset execution in that earlier spike was paused because the user's
+Developer/premium entitlement had not been verified. An administrator-created
+environment and successful technical access are not substitutes for completed
+plan enrollment.
+
+**Subsequent customer development setup:** appropriate paid maker/flow-owner
+rights were purchased and assigned after exact-order approval, a restricted
+Sandbox with Dataverse was created, and the reviewed unmanaged foundation was
+imported into the separately authorized commercial-cloud target. The seven
+custom tables and four definitions were inspected; processing remains Disabled
+and mailbox/alert settings remain empty. The target now also contains one
+disabled manual synthetic proof flow and two tenant-bound connection references.
+This verifies development behavior, not the managed product, live
+classification, or production readiness. Tenant identities, assignments,
+hashes, assessment data, and observations are retained privately.
 
 ## The repeatable sequence
 
@@ -41,7 +82,7 @@ They can be used for another customer without re-designing the product.
 | Layer | Portable artifact | Tenant-local work |
 | --- | --- | --- |
 | Registry | Dataverse table/column/relationship metadata in the solution | Independently verified business records, access teams, evidence and retention |
-| Apps/automation (not built yet) | Solution-aware apps/flows, connection reference and variable definitions | OAuth connections, operational owner, role assignments, mailbox scope, alert destination |
+| Apps/automation | Disabled manual synthetic proof flow, portable connection references, and variable definitions; operational app/processor still unbuilt | OAuth connections, operational owner, role assignments, mailbox scope, alert destination |
 | Deployment | The same reviewed managed ZIP and version | Verified target, private PAC deployment settings and approval evidence |
 | Microsoft security | A reviewed baseline/configuration procedure | Recipient entitlement, policy precedence, mailbox topology, authorized policy changes |
 | Optional Azure | Bicep only if an Azure worker is justified | Subscription/region, scoped identities, monitoring, cost approval |
@@ -56,12 +97,68 @@ versioned releases; use environment variables and connection references for
 tenant differences. Existing Dynamics or another registry can later be an
 adapter, not an implicit trusted-data source.
 
+## Purchase and development-target gates
+
+When purchasing is authorized, first verify the selected tenant's actual
+products and the intended maker's assignments. Another customer's subscriptions,
+available trial offers, and administrator access do not establish entitlement.
+Use existing appropriate seats before buying new ones.
+
+Record the exact product, quantity, billing term/frequency, estimated taxes,
+renewal behavior, assignment target, and checkout total privately. Monthly
+billing can still involve an annual commitment; verify subscription length
+separately. Obtain exact-order approval, submit each order once, and confirm
+both purchase and assignment readback. Do not retry an uncertain purchase
+without checking whether the first order succeeded.
+
+License premium app users separately from automated-flow ownership; the future
+business administrator's app rights are not covered by a developer's license.
+A flow-owner license does not confer access to other mailboxes. See the
+[workflow and licensing requirements](email-verification-workflow.md).
+
+If the tenant has only a default environment without Dataverse, do not add a
+database to it as an implicit development bootstrap. Seek approval for a separate
+Sandbox, region, Dataverse, and scoped development access group. Verify included
+capacity and its freshness, then let the actual creation operation enforce
+capacity eligibility. Do not activate PAYG, Managed Environments, sample data,
+or Dynamics apps to get past a blocker.
+
+Verify explicit group membership, not just ownership, before binding the group
+to the environment. Environment group restriction is not a denial of access to
+tenant-wide administrators or a replacement for Dataverse roles. Capture the
+environment ID/type/region/origin/organization ID independently after creation.
+
+Do not equate a macro region geography with a specific datacenter region.
+For example, **North America** permits United States or Canada. Where the
+portal offers only macro-region placement, obtain approval for that actual
+residency boundary before saving; do not silently broaden a US-only request.
+Microsoft's [macro-region guidance](https://learn.microsoft.com/power-platform/admin/macro-regions)
+describes specific-region eligibility and the need to verify assigned location
+after provisioning. Additional residency purchases need separate approval.
+
+Recheck the final form values after changing type or geography; the portal can
+regenerate a default environment name. Verify the actual Dataverse/Managed/PAYG
+switch states, group selection, language, currency, and sample-data choices
+rather than treating a successful browser click as proof of configuration.
+
+Inspect both legacy data policies and the advanced connector-policy layer for
+the target environment. An empty legacy inventory is not proof that every
+connector/action is permitted. Record the advanced rule's actual applied state
+and any access denial; do not turn on Managed Environments or change a policy
+just to inspect or unblock a connector.
+
 ## Bootstrap development
 
 Prerequisites: Node.js 22+, PowerShell 7, .NET 10 SDK for the pinned PAC tool,
 and an installed Vercel `agent-browser` with its local browser available.
 Bootstrap supports commercial-cloud Sandbox/Developer environments only.
 Developer/trial access does not establish production licensing.
+The free Developer Plan applies only to Developer environments, not an existing
+Sandbox. Verify the actual user's enrollment/assignment, not another account's
+license or the administrator's ability to provision an environment. If approved
+self-service enrollment cannot complete, record the blocker and continue only
+with offline work. Do not change tenant licensing/consent policies, reset another
+account, or toggle administrator provisioning options as a workaround.
 
 ```powershell
 dotnet tool restore
@@ -76,9 +173,11 @@ Sign in manually, confirm the tenant
 and approved environment in the admin center, and open the actual Dataverse
 application URL in the same isolated browser. Use `agent-browser ... tab list`
 to identify its stable tab ID. Populate the private configuration with the
-verified HTTPS origin, organization ID, environment type, session, tab, and
-explicit authorization. Organization ID is not the Power Platform environment
-ID or Entra tenant ID; verify each independently.
+verified HTTPS origin, organization ID, environment type, isolated browser
+namespace/session, tab, and explicit authorization. The browser job supports a
+globally installed `agent-browser` or the pinned npx fallback without exporting
+browser state. Organization ID is not the Power Platform environment ID or
+Entra tenant ID; verify each independently.
 
 ```powershell
 .\scripts\Initialize-Development.ps1 -ConfigurationFile .\.local\development.local.json
@@ -120,9 +219,11 @@ No end-user roles are granted by bootstrap.
 | `mtc_OperatorAlertDestination` | Empty |
 | `mtc_PolicyVersion` | `1` |
 
-There is no processor to enable yet. These definitions are the future configuration
-contract, not proof of a functioning runtime or a sufficient kill switch by themselves.
-Keep current values out of this publicly exported development solution.
+There is no operational or automatically triggered processor to enable yet; the
+manual synthetic proof does not read these values. These definitions are the
+future configuration contract, not proof of a functioning runtime or a
+sufficient kill switch by themselves. Keep current values out of this publicly
+exported development solution.
 
 ## Export and build
 
@@ -155,13 +256,14 @@ The checked-in source is the reviewed dual-format export. To rebuild it:
 .\scripts\Build-Solution.ps1
 ```
 
-The build validates solution identity, seven table roots, reference-only User
-dependency, safe defaults, absence of current values/unreviewed connections,
-and XML parsing. It packs managed and unmanaged ZIPs and verifies their actual
+The build validates solution identity, seven table roots, the reviewed
+manual-only workflow, the two portable connection references, reference-only
+User dependency, safe defaults, absence of current values/tenant bindings, and
+JSON/XML parsing. It packs managed and unmanaged ZIPs and verifies their actual
 manifest managed flags and version. Outputs/hashes are generated under ignored
 `artifacts`. Choose a fresh output directory for each repeat build.
 
-The foundation source validator intentionally describes this release's scope.
+The solution source validator intentionally describes this release's scope.
 When adding apps/flows/connection definitions or changing defaults, review and
 update its contract and tests as part of the feature; don't bypass it.
 CI produces the two ZIPs as build artifacts, not approved production releases.
@@ -173,26 +275,31 @@ and gate evidence. Default all gates to unknown/not started. For a product
 deployment, create test/pilot resources with authorization, then import the same
 managed release instead of rerunning the development bootstrap on production.
 
-The foundation can be imported into an approved test environment, but doing so
-does not deploy the unimplemented application or prove cross-tenant operation.
-No second-tenant import or email acceptance testing is claimed for this release.
+The development proof can be imported into an approved test environment, but
+doing so does not deploy the unimplemented application/processor or prove
+cross-tenant operation.
+The separately authorized customer-development import used the unmanaged
+foundation for shared-source feature development. No second-tenant managed
+product import or complete live-email acceptance testing is claimed.
 
 For a reviewed release, the supported PAC commands are:
 
 ```powershell
 # PAC authentication is separate from the browser's sign-in.
 # Verify and use a customer-specific profile; never change another session's profile.
+# Device-code sign-in may be blocked by Security Defaults or Conditional Access.
+# Use an allowed interactive flow instead; never weaken MFA policies for deployment.
 dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.1.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.2.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.1.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.2.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -205,6 +312,76 @@ Production is blocked until the missing product components and every agreed
 gate in the [pilot plan](pilot-plan.md) are implemented and evidenced. First
 validate the trusted authentication/header/category path; do not replace it
 with an optimistic demo that mislabels messages.
+
+## Offline proof policy
+
+`src\qualification\proof-policy.js` is a bounded, synthetic-only proof policy,
+not a production classifier. Run its scenarios with `npm test`; no tenant
+credentials or license enrollment are required for these local tests.
+
+`src\registry\verification-policy.js` is the corresponding offline
+verification-transition contract. It authorizes actions from trusted caller
+context rather than command-supplied identities, supports explicit
+single-registrar and independent-review modes, normalizes exact contact/domain
+targets, rejects wholesale consumer-domain approval, requires evidence and a
+future expiry, and server-stamps approval/rejection/revocation audit events.
+It is not yet wired to Dataverse plug-ins, custom APIs, security roles, or the
+administrator app, so it cannot authorize a live registry record.
+
+- Fixture recognition requires an exact approved identity, current verification
+  and expiry timestamps, and explicit independent-verification evidence.
+  The default independent-review mode requires distinct requester/reviewer IDs.
+  An explicit `registry.verificationAuthority` can select `single-registrar`
+  with `authorizedRegistrarIds`; only listed verifiers are eligible, including
+  when creating their own entries. Multiple verifiers are supported. This
+  fixture configuration is not server-side role enforcement, and captured mail
+  still cannot receive positive qualification under either mode.
+  Consumer provider domains cannot grant wholesale recognition.
+- Review signals take precedence over recognition. Unavailable authentication,
+  content, link-purpose, native-risk, or payment-change evidence stays incomplete.
+- The fixture entry point requires `fixture: true`. Its positive presentation
+  says **Synthetic proof** and cannot pass the category-writing helper.
+- The captured-message entry point does not accept header text or an input
+  authentication flag as trusted evidence. It always records
+  `RECEIVING_BOUNDARY_NOT_VALIDATED`; no live positive labels are possible.
+- The category helper preserves unrelated categories and permits only the
+  three exact non-positive `MTC Proof` labels. It remains a pure helper; the
+  separate manual solution flow has executed one bounded synthetic category
+  path without enabling positive qualification.
+- Mailbox/folder/subject-marker scope and stable message identifiers are
+  mandatory. Malformed registry/link structures throw explicit errors; they
+  are not silently ignored or converted into successful assessments.
+
+The policy currently accepts curated, structured fixture evidence; it does not
+parse a message body, classify arbitrary link purpose, detect every lookalike,
+validate real authentication headers, enforce Dataverse approval permissions,
+or implement durable retries. Local fixture results cannot satisfy the manual
+live acceptance or production gates.
+
+## Manual synthetic runtime proof
+
+The version 0.2.0.0 solution includes one Off, manual-only flow for synthetic
+development evidence. It:
+
+- Finds the exact `MTC-Proof` folder and requires exactly one proof message with
+  the unrelated `Personal` category and subject marker.
+- Requests `Prefer: IdType="ImmutableId"`, uses the item ETag in `If-Match`,
+  preserves existing categories, and verifies the non-positive category write.
+- Lists `MessageAssessment` rows by mailbox reference plus immutable ID and
+  fails if more than one exists.
+- Creates or updates one metadata-only assessment with relationship,
+  authentication, and risk states explicitly `Incomplete`.
+- Records processing and presentation success separately; message bodies,
+  attachments, sender addresses, and customer records are not persisted.
+
+Two consecutive observed runs reused one assessment row. A Dataverse connection
+attempt in run-only invoker context failed Unauthorized before record creation;
+the reviewed flow therefore uses the tenant-bound Dataverse connection reference
+in embedded owner context while retaining the Outlook run-only connection for
+the manual proof. This does not establish the future operational ownership
+model. Automatic triggering, shared mailboxes, excluded-mailbox denial,
+receiving-system authentication, failure reconciliation, and positive
+qualification remain blocked.
 
 ## Official platform references
 

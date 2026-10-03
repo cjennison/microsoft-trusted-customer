@@ -4,12 +4,28 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Reusable development foundation, version 0.1.0.0. Seven Dataverse
+**Status:** Reusable development proof, version 0.2.0.0. Seven Dataverse
 tables, relationships, and disabled-by-default configuration have been
-provisioned in an authorized sandbox. No onboarding/review application, email
-classifier, mail flow change, or production/client deployment exists yet.
+provisioned in authorized development environments. An offline, synthetic-only
+qualification proof policy and an offline verification-transition contract are
+available. The transition contract fail-closes unauthorized approval, stamps
+the trusted caller, and models evidence, expiry, rejection, and revocation; it
+is not deployed Dataverse enforcement. No operational onboarding/review
+application, live email classifier, or production deployment exists yet. The
+reviewed solution has also been imported into a separately authorized customer
+development Sandbox; this is development proof, not operational email tagging.
+A disabled, manual-only solution flow now dynamically finds the synthetic proof
+folder and exactly one categorized proof message, requests a Graph immutable ID,
+uses ETag concurrency, preserves the unrelated `Personal` category, applies only
+the non-positive MTC category, verifies the write, and persists metadata-only
+`MessageAssessment` state through portable Outlook and Dataverse connection
+references. Two repeated runs succeeded while reusing one assessment row. The
+flow remains Off. It does not validate receiving-system authentication evidence,
+shared/all-mailbox permissions, automatic triggering, excluded-mailbox denial,
+or any live positive qualification.
 
-**Documented:** September 30, 2026. Development foundation added October 1, 2026.
+**Documented:** September 30, 2026. Development foundation added October 1,
+2026; manual message-runtime proof added October 3, 2026.
 
 ## The opportunity
 
@@ -40,6 +56,9 @@ can be compromised, and a genuine email can contain a malicious link.
   data model, qualification rules, limitations, and Microsoft sources.
 - [Client pilot plan](docs/pilot-plan.md): first-day checklist, decisions,
   phased delivery, acceptance scenarios, and rollback.
+- [Email verification workflow](docs/email-verification-workflow.md): simple
+  administrator experience, exact-address/domain choices, retained unverified
+  mail, after-delivery reassessment, and all-mailbox implementation gates.
 - [Replication pattern](docs/replication-pattern.md): tenant discovery,
   development bootstrap, portable solutions, export/build/deployment, and gates.
 - [Deployment skill](.github/skills/deploy-email-qualification/SKILL.md):
@@ -51,7 +70,8 @@ can be compromised, and a genuine email can contain a malicious link.
 schema; `solutions\MicrosoftTrustedCustomer` contains the reviewed dual-format
 solution export. PowerShell scripts bootstrap/export through an isolated,
 human-authenticated `agent-browser`, and build managed/unmanaged packages using
-the repository-pinned Power Platform CLI.
+the repository-pinned Power Platform CLI. The solution flow is a disabled
+manual synthetic proof, not an arrival trigger or operational classifier.
 
 Use the same managed release across customers with private per-tenant settings,
 not client-specific code branches. Bicep is reserved for Azure resources if a
@@ -59,6 +79,20 @@ later Graph worker requires them; it does not package Dataverse solutions.
 Follow the replication guide before provisioning anything. Customer records,
 current environment variable values, credentials, and browser state stay out
 of this public repository.
+
+`src\qualification\proof-policy.js` exercises independently reviewed fixture
+identities, exact matches, expiry/revocation, Reply-To and URL checks, incomplete
+evidence, and scoped non-positive proof categories. Synthetic recognition
+cannot be applied to an Outlook message. Captured-message assessment always
+remains incomplete until a trusted receiving-system boundary is proven.
+The fixture policy supports an explicitly selected single-registrar model and
+multiple authorized verifier identifiers, while retaining independent-review
+mode by default. Fixture identifiers are not deployed app roles or server-side
+verification enforcement.
+
+Developer environment creation, solution import, or successful API access does
+not prove the user's license entitlement. Confirm completed Developer Plan
+enrollment or appropriate premium rights before running premium assets.
 
 ## Initial scope
 

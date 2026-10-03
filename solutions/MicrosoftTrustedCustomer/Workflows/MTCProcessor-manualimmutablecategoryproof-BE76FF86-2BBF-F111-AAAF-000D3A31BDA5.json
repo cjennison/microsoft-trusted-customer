@@ -1,0 +1,323 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCOffice365Outlook"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCMicrosoftDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "68bb3218-2ded-420c-9ee9-da967fde059c"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_proof_folder": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "5b277099-3827-428b-a1bc-42fe11a46733"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "Uri": "https://graph.microsoft.com/v1.0/me/mailFolders?$filter=displayName%20eq%20%27MTC-Proof%27&$select=id,displayName",
+              "Method": "GET",
+              "ContentType": "application/json"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_office365"
+            }
+          }
+        },
+        "Get_scoped_messages": {
+          "runAfter": {
+            "Get_proof_folder": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "Uri": "@concat('https://graph.microsoft.com/v1.0/me/mailFolders/', encodeUriComponent(first(body('Get_proof_folder')?['value'])?['id']), '/messages?$filter=categories/any(a:a%20eq%20%27Personal%27)%20and%20startswith(subject,%27%5BMTC-PROOF%5D%27)&$select=id,subject,categories,internetMessageId,receivedDateTime,from,sender,replyTo,isDraft,parentFolderId&$top=10')",
+              "Method": "GET",
+              "CustomHeader1": "Prefer: IdType=\"ImmutableId\"",
+              "ContentType": "application/json"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_office365"
+            }
+          }
+        },
+        "Require_exactly_one_message": {
+          "runAfter": {
+            "Get_scoped_messages": [
+              "Succeeded"
+            ]
+          },
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@length(body('Get_scoped_messages')?['value'])",
+                  1
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "List_existing_assessments": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mtc_messageassessments",
+                  "$select": "mtc_messageassessmentid,mtc_processingstatus,mtc_presentationstatus",
+                  "$filter": "@concat('mtc_stablemessageid eq ''', first(body('Get_scoped_messages')?['value'])?['id'], ''' and mtc_mailboxreference eq ''me''')",
+                  "$top": 2
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Require_at_most_one_assessment": {
+              "runAfter": {
+                "List_existing_assessments": [
+                  "Succeeded"
+                ]
+              },
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "lessOrEquals": [
+                      "@length(body('List_existing_assessments')?['value'])",
+                      1
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Assessment_record_exists": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@length(body('List_existing_assessments')?['value'])",
+                          1
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Mark_existing_assessment_pending": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "mtc_messageassessments",
+                          "recordId": "@first(body('List_existing_assessments')?['value'])?['mtc_messageassessmentid']",
+                          "item/mtc_name": "@concat('Synthetic proof ', substring(first(body('Get_scoped_messages')?['value'])?['id'], 0, 24))",
+                          "item/mtc_mailboxreference": "me",
+                          "item/mtc_stablemessageid": "@first(body('Get_scoped_messages')?['value'])?['id']",
+                          "item/mtc_receivedon": "@first(body('Get_scoped_messages')?['value'])?['receivedDateTime']",
+                          "item/mtc_assessedon": "@utcNow()",
+                          "item/mtc_registryversion": "synthetic-proof-no-registry",
+                          "item/mtc_ruleversion": "message-runtime-1",
+                          "item/mtc_relationshipstate": 100000000,
+                          "item/mtc_authenticationstate": 100000000,
+                          "item/mtc_riskstate": 100000000,
+                          "item/mtc_processingstatus": 100000000,
+                          "item/mtc_presentationstatus": 100000000,
+                          "item/mtc_reasoncodes": "MTC_PROOF_SYNTHETIC;MTC_AUTH_BOUNDARY_UNVALIDATED;MTC_QUALIFICATION_INCOMPLETE"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord",
+                          "connectionName": "shared_commondataserviceforapps"
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Create_pending_assessment": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "mtc_messageassessments",
+                            "item/mtc_name": "@concat('Synthetic proof ', substring(first(body('Get_scoped_messages')?['value'])?['id'], 0, 24))",
+                            "item/mtc_mailboxreference": "me",
+                            "item/mtc_stablemessageid": "@first(body('Get_scoped_messages')?['value'])?['id']",
+                            "item/mtc_receivedon": "@first(body('Get_scoped_messages')?['value'])?['receivedDateTime']",
+                            "item/mtc_assessedon": "@utcNow()",
+                            "item/mtc_registryversion": "synthetic-proof-no-registry",
+                            "item/mtc_ruleversion": "message-runtime-1",
+                            "item/mtc_relationshipstate": 100000000,
+                            "item/mtc_authenticationstate": 100000000,
+                            "item/mtc_riskstate": 100000000,
+                            "item/mtc_processingstatus": 100000000,
+                            "item/mtc_presentationstatus": 100000000,
+                            "item/mtc_reasoncodes": "MTC_PROOF_SYNTHETIC;MTC_AUTH_BOUNDARY_UNVALIDATED;MTC_QUALIFICATION_INCOMPLETE"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "CreateRecord",
+                            "connectionName": "shared_commondataserviceforapps"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "Apply_non_positive_category": {
+                  "runAfter": {
+                    "Assessment_record_exists": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "Uri": "@concat('https://graph.microsoft.com/v1.0/me/messages/', encodeUriComponent(first(body('Get_scoped_messages')?['value'])?['id']))",
+                      "Method": "PATCH",
+                      "CustomHeader1": "@concat('If-Match: ', first(body('Get_scoped_messages')?['value'])?['@odata.etag'])",
+                      "CustomHeader2": "Prefer: IdType=\"ImmutableId\"",
+                      "Body": {
+                        "categories": "@union(coalesce(first(body('Get_scoped_messages')?['value'])?['categories'], createArray()), createArray('MTC Proof - qualification incomplete'))"
+                      },
+                      "ContentType": "application/json"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "operationId": "HttpRequest",
+                      "connectionName": "shared_office365"
+                    }
+                  }
+                },
+                "Verify_category": {
+                  "runAfter": {
+                    "Apply_non_positive_category": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "Uri": "@concat('https://graph.microsoft.com/v1.0/me/messages/', encodeUriComponent(first(body('Get_scoped_messages')?['value'])?['id']), '?$select=id,categories,internetMessageId,parentFolderId')",
+                      "Method": "GET",
+                      "CustomHeader1": "Prefer: IdType=\"ImmutableId\"",
+                      "ContentType": "application/json"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "operationId": "HttpRequest",
+                      "connectionName": "shared_office365"
+                    }
+                  }
+                },
+                "Complete_assessment": {
+                  "runAfter": {
+                    "Verify_category": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "mtc_messageassessments",
+                      "recordId": "@if(equals(length(body('List_existing_assessments')?['value']), 1), first(body('List_existing_assessments')?['value'])?['mtc_messageassessmentid'], body('Create_pending_assessment')?['mtc_messageassessmentid'])",
+                      "item/mtc_assessedon": "@utcNow()",
+                      "item/mtc_processingstatus": 100000001,
+                      "item/mtc_presentationstatus": 100000001,
+                      "item/mtc_reasoncodes": "MTC_PROOF_SYNTHETIC;MTC_AUTH_BOUNDARY_UNVALIDATED;MTC_QUALIFICATION_INCOMPLETE;MTC_CATEGORY_APPLIED_PRESERVED"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "UpdateOnlyRecord",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Fail_assessment_cardinality": {
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "MTC_ASSESSMENT_CARDINALITY",
+                        "message": "Expected at most one assessment for the scoped mailbox and immutable message identifier."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Fail_scope_cardinality": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "MTC_SCOPE_CARDINALITY",
+                    "message": "Expected exactly one Personal-categorized MTC proof message."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

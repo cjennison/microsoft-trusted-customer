@@ -1,11 +1,11 @@
 {
   "name": "microsoft-trusted-customer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Repeatable Microsoft email qualification development pattern",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/provisioning/dataverse.js"
+    "check": "node --check src/provisioning/dataverse.js && node --check src/qualification/proof-policy.js && node --check src/registry/verification-policy.js && node --check src/runtime/message-selection.js"
   },
   "engines": {
     "node": ">=22"

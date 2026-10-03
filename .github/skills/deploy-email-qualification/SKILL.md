@@ -39,12 +39,18 @@ present the development foundation as a functioning anti-phishing system.
   Attachments policy scope and precedence. Record denied access as unknown,
   not "absent" or "secure."
 - Identify approved pilot and excluded mailboxes, device/client combinations,
-  accounts-payable owner, independent approver, operational owner, alert
+  accounts-payable owner, authorized registrars, selected verification mode,
+  independent approver where required, operational owner, alert
   destination, retention, and baseline/rollback evidence.
 - Compare native configuration alone with the custom registry. Recommend the
   smallest justified route; do not require Azure, Dynamics, or Copilot Studio.
 - Stop with explicit gaps if capacity, permissions, licensing, or evidence
   are missing. Do not infer production rights from trials or development rights.
+- For a no-purchase proof, verify the current user's completed Developer Plan
+  enrollment before premium asset execution. Administrator-created environments,
+  successful imports/API calls, and another account's licenses do not prove
+  entitlement. If self-service enrollment is blocked, stop live work rather than
+  modifying tenant licensing policy or using admin provisioning as a bypass.
 
 ## 2. Agree a plan
 
@@ -78,9 +84,16 @@ present the development foundation as a functioning anti-phishing system.
 
 ## 4. Implement the product before activation
 
-- Build registry editor/independent approver/reviewer/service security roles and
-  enforce approval/revocation/expiry server-side. Choice fields and lookup
-  columns alone do not enforce approval or separation of duties.
+- Build registrar/reviewer/service roles, plus distinct requester/approver roles
+  where independent-review mode is selected. Enforce the explicitly chosen
+  verification mode, registrar membership, evidence, expiry, revocation, and
+  actual-verifier audit server-side. Single-registrar mode permits an authorized
+  person to create and verify an entry, never to bypass independent ownership
+  evidence. Support multiple registrars through local roles/groups, not
+  hardcoded identities. Choice fields and offline fixture IDs are not security.
+- Verify every app user's entitlement and any incident-related account recovery
+  before granting app access. Do not assume a maker's license covers other
+  registrars or that MFA enrollment alone proves a compromised account recovered.
 - Build solution-aware onboarding and review app/flows. Use connection
   references and environment variable definitions, never tenant constants.
 - Spike trusted receiving-system authentication, exact identity matching,
@@ -93,6 +106,9 @@ present the development foundation as a functioning anti-phishing system.
 - Use synthetic registry and message data until authorized pilot testing.
   Enable organization auditing only with explicit approved scope; table audit
   metadata alone does not prove that an audit trail is being captured.
+- The offline proof policy cannot authorize live positive labels. Keep captured
+  messages incomplete until the trusted receiving-system boundary is validated;
+  synthetic fixtures and connectivity spikes are not live acceptance evidence.
 
 ## 5. Package and deploy
 

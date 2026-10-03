@@ -5,6 +5,8 @@
     "administratorAuthorization": "unknown",
     "exchangeAndDefenderEntitlements": "unknown",
     "recipientServicePlanAssignments": "unknown",
+    "registryUserEntitlements": "unknown",
+    "registrarIdentityRecovery": "unknown",
     "powerAppsProductionEntitlements": "unknown",
     "flowOwnerEntitlements": "unknown",
     "trialExpiry": "unknown",
@@ -21,6 +23,8 @@
     "route": "not-selected",
     "productionCostDelta": "not-confirmed",
     "processingMode": "Disabled",
+    "verificationAuthorityMode": "not-selected",
+    "registryRegistrarReferences": [],
     "mailboxScope": [],
     "unsupportedClients": [],
     "approvedChanges": []

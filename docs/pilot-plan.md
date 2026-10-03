@@ -1,10 +1,13 @@
 # Client pilot: October 1, 2026
 
-**Status:** Planned work; no access, configuration, implementation, or test
-results for the customer pilot are assumed complete. A separate development
-schema foundation was built October 1; see the
-[replication pattern](replication-pattern.md). This does not satisfy the message
-path, security, manual acceptance, or production gates below.
+**Status:** Pilot approval remains blocked. A development foundation was built
+October 1; see the [replication pattern](replication-pattern.md). A later bounded
+own-mailbox synthetic proof dynamically selected one exact immutable message,
+preserved an unrelated category, applied and verified one non-positive category,
+and persisted one reusable metadata-only incomplete assessment across repeated
+runs. The manual flow remains Off. This evidence does not satisfy trusted
+authentication, shared/all-mailbox scope, excluded-mailbox denial, automatic
+triggering, supported-client acceptance, security, or production gates below.
 
 **First-day goal:** Understand the actual attack, improve the native Microsoft
 baseline where authorized, and establish a bounded qualification proof of
@@ -49,7 +52,7 @@ SharePoint access alone is not Exchange/Defender administration access.
 | Mailbox scope | One AP/shared mailbox plus a small representative user group |
 | System of record | Existing vendor system if available; otherwise Dataverse with approved onboarding records |
 | Budget/licensing | Native baseline first; confirm Dataverse/Power Platform and any Azure entitlements before custom build |
-| Onboarding authority | Named business owner and separate approver; no automatic trust based on email history |
+| Onboarding authority | Named authorized registrars using explicitly chosen single-registrar or independent-review mode; independent ownership evidence always required, never automatic trust based on email history |
 | Payment controls | Independent verification for any bank change/redirection; customer sets other amount-based approval thresholds |
 | Presentation | Explicit Outlook categories plus a reviewer workspace; no "safe" badges |
 | Unsupported evidence | Incomplete qualification and review, never an optimistic default |
@@ -96,6 +99,7 @@ and observed results in restricted pilot evidence.
 | Unexpected Reply-To on a recognized sender | Review required unless independently approved and in scope |
 | Approved vendor using a verified third-party invoice portal | Explain the scoped approved portal relationship, not an arbitrary domain match |
 | New legitimate business with no registry record | Unrecognized, not automatically declared malicious; controlled onboarding path |
+| New customer approved after their first message arrives | The original retained message is reassessed within the agreed scope and relabeled only if eligible; no resend, move, deletion, or unrelated category loss |
 | Exact approved consumer-mail address vs another address on that provider | Only the approved address can match; never recognize the provider domain wholesale |
 | Approved name/logo with an unapproved address | No positive match from branding or display name |
 | Known-contact payment redirection from an apparently genuine mailbox | Independent payment verification still mandatory, even when authentication passes |
@@ -110,6 +114,9 @@ and observed results in restricted pilot evidence.
 | External sender copies the proposed badge into its message body | Copied content is not treated as the service's assessment |
 | Shared mailbox and real desktop/web/mobile/tablet clients | Agreed labels/review path work for each supported client, or limitations are explicit |
 | Access to a mailbox outside pilot scope | Denied by effective permissions, not merely omitted from trigger configuration |
+| Nontechnical registrar manages an exact address or business domain | Plain-language workflow, consumer-domain rejection, evidence, expiry/revocation, actual-verifier audit, and server-side enforcement of the selected approval mode |
+| Multiple registrars, unauthorized approval, or forged verifier identity | Independently licensed/authorized people can verify; unauthorized callers and verifier impersonation are denied; self-approval is denied in independent-review mode |
+| Additional approved employee/shared mailbox and future mailbox enrollment | Same policy and authorized effective access, measured coverage, and explicit enrollment rather than assumed tenant-wide connector access |
 
 ## 5. Measure value and gate deployment
 

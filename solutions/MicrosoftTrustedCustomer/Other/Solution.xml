@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml version="9.2.26092.142" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26092.142" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26092.00142">
+<ImportExportXml version="9.2.26085.172" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26085.172" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26085.00172">
   <SolutionManifest>
     <UniqueName>MicrosoftTrustedCustomer</UniqueName>
     <LocalizedNames>
       <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Development registry foundation only. No email classifier, payment approval, or active mailbox automation." languagecode="1033" />
+      <Description description="Development foundation plus a disabled manual synthetic message-category and assessment-persistence proof. No automatic classifier, positive qualification, or payment approval." languagecode="1033" />
     </Descriptions>
-    <Version>0.1.0.0</Version>
+    <Version>0.2.0.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>
@@ -88,6 +88,7 @@
       <RootComponent type="1" schemaName="mtc_paymentverification" behavior="0" />
       <RootComponent type="1" schemaName="mtc_verificationcase" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="1" />
+      <RootComponent type="29" id="{be76ff86-2bbf-f111-aaaf-000d3a31bda5}" behavior="0" />
     </RootComponents>
     <MissingDependencies />
   </SolutionManifest>
