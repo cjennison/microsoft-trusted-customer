@@ -18,14 +18,14 @@ if ($solution.Version -notmatch '^\d+\.\d+\.\d+\.\d+$' -or $solution.Managed -ne
     throw 'Expected a versioned Both-format (managed and unmanaged) PAC source export.'
 }
 $expectedTables = @(
-    'mtc_approvedcontact', 'mtc_approveddomain', 'mtc_approvedportal',
-    'mtc_businessparty', 'mtc_messageassessment', 'mtc_paymentverification', 'mtc_verificationcase'
+    'mtc_approvedcontact', 'mtc_approveddomain', 'mtc_businessparty',
+    'mtc_messageassessment', 'mtc_verificationcase'
 )
 $actualTables = @($solution.RootComponents.RootComponent |
     Where-Object { $_.type -eq '1' -and $_.schemaName -ne 'systemuser' } |
     ForEach-Object { $_.schemaName })
 if (Compare-Object $expectedTables $actualTables) {
-    throw 'The solution must contain exactly the seven reviewed custom table roots.'
+    throw 'The solution must contain exactly the five reviewed known-sender table roots.'
 }
 $workflowRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '29' })
 $expectedWorkflowIds = @(
@@ -175,7 +175,7 @@ if (-not $authActions.List_external_auth_candidates -or -not $externalScope -or
 if ($authWorkflowText -notmatch 'Prefer: IdType=\\"ImmutableId\\"' -or
     $authWorkflowText -notmatch 'If-Match:' -or
     $authWorkflowText -notmatch 'startsWith\(toLower\(trim\(string\(item\(\)\?\[''value''\]\)\)\), ''mx\.microsoft\.com''\)' -or
-    $authWorkflowText -notmatch 'MTC Proof - unrecognized sender' -or
+    $authWorkflowText -notmatch 'MTC Proof - not known' -or
     $authWorkflowText -notmatch 'MTC_REGISTRY_NO_MATCH' -or
     $authWorkflowText -notmatch '"item/mtc_mailboxreference"\s*:\s*"me"') {
     throw 'The authentication proof lost a trusted-boundary, registry, concurrency, or persistence safeguard.'

@@ -291,9 +291,21 @@
                         }
                       }
                     },
-                    "Apply_unrecognized_category": {
+                    "Filter_existing_non_mtc_categories": {
                       "runAfter": {
                         "Unrecognized_assessment_record_exists": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@coalesce(body('Get_message_authentication_headers')?['categories'], createArray())",
+                        "where": "@not(startsWith(item(), 'MTC Proof - '))"
+                      }
+                    },
+                    "Apply_unrecognized_category": {
+                      "runAfter": {
+                        "Filter_existing_non_mtc_categories": [
                           "Succeeded"
                         ]
                       },
@@ -305,7 +317,7 @@
                           "CustomHeader1": "@concat('If-Match: ', first(body('List_external_auth_candidates')?['value'])?['@odata.etag'])",
                           "CustomHeader2": "Prefer: IdType=\"ImmutableId\"",
                           "Body": {
-                            "categories": "@union(coalesce(body('Get_message_authentication_headers')?['categories'], createArray()), createArray('MTC Proof - unrecognized sender'))"
+                            "categories": "@union(body('Filter_existing_non_mtc_categories'), createArray('MTC Proof - not known'))"
                           },
                           "ContentType": "application/json"
                         },
@@ -349,7 +361,7 @@
                           {
                             "contains": [
                               "@coalesce(body('Verify_unrecognized_category')?['categories'], createArray())",
-                              "MTC Proof - unrecognized sender"
+                              "MTC Proof - not known"
                             ]
                           }
                         ]

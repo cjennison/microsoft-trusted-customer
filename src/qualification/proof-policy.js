@@ -1,15 +1,14 @@
 'use strict';
 
 (function (root) {
-  const version = 'proof-2';
+  const version = 'proof-3';
   const consumerDomains = new Set([
     'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com',
     'yahoo.com', 'icloud.com', 'aol.com', 'proton.me', 'protonmail.com'
   ]);
   const labels = Object.freeze({
-    review: 'MTC Proof - review required',
-    incomplete: 'MTC Proof - qualification incomplete',
-    unknown: 'MTC Proof - unrecognized sender'
+    known: 'MTC Proof - known sender',
+    unknown: 'MTC Proof - not known'
   });
 
   function domain(value) {
@@ -89,24 +88,6 @@
     return changes + Number(i < left.length || j < right.length) === 1;
   }
 
-  function linkHost(value) {
-    if (typeof value !== 'string' || value.trim() !== value || /[\u0000-\u0020\\]/u.test(value)) {
-      throw new Error('Unsupported link.');
-    }
-    let url = new URL(value);
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
-        (url.port && !['80', '443'].includes(url.port))) throw new Error('Unsupported link.');
-    const host = domain(url.hostname);
-    if (host.endsWith('.safelinks.protection.outlook.com')) {
-      const originals = url.searchParams.getAll('url');
-      if (originals.length !== 1) throw new Error('Safe Links original target is missing or ambiguous.');
-      url = new URL(originals[0]);
-      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
-          (url.port && !['80', '443'].includes(url.port))) throw new Error('Unsupported original link.');
-    }
-    return { host: domain(url.hostname), https: url.protocol === 'https:' };
-  }
-
   function validateScope(message, scope) {
     if (!message || typeof message !== 'object' || !scope || scope.authorizationConfirmed !== true ||
         typeof scope.mailboxId !== 'string' || !scope.mailboxId.trim() ||
@@ -121,8 +102,8 @@
 
   function validateRegistry(registry) {
     if (!registry || !Array.isArray(registry.parties) || !Array.isArray(registry.contacts) ||
-        !Array.isArray(registry.domains) || !Array.isArray(registry.portals) ||
-        typeof registry.version !== 'string' || !registry.version.trim()) {
+        !Array.isArray(registry.domains) || typeof registry.version !== 'string' ||
+        !registry.version.trim()) {
       throw new Error('Complete versioned registry data is required.');
     }
     for (const party of registry.parties) {
@@ -131,8 +112,7 @@
       }
     }
     for (const [collection, field, normalize] of [
-      [registry.contacts, 'email', address], [registry.domains, 'domain', domain],
-      [registry.portals, 'hostname', domain]
+      [registry.contacts, 'email', address], [registry.domains, 'domain', domain]
     ]) {
       for (const record of collection) {
         if (!record || typeof record.partyId !== 'string' || !record.partyId.trim()) {
@@ -162,10 +142,6 @@
     validateRegistry(registry);
     const authority = verificationAuthority(registry.verificationAuthority);
     const approved = record => activeRecord(record, now, authority);
-    if (message.links !== undefined && (!Array.isArray(message.links) ||
-        message.links.some(link => !link || typeof link !== 'object' || Array.isArray(link)))) {
-      throw new Error('Structured link evidence is required.');
-    }
     const reasons = new Set();
     let review = false;
     let incomplete = false;
@@ -203,7 +179,6 @@
     const exactContacts = registry.contacts.filter(contact => address(contact.email) === from);
     const contactMatches = approvedContacts.filter(contact => address(contact.email) === from);
     const domainMatches = approvedDomains.filter(item => domain(item.domain) === fromDomain);
-    let partyId = null;
     if (exactContacts.some(contact => !approved(contact) || !partyActive(contact.partyId))) {
       flag('KNOWN_CONTACT_NOT_CURRENTLY_APPROVED');
     }
@@ -213,10 +188,8 @@
     } else if (contactMatches.length === 1 && !review) {
       relationshipState = 'contact-recognized';
       matchedContactId = contactMatches[0].id;
-      partyId = contactMatches[0].partyId;
     } else if (domainMatches.length === 1 && !review) {
       relationshipState = 'domain-recognized';
-      partyId = domainMatches[0].partyId;
     }
 
     if (fromDomain && approvedDomains.some(item => oneEditApart(fromDomain, domain(item.domain)))) {
@@ -236,39 +209,13 @@
       if (!permitted.includes(destination)) flag('UNEXPECTED_REPLY_TO');
     }
 
-    if (!message.inspection || message.inspection.bodyReadable !== true ||
-        message.inspection.linksComplete !== true || message.inspection.attachmentsSupported !== true ||
-        !Array.isArray(message.links)) fail('CONTENT_INSPECTION_INCOMPLETE');
-    if (!message.inspection || message.inspection.paymentChangeChecked !== true) fail('PAYMENT_CHANGE_CHECK_INCOMPLETE');
-    if (message.paymentChangeRequested === true) flag('INDEPENDENT_PAYMENT_VERIFICATION_REQUIRED');
-    if (typeof message.paymentChangeRequested !== 'boolean') fail('PAYMENT_CHANGE_CHECK_INCOMPLETE');
-    if (message.nativeRisk === 'review') flag('NATIVE_RISK_SIGNAL');
-    if (!['review', 'no-signal'].includes(message.nativeRisk)) fail('NATIVE_RISK_EVIDENCE_INCOMPLETE');
-
-    for (const link of message.links ?? []) {
-      let target;
-      try { target = linkHost(link.url); } catch (error) { fail('LINK_TARGET_UNRESOLVED'); continue; }
-      const portals = registry.portals.filter(portal => approved(portal) && partyActive(portal.partyId));
-      if (portals.some(portal => oneEditApart(target.host, domain(portal.hostname)))) flag('PORTAL_HOST_LOOKALIKE');
-      if (['payment', 'login'].includes(link.purpose)) {
-        if (!target.https) flag('SENSITIVE_LINK_NOT_HTTPS');
-        if (!portals.some(portal => portal.partyId === partyId && domain(portal.hostname) === target.host)) {
-          flag('SENSITIVE_PORTAL_NOT_APPROVED');
-        }
-      } else if (link.purpose !== 'ordinary') {
-        fail('LINK_PURPOSE_UNRESOLVED');
-      }
-    }
-
-    let presentation = labels.unknown;
-    if (review) presentation = labels.review;
-    else if (incomplete) presentation = labels.incomplete;
-    else if (relationshipState === 'contact-recognized') presentation = 'Synthetic proof - recognized contact; payment not verified';
-    else if (relationshipState === 'domain-recognized') presentation = 'Synthetic proof - recognized domain; contact unverified';
+    const known = !review && !incomplete && authenticationState === 'aligned-pass' &&
+      ['contact-recognized', 'domain-recognized'].includes(relationshipState);
+    const presentation = known ? labels.known : labels.unknown;
     return {
       policyVersion: version, registryVersion: registry.version,
       evidenceMode: synthetic ? 'synthetic-fixture' : 'captured-message-unvalidated',
-      proofOnly: true, paymentVerified: false, canApplyPositiveLabel: false,
+      proofOnly: true, canApplyPositiveLabel: false,
       relationshipState, authenticationState,
       riskState: review ? 'review-required' : incomplete ? 'incomplete' : 'no-signal-in-completed-fixture-checks',
       presentation, matchedContactId, reasonCodes: [...reasons].sort()
@@ -291,13 +238,13 @@
     if (!assessment || assessment.proofOnly !== true || assessment.canApplyPositiveLabel !== false ||
         assessment.policyVersion !== version ||
         !['synthetic-fixture', 'captured-message-unvalidated'].includes(assessment.evidenceMode) ||
-        !Object.values(labels).includes(assessment.presentation)) {
-      throw new Error('Only non-positive proof categories can be applied.');
+        assessment.presentation !== labels.unknown) {
+      throw new Error('Only the fail-closed Not known proof category can be applied.');
     }
     return [...new Set([...existing.filter(item => !Object.values(labels).includes(item)), assessment.presentation])];
   }
 
-  const api = { version, labels, domain, address, active, linkHost, validateScope, assessFixture, assessCapturedMessage, nextCategories };
+  const api = { version, labels, domain, address, active, validateScope, assessFixture, assessCapturedMessage, nextCategories };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MtcProofPolicy = api;
 })(globalThis);

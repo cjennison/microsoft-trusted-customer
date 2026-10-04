@@ -6,9 +6,9 @@
       <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Development foundation plus disabled manual synthetic immutable-category, authentication-boundary, and assessment-persistence proofs. No automatic classifier, positive qualification, or payment approval." languagecode="1033" />
+      <Description description="Development known/not-known sender foundation plus disabled manual synthetic proofs. Known requires active registry match and trusted receiving authentication. No automatic classifier." languagecode="1033" />
     </Descriptions>
-    <Version>0.3.0.0</Version>
+    <Version>0.4.0.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>
@@ -82,10 +82,8 @@
     <RootComponents>
       <RootComponent type="1" schemaName="mtc_approvedcontact" behavior="0" />
       <RootComponent type="1" schemaName="mtc_approveddomain" behavior="0" />
-      <RootComponent type="1" schemaName="mtc_approvedportal" behavior="0" />
       <RootComponent type="1" schemaName="mtc_businessparty" behavior="0" />
       <RootComponent type="1" schemaName="mtc_messageassessment" behavior="0" />
-      <RootComponent type="1" schemaName="mtc_paymentverification" behavior="0" />
       <RootComponent type="1" schemaName="mtc_verificationcase" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="1" />
       <RootComponent type="29" id="{4de55d19-e43c-44ba-be99-856d9a672e88}" behavior="0" />

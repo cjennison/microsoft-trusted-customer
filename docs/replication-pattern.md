@@ -1,6 +1,6 @@
 # Reusable deployment pattern
 
-**Implemented development proof:** version 0.3.0.0 contains the seven-table
+**Implemented development proof:** version 0.4.0.0 contains the five-table
 foundation plus two disabled manual synthetic message-runtime flows and portable
 Outlook/Dataverse connection references. The repository contains the
 deterministic schema bootstrap, reviewed managed/unmanaged solution source,
@@ -25,9 +25,9 @@ conversations. A second manual flow then found exactly one synthetic external
 Inbox message, retrieved headers without body or attachments, required exactly
 one Microsoft `Authentication-Results` header containing SPF, DKIM, DMARC, and
 composite-authentication pass, and confirmed there was no active approved exact
-contact. It applied and verified `MTC Proof - unrecognized sender`, displayed
-the category in Outlook web, and persisted one Unrecognized/Aligned
-pass/Incomplete assessment. A repeat run reused the same row. Both flows are Off
+contact. It applied and verified `MTC Proof - not known`, displayed the category
+in Outlook web, and persisted one Unrecognized/Aligned pass/Incomplete
+assessment. A repeat run reused the same row. Both flows are Off
 and have no automatic triggers. This is still not a complete message path or
 cross-tenant deployment test: the current trusted-header match is bounded to the
 observed Microsoft header shape, and shared/all-mailbox access,
@@ -50,7 +50,7 @@ plan enrollment.
 **Subsequent customer development setup:** appropriate paid maker/flow-owner
 rights were purchased and assigned after exact-order approval, a restricted
 Sandbox with Dataverse was created, and the reviewed unmanaged foundation was
-imported into the separately authorized commercial-cloud target. The seven
+imported into the separately authorized commercial-cloud target. The five
 custom tables and four definitions were inspected; processing remains Disabled
 and mailbox/alert settings remain empty. The target now also contains two
 disabled manual synthetic proof flows and two tenant-bound connection references.
@@ -206,8 +206,8 @@ Partial components are retained, not silently erased.
 ### Foundation schema
 
 The solution contains BusinessParty, ApprovedDomain, ApprovedContact,
-ApprovedPortal, VerificationCase, MessageAssessment, and PaymentVerification,
-with parent/contact/reviewer lookups. All custom tables are user-owned.
+VerificationCase, and MessageAssessment, with parent/contact/reviewer lookups.
+All custom tables are user-owned.
 Deleting referenced parties/reviewers is restricted; relationships do not
 cascade deletions or sharing.
 
@@ -264,7 +264,7 @@ The checked-in source is the reviewed dual-format export. To rebuild it:
 .\scripts\Build-Solution.ps1
 ```
 
-The build validates solution identity, seven table roots, the reviewed
+The build validates solution identity, five table roots, the reviewed
 manual-only workflow, the two portable connection references, reference-only
 User dependency, safe defaults, absence of current values/tenant bindings, and
 JSON/XML parsing. It packs managed and unmanaged ZIPs and verifies their actual
@@ -301,13 +301,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.3.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.4.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.3.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.4.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -345,30 +345,28 @@ administrator app, so it cannot authorize a live registry record.
   fixture configuration is not server-side role enforcement, and captured mail
   still cannot receive positive qualification under either mode.
   Consumer provider domains cannot grant wholesale recognition.
-- Review signals take precedence over recognition. Unavailable authentication,
-  content, link-purpose, native-risk, or payment-change evidence stays incomplete.
-- The fixture entry point requires `fixture: true`. Its positive presentation
-  says **Synthetic proof** and cannot pass the category-writing helper.
+- Missing, failed, conflicting, expired, revoked, or ambiguous identity evidence
+  produces **Not known**. Known requires an active exact address/domain match
+  plus aligned trusted authentication.
+- The fixture entry point requires `fixture: true`. Its Known presentation
+  cannot pass the live category-writing helper.
 - The captured-message entry point does not accept header text or an input
   authentication flag as trusted evidence. It always records
   `RECEIVING_BOUNDARY_NOT_VALIDATED`; no live positive labels are possible.
-- The category helper preserves unrelated categories and permits only the
-  three exact non-positive `MTC Proof` labels. It remains a pure helper; the
-  separate manual solution flow has executed one bounded synthetic category
-  path without enabling positive qualification.
+- The category helper preserves unrelated categories, removes prior MTC-owned
+  proof labels, and permits only `MTC Proof - not known` for captured messages.
 - Mailbox/folder/subject-marker scope and stable message identifiers are
-  mandatory. Malformed registry/link structures throw explicit errors; they
+  mandatory. Malformed registry structures throw explicit errors; they
   are not silently ignored or converted into successful assessments.
 
 The policy currently accepts curated, structured fixture evidence; it does not
-parse a message body, classify arbitrary link purpose, detect every lookalike,
 validate real authentication headers, enforce Dataverse approval permissions,
 or implement durable retries. Local fixture results cannot satisfy the manual
 live acceptance or production gates.
 
 ## Manual synthetic runtime proof
 
-The version 0.3.0.0 solution includes two Off, manual-only flows for synthetic
+The version 0.4.0.0 solution includes two Off, manual-only flows for synthetic
 development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with
@@ -393,7 +391,8 @@ authentication/unrecognized-presentation flow:
   DMARC, and composite-authentication pass.
 - Lists active approved contacts, matches the exact sender in-flow, and proceeds
   only when no unexpired approved exact contact exists.
-- Applies and verifies `MTC Proof - unrecognized sender` while preserving other
+- Removes prior MTC-owned labels, applies and verifies `MTC Proof - not known`,
+  while preserving other
   categories, then persists Unrecognized relationship, Aligned pass
   authentication, and Incomplete risk as separate dimensions.
 - Fails closed on message, trusted-header, registry, assessment, or category
@@ -407,7 +406,7 @@ in embedded owner context while retaining the Outlook run-only connection for
 manual proof execution. This does not establish the future operational ownership
 model. The current header match and 100-row contact listing are bounded proof
 logic, not the final parser/query design. Automatic triggering, shared mailboxes,
-excluded-mailbox denial, failure reconciliation, and positive qualification
+excluded-mailbox denial, failure reconciliation, and live Known presentation
 remain blocked.
 
 ## Official platform references

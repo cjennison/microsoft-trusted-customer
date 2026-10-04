@@ -10,7 +10,7 @@
         <LocalizedCollectionName description="Message assessments" languagecode="1033" />
       </LocalizedCollectionNames>
       <Descriptions>
-        <Description description="Assessment metadata only. Do not store message bodies, bank details, or attachment contents." languagecode="1033" />
+        <Description description="Known/not-known sender assessment metadata only. Do not store message bodies or attachment contents." languagecode="1033" />
       </Descriptions>
       <attributes>
         <attribute PhysicalName="CreatedBy">

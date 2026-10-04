@@ -9,8 +9,8 @@
   addresses, credentials, evidence, and screenshots out of public Git.
 - Development bootstrap supports only explicitly authorized commercial-cloud
   Sandbox/Developer targets and checks the exact origin and organization ID.
-- Keep native email protections intact. A recognized sender is not a safe email,
-  verified human, or approved payment. Missing evidence fails closed.
+- Keep native email protections intact. A Known sender is not a safe email or
+  verified human. Missing evidence fails closed to Not known.
 - Reuse the same managed solution release across customers. Use tenant-local
   connection references and settings rather than per-client code branches.
 - Use the repository-pinned CLI via dotnet tool run pac. Do not rely on or

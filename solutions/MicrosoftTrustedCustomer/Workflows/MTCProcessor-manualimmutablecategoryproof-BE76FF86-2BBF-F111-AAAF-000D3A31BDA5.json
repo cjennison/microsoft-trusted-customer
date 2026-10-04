@@ -214,9 +214,21 @@
                     }
                   }
                 },
-                "Apply_non_positive_category": {
+                "Filter_existing_non_mtc_categories": {
                   "runAfter": {
                     "Assessment_record_exists": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@coalesce(first(body('Get_scoped_messages')?['value'])?['categories'], createArray())",
+                    "where": "@not(startsWith(item(), 'MTC Proof - '))"
+                  }
+                },
+                "Apply_non_positive_category": {
+                  "runAfter": {
+                    "Filter_existing_non_mtc_categories": [
                       "Succeeded"
                     ]
                   },
@@ -228,7 +240,7 @@
                       "CustomHeader1": "@concat('If-Match: ', first(body('Get_scoped_messages')?['value'])?['@odata.etag'])",
                       "CustomHeader2": "Prefer: IdType=\"ImmutableId\"",
                       "Body": {
-                        "categories": "@union(coalesce(first(body('Get_scoped_messages')?['value'])?['categories'], createArray()), createArray('MTC Proof - qualification incomplete'))"
+                        "categories": "@union(body('Filter_existing_non_mtc_categories'), createArray('MTC Proof - not known'))"
                       },
                       "ContentType": "application/json"
                     },

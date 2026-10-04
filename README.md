@@ -4,7 +4,7 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Reusable development proof, version 0.3.0.0. Seven Dataverse
+**Status:** Reusable development proof, version 0.4.0.0. Five Dataverse
 tables, relationships, and disabled-by-default configuration have been
 provisioned in authorized development environments. An offline, synthetic-only
 qualification proof policy and an offline verification-transition contract are
@@ -24,9 +24,10 @@ solution also includes a second disabled manual proof for one synthetic external
 Inbox message. It required exactly one Microsoft receiving
 `Authentication-Results` header with SPF, DKIM, DMARC, and composite
 authentication pass, confirmed no active approved exact contact, preserved
-existing categories, applied `MTC Proof - unrecognized sender`, displayed it in
-Outlook web, and persisted one reusable metadata-only unrecognized assessment.
-Both flows remain Off. The proof is not a general authentication parser and does
+existing categories, applied `MTC Proof - not known`, displayed it in Outlook
+web, and persisted one reusable metadata-only Not known assessment. Both flows
+remain Off. The proof is not a general
+authentication parser and does
 not validate shared/all-mailbox permissions, automatic triggering,
 excluded-mailbox denial, or any live positive qualification.
 
@@ -35,16 +36,16 @@ excluded-mailbox denial, or any live positive qualification.
 
 ## The opportunity
 
-A contractor reported repeated phishing attempts, including a convincing
-subcontractor payment request with copied branding and a subtly altered link.
-Existing email protections helped flag suspicious messages, but the incident
-still nearly caused a high-value payment diversion.
+A contractor needed a fast, visible way to distinguish known business senders
+from email addresses and domains that had not yet been independently approved.
+Existing email protections still handle spam, phishing, malware, and suspicious
+content; this product adds the missing business-relationship context.
 
-The proposed service adds business context to existing Microsoft protections:
-is this the organization, contact, reply address, and payment portal that the
-customer independently verified during onboarding?
+The proposed service asks one bounded question: does this delivered message come
+from an independently approved address or business domain with trusted receiving
+authentication?
 
-**Recognizing a sender is not the same as proving an email or payment is safe.**
+**A known sender is not the same as a safe email.**
 A lookalike domain can pass email authentication, a legitimate supplier mailbox
 can be compromised, and a genuine email can contain a malicious link.
 
@@ -52,9 +53,9 @@ can be compromised, and a genuine email can contain a malicious link.
 
 | Question | Working answer |
 | --- | --- |
-| Does this already exist? | Microsoft already provides spoofing detection, Defender for Office 365 impersonation protection, safety tips, Safe Links, and Safe Attachments. This proposal adds a business-managed contact registry and explicit payment-verification workflow; it is not a replacement email security product or a claim of a novel detection technique. |
-| Is it valuable? | Potentially, especially for accounts payable and contractor/vendor relationships. The value is making impersonation and payment changes harder to act on accidentally, not promising to eliminate phishing. Validate the benefit against a properly configured native Microsoft baseline before investing in custom software. |
-| What does it look like? | Microsoft email protection + a verified-party registry in Dataverse + Power Apps onboarding + post-delivery qualification and Outlook categories + independent payment approval. Dynamics 365 can supply existing party records. Copilot Studio is optional, not the trust authority. |
+| Does this already exist? | Microsoft already provides spoofing detection, Defender for Office 365 impersonation protection, safety tips, Safe Links, and Safe Attachments. This proposal adds a business-managed known-sender registry and Outlook presentation; it is not a replacement email security product. |
+| Is it valuable? | Potentially. It gives nontechnical staff an immediate Known sender or Not known indicator while new legitimate contacts remain delivered and available for onboarding. |
+| What does it look like? | Microsoft email protection + approved exact contacts/domains in Dataverse + Power Apps onboarding + post-delivery Known/Not known Outlook categories. Dynamics 365 can optionally supply candidate records, but imported records are not automatically approved. |
 
 ## Documentation
 
@@ -87,8 +88,8 @@ current environment variable values, credentials, and browser state stay out
 of this public repository.
 
 `src\qualification\proof-policy.js` exercises independently reviewed fixture
-identities, exact matches, expiry/revocation, Reply-To and URL checks, incomplete
-evidence, and scoped non-positive proof categories. Synthetic recognition
+identities, exact matches, expiry/revocation, Reply-To checks, trusted
+authentication requirements, and binary Known/Not known presentation. Synthetic recognition
 cannot be applied to an Outlook message. Captured-message assessment always
 remains incomplete until a trusted receiving-system boundary is proven.
 The fixture policy supports an explicitly selected single-registrar model and
@@ -102,12 +103,11 @@ enrollment or appropriate premium rights before running premium assets.
 
 ## Initial scope
 
-Start with a small accounts-payable pilot and a few independently verified
-subcontractors. Improve native Microsoft policies first, then assess messages
+Start with a small user/shared-mailbox pilot and a few independently verified
+customer or subcontractor senders. Improve native Microsoft policies first, then assess messages
 in shadow mode before displaying qualification labels.
 
-Do not create broad sender allowlists, bypass spam/phishing scanning, automatically
-approve payments, or automatically trust contacts learned from incoming email.
-Keep client messages, screenshots, contact lists, credentials, and banking details
-out of this repository. Use synthetic examples and client-approved restricted
-storage for incident evidence.
+Do not create broad sender allowlists, bypass spam/phishing scanning, or
+automatically trust contacts learned from incoming email. Keep client messages,
+screenshots, contact lists, and credentials out of this repository. Use
+synthetic examples and client-approved restricted storage for evidence.

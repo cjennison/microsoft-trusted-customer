@@ -23,8 +23,8 @@ present the development foundation as a functioning anti-phishing system.
 - Obtain explicit scope and change authorization. Never buy licenses, activate
   trials/PAYG, enable Managed Environments, modify DLP, or change production
   policies simply to clear a blocker.
-- No broad sender allowlist, quarantine release, mail sending/deletion, payment
-  authorization, or positive qualification on missing evidence.
+- No broad sender allowlist, quarantine release, mail sending/deletion, or Known
+  presentation on missing evidence.
 - No client branching or hardcoded tenant logic. Reuse the same release and
   schema; bind tenant-local connections/configuration at deployment.
 
@@ -39,7 +39,7 @@ present the development foundation as a functioning anti-phishing system.
   Attachments policy scope and precedence. Record denied access as unknown,
   not "absent" or "secure."
 - Identify approved pilot and excluded mailboxes, device/client combinations,
-  accounts-payable owner, authorized registrars, selected verification mode,
+  business administrator, authorized registrars, selected verification mode,
   independent approver where required, operational owner, alert
   destination, retention, and baseline/rollback evidence.
 - Compare native configuration alone with the custom registry. Recommend the
@@ -78,7 +78,7 @@ present the development foundation as a functioning anti-phishing system.
 - Treat its completion report as schema provisioning only. On failure, inspect
   retained components and the browser job status before retrying. Never launch
   duplicate jobs or erase resources to hide a failed attempt.
-- Confirm seven tables, relationships, and four definitions in the maker portal.
+- Confirm five tables, relationships, and four definitions in the maker portal.
   Keep processing disabled and leave current environment variable values out of
   the development solution that will be exported to public Git.
 
@@ -97,18 +97,18 @@ present the development foundation as a functioning anti-phishing system.
 - Build solution-aware onboarding and review app/flows. Use connection
   references and environment variable definitions, never tenant constants.
 - Spike trusted receiving-system authentication, exact identity matching,
-  original URL targets/limitations, assessment persistence, category writes,
-  shared mailboxes, and excluded-mailbox denial.
+  assessment persistence, binary category writes, shared mailboxes, and
+  excluded-mailbox denial.
 - Implement the complete deterministic policy, durable idempotency keys,
   retries/reconciliation, revocation invalidation, and operator-visible failures.
   Do not create a demo classifier that claims authentication from arbitrary
-  header text or quietly skips content checks.
+  header text or grants Known from missing/conflicting identity evidence.
 - Use synthetic registry and message data until authorized pilot testing.
   Enable organization auditing only with explicit approved scope; table audit
   metadata alone does not prove that an audit trail is being captured.
-- The offline proof policy cannot authorize live positive labels. Keep captured
-  messages incomplete until the trusted receiving-system boundary is validated;
-  synthetic fixtures and connectivity spikes are not live acceptance evidence.
+- The offline proof policy cannot authorize a live Known label. Keep captured
+  messages Not known until the trusted receiving-system boundary is validated;
+  synthetic fixtures and connectivity spikes are not production acceptance.
 
 ## 5. Package and deploy
 

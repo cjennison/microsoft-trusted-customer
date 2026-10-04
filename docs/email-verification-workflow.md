@@ -1,8 +1,9 @@
 # Email verification workflow
 
 **Status:** Product requirements and implementation gates, recorded October 2,
-2026. The existing solution is a development schema and offline proof policy;
-the app, mailbox runtime, and live positive labels are not implemented.
+2026. Version 0.4.0.0 contains the five-table development schema, offline
+contracts, and disabled manual proofs; the app, automatic mailbox runtime, and
+production labels are not implemented.
 
 ## The business administrator's workflow
 
@@ -63,21 +64,18 @@ documentation. Actual addresses, domain approvals, and evidence stay private.
 
 ## Outlook presentation and delivery
 
-Use explicit text categories, not color alone. Candidate user-facing wording
-is **Verified contact address**, **Verified business domain - contact
-unverified**, **Unverified sender**, **Needs review**, and **Unable to verify**.
-Finalize wording with actual Outlook-client acceptance; these are not deployed
-category names or changes to the existing offline proof labels.
+Use explicit text categories, not color alone. The product has exactly two
+user-facing states: **Known sender** and **Not known**.
 
-"Verified" describes the independently approved business relationship and
-supported sender evidence. It never means a safe message, verified human,
-uncompromised account, or approved payment. Review signals override positive
-presentation, and missing required evidence cannot produce a positive label.
+Known requires an active approved exact address or business-domain match plus
+trusted receiving authentication aligned to the visible From domain. It never
+means a safe message, verified human, or uncompromised account. Missing,
+expired, revoked, failed, unsupported, conflicting, or ambiguous evidence is
+Not known.
 
 An unverified new customer's message remains available wherever native
 Microsoft protections deliver it. This service does not block, quarantine,
-move, delete, forward, resend, or release messages. Native security decisions
-remain intact. No category means unassessed, not verified.
+move, delete, forward, resend, or release messages. Native security decisions remain intact. No category means unassessed, not Known.
 
 Users can edit Outlook categories; categories are presentation hints, not an
 authorization mechanism. The app's recorded assessment, registry version, and
@@ -132,11 +130,11 @@ Add observed results to private pilot evidence, not this public document.
 
 | Scenario | Required result |
 | --- | --- |
-| A new legitimate customer sends mail before verification | Delivered mail remains available under native policy; unverified presentation cannot imply maliciousness |
+| A new legitimate customer sends mail before verification | Delivered mail remains available under native policy and is Not known; that does not imply maliciousness |
 | The administrator verifies the customer after delivery | The same retained message is reassessed and, only when eligible, relabeled; no duplicate delivery or unrelated category loss |
-| Whole business-domain approval | Exact-domain senders can receive domain-level recognition; arbitrary individuals are not presented as independently verified contacts |
-| Exact consumer-provider address approval | The approved address can match; another address at that provider cannot inherit verification |
-| Approved identity with spoofing, review signals, or incomplete evidence | No positive presentation, even during retroactive reassessment |
+| Whole business-domain approval | Exact-domain senders can be Known; subdomains and consumer-provider domains do not inherit approval |
+| Exact consumer-provider address approval | The approved address can be Known; another address at that provider remains Not known |
+| Approved identity with failed, missing, duplicate, or misaligned authentication | Not known, even during retroactive reassessment |
 | Revocation/expiry after a positive label | Cached approval stops being used and affected retained presentation is reconciled |
 | An authorized registrar creates and verifies an entry | Single-registrar mode permits it only with independent evidence and an audit trail; the actual caller is stamped server-side |
 | Multiple registrars use the app | Each has their own licensed identity and appropriate role; no shared credentials or hardcoded account |

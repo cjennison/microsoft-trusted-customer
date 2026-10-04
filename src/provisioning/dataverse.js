@@ -76,26 +76,23 @@
 
   const tables = [
     table('BusinessParty', 'Business party', 'Business parties',
-      'Independently reviewed business relationship; not a safe-email or payment verdict.',
+      'Independently reviewed business relationship. Known sender does not mean safe message.',
       [text('RelationshipType', 'Relationship type'), ...verification()]),
     table('ApprovedDomain', 'Approved domain', 'Approved domains',
       'Exact business domain only; never implicitly includes subdomains or consumer-mail providers.',
       [text('Domain', 'Exact domain', 253), text('Purpose', 'Purpose'), ...verification()]),
     table('ApprovedContact', 'Approved contact', 'Approved contacts',
-      'Exact independently verified address. Sender recognition does not authorize payments.',
+      'Exact independently verified address for binary known/not-known sender status.',
       [text('EmailAddress', 'Exact email address', 320),
         text('ReplyToAddress', 'Exact approved Reply-To address', 320),
         text('BusinessRole', 'Business role'), ...verification()]),
-    table('ApprovedPortal', 'Approved portal', 'Approved portals',
-      'Exact independently verified portal hostname and scoped business purpose.',
-      [text('Hostname', 'Exact hostname', 253), text('Purpose', 'Purpose'), ...verification()]),
     table('VerificationCase', 'Verification case', 'Verification cases',
       'Independent review history. Separation of duties still requires workflow and security implementation.',
       [choice('ReviewStatus', 'Review status', ['Pending', 'Approved', 'Rejected', 'Revoked']),
         text('EvidenceReference', 'Restricted evidence reference', 1000),
         date('ReviewedOn', 'Reviewed on')]),
     table('MessageAssessment', 'Message assessment', 'Message assessments',
-      'Assessment metadata only. Do not store message bodies, bank details, or attachment contents.',
+      'Known/not-known sender assessment metadata only. Do not store message bodies or attachment contents.',
       [text('MailboxReference', 'Mailbox reference', 320),
         text('StableMessageId', 'Stable message identifier', 1000),
         date('ReceivedOn', 'Received on'), date('AssessedOn', 'Assessed on'),
@@ -105,13 +102,7 @@
         choice('RiskState', 'Risk state', ['Incomplete', 'Review required', 'No signal in completed checks']),
         choice('ProcessingStatus', 'Processing status', ['Pending', 'Completed', 'Failed']),
         choice('PresentationStatus', 'Presentation status', ['Not attempted', 'Applied', 'Failed']),
-        text('ReasonCodes', 'Deterministic reason codes', 4000)]),
-    table('PaymentVerification', 'Payment verification', 'Payment verifications',
-      'External transaction verification reference; no bank details and no automatic payment approval.',
-      [text('ExternalRequestReference', 'External financial-system request reference', 1000),
-        choice('VerificationOutcome', 'Verification outcome', ['Pending', 'Independently verified', 'Rejected']),
-        text('EvidenceReference', 'Restricted evidence reference', 1000),
-        date('VerifiedOn', 'Verified on')])
+        text('ReasonCodes', 'Deterministic reason codes', 4000)])
   ];
 
   function relationship(parent, child, column, displayName) {
@@ -135,12 +126,12 @@
   }
 
   const relationships = [
-    ...['ApprovedDomain', 'ApprovedContact', 'ApprovedPortal', 'VerificationCase', 'PaymentVerification']
+    ...['ApprovedDomain', 'ApprovedContact', 'VerificationCase']
       .map(child => relationship('BusinessParty', child, 'BusinessParty', 'Business party')),
     relationship('ApprovedContact', 'VerificationCase', 'Contact', 'Contact'),
     relationship('ApprovedContact', 'MessageAssessment', 'Contact', 'Matched contact'),
     relationship('VerificationCase', 'BusinessParty', 'VerificationCase', 'Verification case'),
-    ...['BusinessParty', 'ApprovedDomain', 'ApprovedContact', 'ApprovedPortal', 'VerificationCase', 'PaymentVerification']
+    ...['BusinessParty', 'ApprovedDomain', 'ApprovedContact', 'VerificationCase']
       .map(child => relationship('SystemUser', child, 'IndependentReviewer', 'Independent reviewer'))
   ];
 
@@ -261,14 +252,14 @@
     if (solutions.value.length > 1) throw new Error('Ambiguous development solution.');
     const existingSolution = solutions.value[0];
     if (existingSolution && (existingSolution.ismanaged ||
-        existingSolution._publisherid_value !== publisher.publisherid || existingSolution.version !== '0.1.0.0')) {
+        existingSolution._publisherid_value !== publisher.publisherid || existingSolution.version !== '0.4.0.0')) {
       throw new Error('Existing solution conflicts; use a versioned migration rather than bootstrap.');
     }
     if (!existingSolution) {
       await request('solutions', 'POST', {
         uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
-        version: '0.1.0.0',
-        description: 'Development registry foundation only. No email classifier, payment approval, or active mailbox automation.',
+        version: '0.4.0.0',
+        description: 'Development known/not-known sender registry foundation. No automatic classifier or active mailbox automation.',
         'publisherid@odata.bind': `/publishers(${publisher.publisherid})`
       });
       report.created.push('solution');

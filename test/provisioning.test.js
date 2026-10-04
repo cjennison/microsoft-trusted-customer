@@ -88,8 +88,8 @@ function fakeDataverse() {
   return state;
 }
 
-test('schema has all seven logical record types and four safe configuration definitions', () => {
-  assert.equal(tables.length, 7);
+test('schema has the five known-sender record types and four safe configuration definitions', () => {
+  assert.equal(tables.length, 5);
   assert.equal(environmentVariables.length, 4);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_ProcessingMode').defaultvalue, 'Disabled');
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_PilotMailbox').defaultvalue, '');

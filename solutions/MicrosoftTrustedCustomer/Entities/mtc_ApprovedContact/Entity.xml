@@ -10,7 +10,7 @@
         <LocalizedCollectionName description="Approved contacts" languagecode="1033" />
       </LocalizedCollectionNames>
       <Descriptions>
-        <Description description="Exact independently verified address. Sender recognition does not authorize payments." languagecode="1033" />
+        <Description description="Exact independently verified address for binary known/not-known sender status." languagecode="1033" />
       </Descriptions>
       <attributes>
         <attribute PhysicalName="CreatedBy">

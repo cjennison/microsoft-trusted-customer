@@ -10,7 +10,7 @@
         <LocalizedCollectionName description="Business parties" languagecode="1033" />
       </LocalizedCollectionNames>
       <Descriptions>
-        <Description description="Independently reviewed business relationship; not a safe-email or payment verdict." languagecode="1033" />
+        <Description description="Independently reviewed business relationship. Known sender does not mean safe message." languagecode="1033" />
       </Descriptions>
       <attributes>
         <attribute PhysicalName="CreatedBy">
