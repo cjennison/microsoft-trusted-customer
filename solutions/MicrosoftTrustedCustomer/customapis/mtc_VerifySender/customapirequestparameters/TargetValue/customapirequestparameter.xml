@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="TargetValue">
+  <displayname default="TargetValue">
+    <label description="TargetValue" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_VerifySender.TargetValue</name>
+  <type>10</type>
+</customapirequestparameter>

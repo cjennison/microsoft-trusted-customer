@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="MailboxType">
+  <displayname default="MailboxType">
+    <label description="MailboxType" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_SetMailboxEnrollment.MailboxType</name>
+  <type>10</type>
+</customapirequestparameter>

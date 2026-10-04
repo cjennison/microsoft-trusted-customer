@@ -6,9 +6,9 @@
       <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation." languagecode="1033" />
+      <Description description="Development Sender Registry app with caller-stamped single-registrar APIs, protected approval records, and paused mailbox onboarding. Automatic Outlook processing remains Off." languagecode="1033" />
     </Descriptions>
-    <Version>0.6.0.0</Version>
+    <Version>0.7.0.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>
@@ -87,11 +87,46 @@
       <RootComponent type="1" schemaName="mtc_messageassessment" behavior="0" />
       <RootComponent type="1" schemaName="mtc_verificationcase" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="1" />
+      <RootComponent type="20" id="{1c28e682-46c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="20" id="{4328e682-46c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
       <RootComponent type="29" id="{4de55d19-e43c-44ba-be99-856d9a672e88}" behavior="0" />
       <RootComponent type="29" id="{81b229c4-d759-49a7-93da-816056e8841c}" behavior="0" />
       <RootComponent type="29" id="{be76ff86-2bbf-f111-aaaf-000d3a31bda5}" behavior="0" />
       <RootComponent type="372" id="{8da23315-b15c-46d9-9f6f-dc85080b0276}" schemaName="mtc_mtc-20microsoft-20graph-20mail" behavior="0" />
+      <RootComponent type="61" schemaName="mtc_/registrar/app.js" behavior="0" />
+      <RootComponent type="61" schemaName="mtc_/registrar/index.html" behavior="0" />
+      <RootComponent type="61" schemaName="mtc_/registrar/styles.css" behavior="0" />
+      <RootComponent type="62" schemaName="mtc_SenderRegistrySitemap" behavior="0" />
+      <RootComponent type="80" schemaName="mtc_SenderRegistry" behavior="0" />
+      <RootComponent type="91" id="{c83cc572-45c0-f111-aaad-7ced8d6f24ce}" schemaName="Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" behavior="0" />
+      <RootComponent type="92" id="{0091ed7c-46c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{0491ed7c-46c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{7775098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{83650e85-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{8475098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{8a650e85-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{8c75098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{94650e85-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{9775098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{98650e85-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{a075098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{a675098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{ad75098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
+      <RootComponent type="92" id="{b475098b-45c0-f111-aaad-7ced8d6f24ce}" behavior="0" />
     </RootComponents>
-    <MissingDependencies />
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)">
+          <package appName="AppModule Web Resources Package" version="2.5">AppModuleWebResources (2.5)</package>
+        </Required>
+        <Dependent type="80" schemaName="mtc_SenderRegistry" displayName="Sender Registry" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.20)" id.uniquename="AppChannel">
+          <package appName="PowerAppsAppFramework Package" version="1.0.0.25">PowerAppsAppFramework_Anchor (1.0.0.25)</package>
+        </Required>
+        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=mtc_SenderRegistry,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="mtc_SenderRegistry" id.settingdefinitionid.uniquename="AppChannel" />
+      </MissingDependency>
+    </MissingDependencies>
   </SolutionManifest>
 </ImportExportXml>

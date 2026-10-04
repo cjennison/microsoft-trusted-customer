@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="Reason">
+  <displayname default="Reason">
+    <label description="Reason" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_RevokeSender.Reason</name>
+  <type>10</type>
+</customapirequestparameter>

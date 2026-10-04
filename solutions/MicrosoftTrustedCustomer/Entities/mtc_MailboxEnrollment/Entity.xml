@@ -1121,6 +1121,20 @@
           </Descriptions>
         </attribute>
       </attributes>
+      <EntityKeys>
+        <EntityKey>
+          <Name>mtc_MailboxIdentity</Name>
+          <LogicalName>mtc_mailboxidentity</LogicalName>
+          <IntroducedVersion>0.6.0.0</IntroducedVersion>
+          <IsCustomizable>0</IsCustomizable>
+          <EntityKeyAttributes>
+            <AttributeName>mtc_mailboxreference</AttributeName>
+          </EntityKeyAttributes>
+          <displaynames>
+            <displayname description="Unique exact identity" languagecode="1033" />
+          </displaynames>
+        </EntityKey>
+      </EntityKeys>
       <EntitySetName>mtc_mailboxenrollments</EntitySetName>
       <IsDuplicateCheckSupported>0</IsDuplicateCheckSupported>
       <IsBusinessProcessEnabled>0</IsBusinessProcessEnabled>

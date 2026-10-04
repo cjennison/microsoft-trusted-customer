@@ -1,0 +1,18 @@
+<customapi uniquename="mtc_RevokeSender">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Requires MTC Registrar membership; stamps the actual interactive caller. Single-registrar MVP.">
+    <label description="Requires MTC Registrar membership; stamps the actual interactive caller. Single-registrar MVP." languagecode="1033" />
+  </description>
+  <displayname default="Revoke an approved sender">
+    <label description="Revoke an approved sender" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>mtc_RevokeSender</name>
+  <plugintypeid>
+    <plugintypeexportkey>ce3cc572-45c0-f111-aaad-7ced8d6f24ce</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

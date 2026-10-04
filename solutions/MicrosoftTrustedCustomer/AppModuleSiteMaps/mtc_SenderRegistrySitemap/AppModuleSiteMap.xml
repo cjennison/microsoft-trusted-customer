@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AppModuleSiteMap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SiteMapUniqueName>mtc_SenderRegistrySitemap</SiteMapUniqueName>
+  <EnableCollapsibleGroups>False</EnableCollapsibleGroups>
+  <ShowHome>True</ShowHome>
+  <ShowPinned>True</ShowPinned>
+  <ShowRecents>True</ShowRecents>
+  <SiteMap>
+    <Area Id="MTC_Registry">
+      <Titles>
+        <Title LCID="1033" Title="Sender Registry" />
+      </Titles>
+      <Group Id="MTC_Workspace">
+        <Titles>
+          <Title LCID="1033" Title="Workspace" />
+        </Titles>
+        <SubArea Id="MTC_SenderRegistry" Url="$webresource:mtc_/registrar/index.html">
+          <Titles>
+            <Title LCID="1033" Title="Sender Registry" />
+          </Titles>
+        </SubArea>
+      </Group>
+    </Area>
+  </SiteMap>
+  <LocalizedNames>
+    <LocalizedName description="Sender Registry" languagecode="1033" />
+  </LocalizedNames>
+</AppModuleSiteMap>

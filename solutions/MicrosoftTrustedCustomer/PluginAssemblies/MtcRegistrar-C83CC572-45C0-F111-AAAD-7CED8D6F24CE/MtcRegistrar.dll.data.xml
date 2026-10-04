@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PluginAssembly FullName="Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginAssemblyId="c83cc572-45c0-f111-aaad-7ced8d6f24ce" CustomizationLevel="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Description>Caller-stamped single-registrar verification and protected registry writes.</Description>
+  <IsolationMode>2</IsolationMode>
+  <SourceType>0</SourceType>
+  <IntroducedVersion>0.6.0.0</IntroducedVersion>
+  <FileName>/PluginAssemblies/MtcRegistrar-C83CC572-45C0-F111-AAAD-7CED8D6F24CE/MtcRegistrar.dll</FileName>
+  <PluginTypes>
+    <PluginType AssemblyQualifiedName="Mtc.Registrar.MailboxApi, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="c8c89119-47c0-f111-aaad-7ced8d6f24ce" Name="Mtc.Registrar.MailboxApi">
+      <FriendlyName>Mtc.Registrar.MailboxApi</FriendlyName>
+    </PluginType>
+    <PluginType AssemblyQualifiedName="Mtc.Registrar.RegistryWriteGuard, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="cf3cc572-45c0-f111-aaad-7ced8d6f24ce" Name="Mtc.Registrar.RegistryWriteGuard">
+      <FriendlyName>Mtc.Registrar.RegistryWriteGuard</FriendlyName>
+    </PluginType>
+    <PluginType AssemblyQualifiedName="Mtc.Registrar.VerificationApi, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="ce3cc572-45c0-f111-aaad-7ced8d6f24ce" Name="Mtc.Registrar.VerificationApi">
+      <FriendlyName>Mtc.Registrar.VerificationApi</FriendlyName>
+    </PluginType>
+  </PluginTypes>
+</PluginAssembly>

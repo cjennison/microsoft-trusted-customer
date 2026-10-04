@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Role id="{1c28e682-46c0-f111-aaad-7ced8d6f24ce}" name="MTC Registrar" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <IsCustomizable>1</IsCustomizable>
+  <IsAutoAssigned>0</IsAutoAssigned>
+  <RolePrivileges>
+    <RolePrivilege name="prvAppendmtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvAppendmtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvAppendmtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvAppendmtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvAppendToUser" level="Global" />
+    <RolePrivilege name="prvCreatemtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvCreatemtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvCreatemtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvCreatemtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvCreateSharePointData" level="Global" />
+    <RolePrivilege name="prvReadEnvironmentVariableDefinition" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvReadmtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvReadmtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvReadmtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvReadmtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvReadSharePointData" level="Global" />
+    <RolePrivilege name="prvReadSharePointDocument" level="Global" />
+    <RolePrivilege name="prvWritemtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvWritemtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvWritemtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvWritemtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvWriteSharePointData" level="Global" />
+  </RolePrivileges>
+</Role>

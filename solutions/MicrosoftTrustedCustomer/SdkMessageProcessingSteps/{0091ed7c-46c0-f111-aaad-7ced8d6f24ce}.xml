@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SdkMessageProcessingStep Name="MTC registry relationship guard: Associate" SdkMessageProcessingStepId="{0091ed7c-46c0-f111-aaad-7ced8d6f24ce}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SdkMessageId>16e7c888-3b24-448b-b7da-ebfe9b681762</SdkMessageId>
+  <PluginTypeName>Mtc.Registrar.RegistryWriteGuard, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a</PluginTypeName>
+  <PluginTypeId>cf3cc572-45c0-f111-aaad-7ced8d6f24ce</PluginTypeId>
+  <AsyncAutoDelete>0</AsyncAutoDelete>
+  <Description>Protect approval relationships; unrelated tables are unaffected.</Description>
+  <FilteringAttributes></FilteringAttributes>
+  <InvocationSource>0</InvocationSource>
+  <Mode>0</Mode>
+  <Rank>1</Rank>
+  <EventHandlerTypeCode>4602</EventHandlerTypeCode>
+  <Stage>10</Stage>
+  <IsCustomizable>1</IsCustomizable>
+  <IsHidden>0</IsHidden>
+  <SupportedDeployment>0</SupportedDeployment>
+  <IntroducedVersion>0.6.0.0</IntroducedVersion>
+  <SdkMessageProcessingStepImages />
+</SdkMessageProcessingStep>

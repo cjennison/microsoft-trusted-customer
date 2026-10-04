@@ -38,6 +38,37 @@ foreach ($package in $paths) {
         if ($packed.UniqueName -ne 'MicrosoftTrustedCustomer' -or $packed.Managed -ne $expectedManaged -or $packed.Version -ne $version) {
             throw 'Packaged solution identity, version, or managed mode is incorrect.'
         }
+        $customizationEntry = $archive.GetEntry('customizations.xml')
+        if (-not $customizationEntry) { throw 'Packaged customization metadata is missing.' }
+        $reader = [IO.StreamReader]::new($customizationEntry.Open())
+        try { $packedCustomizations = [xml]$reader.ReadToEnd() } finally { $reader.Dispose() }
+        $connectors = @($packedCustomizations.ImportExportXml.Connectors.Connector)
+        if ($connectors.Count -ne 1 -or
+            $connectors[0].connectorid -ne '8da23315-b15c-46d9-9f6f-dc85080b0276') {
+            throw 'The packaged custom Graph connector is missing or has the wrong identity.'
+        }
+        foreach ($property in 'openapidefinition', 'connectionparameters', 'connectionparametersets', 'policytemplateinstances', 'iconblob') {
+            $entryPath = [string]$connectors[0].$property
+            if (-not $entryPath.StartsWith('/Connector/') -or
+                -not $archive.GetEntry($entryPath.TrimStart('/'))) {
+                throw "Packaged Graph connector payload is missing: $property"
+            }
+        }
+        $pluginAssemblies = @($packedCustomizations.ImportExportXml.SolutionPluginAssemblies.PluginAssembly)
+        if ($pluginAssemblies.Count -ne 1 -or
+            $pluginAssemblies[0].FullName -notlike 'Mtc.Registrar,*' -or
+            $pluginAssemblies[0].IsolationMode -ne '2') {
+            throw 'The packaged registrar assembly is missing or not sandbox-isolated.'
+        }
+        $pluginFileName = [string]$pluginAssemblies[0].FileName
+        if (-not $archive.GetEntry($pluginFileName.TrimStart('/'))) {
+            throw 'The packaged registrar assembly binary is missing.'
+        }
+        foreach ($apiName in 'mtc_VerifySender', 'mtc_RevokeSender', 'mtc_SetMailboxEnrollment') {
+            if (-not $archive.GetEntry("customapis/$apiName/customapi.xml")) {
+                throw "Packaged registrar API metadata is missing: $apiName"
+            }
+        }
     } finally {
         $archive.Dispose()
     }

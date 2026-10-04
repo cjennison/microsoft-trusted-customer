@@ -2,8 +2,11 @@
 
 (function (root) {
   const solutionName = 'MicrosoftTrustedCustomer';
-  const solutionVersion = '0.6.0.0';
-  const upgradeableSolutionVersions = new Set(['0.5.0.0']);
+  const solutionVersion = '0.7.0.0';
+  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0']);
+  const verificationCaseUpgradeColumns = new Set([
+    'mtc_TargetType', 'mtc_TargetValue', 'mtc_VerificationMethod', 'mtc_Reason', 'mtc_ExpiresOn'
+  ]);
   const prefix = 'mtc';
   const label = text => ({ LocalizedLabels: [{ Label: text, LanguageCode: 1033 }] });
   const required = value => ({ Value: value });
@@ -92,6 +95,11 @@
       'Independent review history. Separation of duties still requires workflow and security implementation.',
       [choice('ReviewStatus', 'Review status', ['Pending', 'Approved', 'Rejected', 'Revoked']),
         text('EvidenceReference', 'Restricted evidence reference', 1000),
+        text('TargetType', 'Verification target type', 10),
+        text('TargetValue', 'Exact verification target', 320),
+        text('VerificationMethod', 'Independent verification method'),
+        text('Reason', 'Verification change reason', 1000),
+        date('ExpiresOn', 'Verification expiry'),
         date('ReviewedOn', 'Reviewed on')]),
     table('MessageAssessment', 'Message assessment', 'Message assessments',
       'Known/not-known sender assessment metadata only. Do not store message bodies or attachment contents.',
@@ -289,6 +297,16 @@
       const created = !existing;
       if (!existing) {
         await request('EntityDefinitions', 'POST', definition, true);
+        existing = await request(path);
+      }
+      if (!created && upgradeSolution && definition.SchemaName === 'mtc_VerificationCase') {
+        for (const attribute of definition.Attributes) {
+          if (verificationCaseUpgradeColumns.has(attribute.SchemaName) &&
+              !existing.Attributes.some(item => item.SchemaName === attribute.SchemaName)) {
+            await request(`${basePath}/Attributes`, 'POST', attribute, true);
+            report.updated.push(`${definition.SchemaName}.${attribute.SchemaName}`);
+          }
+        }
         existing = await request(path);
       }
       if (definition.Attributes.some(attribute => attribute.OptionSet)) {

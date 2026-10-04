@@ -60,6 +60,16 @@ function fakeDataverse() {
         state.tables.set(body.SchemaName.toLowerCase(), metadata(body));
         return reply(null, 204);
       }
+      if (path.startsWith('EntityDefinitions(') && path.endsWith('/Attributes')) {
+        const name = /LogicalName='([^']+)'/.exec(path)[1];
+        const table = state.tables.get(name);
+        assert.ok(table);
+        table.Attributes.push({
+          ...structuredClone(body),
+          AttributeType: body['@odata.type'].split('.').at(-1).replace('AttributeMetadata', '')
+        });
+        return reply(null, 204);
+      }
       if (path === 'RelationshipDefinitions') {
         state.relationships.set(body.SchemaName, { ...body, ReferencingAttribute: body.Lookup.SchemaName.toLowerCase() });
         return reply(null, 204);
@@ -97,7 +107,7 @@ function fakeDataverse() {
 }
 
 test('schema has six runtime record types and four safe configuration definitions', () => {
-  assert.equal(solutionVersion, '0.6.0.0');
+  assert.equal(solutionVersion, '0.7.0.0');
   assert.equal(tables.length, 6);
   assert.equal(environmentVariables.length, 4);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_ProcessingMode').defaultvalue, 'Disabled');
@@ -202,7 +212,25 @@ test('bootstrap upgrades the reviewed 0.5 solution only after publishing the new
   const publishIndex = state.writes.findIndex(item => item.path === 'PublishXml');
   const upgradeIndex = state.writes.findIndex(item => item.path.startsWith('solutions('));
   assert.ok(publishIndex >= 0 && upgradeIndex > publishIndex);
-  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.6.0.0']);
+  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.7.0.0']);
+});
+
+test('0.6 migration adds only the new immutable verification event columns', async () => {
+  const state = fakeDataverse();
+  const context = { origin: target.environmentOrigin, fetch: state.fetch };
+  await bootstrap(target, context);
+  state.setSolutionVersion('0.6.0.0');
+  const columns = new Set(['mtc_TargetType', 'mtc_TargetValue', 'mtc_VerificationMethod', 'mtc_Reason', 'mtc_ExpiresOn']);
+  const verificationCase = state.tables.get('mtc_verificationcase');
+  verificationCase.Attributes = verificationCase.Attributes.filter(attribute => !columns.has(attribute.SchemaName));
+  state.writes.length = 0;
+  const report = await bootstrap(target, context);
+  const added = state.writes.filter(write => write.path.endsWith('/Attributes'));
+  assert.deepEqual(added.map(write => write.body.SchemaName).sort(), [...columns].sort());
+  assert.equal(report.updated.length, 6);
+  state.writes.length = 0;
+  await bootstrap(target, context);
+  assert.ok(!state.writes.some(write => write.path.endsWith('/Attributes')));
 });
 
 test('authorization failures and throttling never become missing-table fallbacks', async () => {

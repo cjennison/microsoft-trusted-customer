@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Role id="{4328e682-46c0-f111-aaad-7ced8d6f24ce}" name="MTC Operator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <IsCustomizable>1</IsCustomizable>
+  <IsAutoAssigned>0</IsAutoAssigned>
+  <RolePrivileges>
+    <RolePrivilege name="prvAppendmtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvCreatemtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvCreateSharePointData" level="Global" />
+    <RolePrivilege name="prvReadEnvironmentVariableDefinition" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvReadmtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvReadmtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvReadmtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvReadmtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvReadSharePointData" level="Global" />
+    <RolePrivilege name="prvReadSharePointDocument" level="Global" />
+    <RolePrivilege name="prvWritemtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvWriteSharePointData" level="Global" />
+  </RolePrivileges>
+</Role>

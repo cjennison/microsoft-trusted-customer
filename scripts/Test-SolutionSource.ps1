@@ -48,7 +48,7 @@ if ($connectorRoots.Count -ne 1 -or
 $unexpectedRoots = @($solution.RootComponents.RootComponent | Where-Object {
     ($_.type -eq '1' -and $_.schemaName -eq 'systemuser' -and $_.behavior -ne '1') -or
     ($_.type -eq '1' -and $_.schemaName -ne 'systemuser' -and $_.schemaName -notin $expectedTables) -or
-    ($_.type -notin @('1', '29', '372'))
+    ($_.type -notin @('1', '20', '29', '61', '62', '80', '91', '92', '372'))
 })
 if ($unexpectedRoots.Count) {
     throw 'Unreviewed solution root components were found.'
@@ -88,6 +88,16 @@ foreach ($file in Get-ChildItem -LiteralPath $source -Recurse -File) {
     if ($file.Extension -ieq '.png' -and
         $file.Name -eq 'mtc_mtc-20microsoft-20graph-20mail_iconblob.Png' -and
         $file.Directory.Name -eq 'Connectors') {
+        continue
+    }
+    if ($file.Extension -in @('.html', '.js', '.css') -and
+        $file.FullName.StartsWith((Join-Path $source 'WebResources\mtc_\registrar'), [StringComparison]::OrdinalIgnoreCase) -and
+        $file.Name -in @('index.html', 'app.js', 'styles.css')) {
+        continue
+    }
+    if ($file.Extension -eq '.dll' -and
+        $file.Name -eq 'MtcRegistrar.dll' -and
+        $file.Directory.Parent.Name -eq 'PluginAssemblies') {
         continue
     }
     throw "Unreviewed file type in solution source: $($file.Name)"
@@ -151,6 +161,100 @@ $connectorText = ($connectorFiles | Where-Object Extension -in @('.json', '.xml'
 if ($connectorText -match 'GenericFederatedIdentityCredential|clientSecret|authorization_code|@' -or
     $connectorText -match '(?i)sesturbo|\.crm\d*\.dynamics\.com') {
     throw 'Tenant-local or unsupported authentication data was found in the Graph connector source.'
+}
+$expectedAdditionalRoots = @{
+    '20' = 2
+    '61' = 3
+    '62' = 1
+    '80' = 1
+    '91' = 1
+    '92' = 14
+}
+foreach ($type in $expectedAdditionalRoots.Keys) {
+    $roots = @($solution.RootComponents.RootComponent | Where-Object type -eq $type)
+    if ($roots.Count -ne $expectedAdditionalRoots[$type] -or
+        @($roots | Where-Object behavior -ne '0').Count) {
+        throw "Unexpected registrar solution root count or behavior: $type"
+    }
+}
+$roleFiles = @(Get-ChildItem -LiteralPath (Join-Path $source 'Roles') -Filter '*.xml' -File)
+if ((Compare-Object @('MTC Registrar.xml', 'MTC Operator.xml') @($roleFiles.Name))) {
+    throw 'Expected exactly the registrar and operator roles.'
+}
+foreach ($roleFile in $roleFiles) {
+    $roleXml = [xml](Get-Content -LiteralPath $roleFile.FullName -Raw)
+    if ($roleXml.Role.IsAutoAssigned -ne '0' -or $roleXml.SelectNodes('//systemuser').Count) {
+        throw 'Registrar roles must not automatically grant or transport user assignments.'
+    }
+    $unsafe = @($roleXml.Role.RolePrivileges.RolePrivilege | Where-Object {
+        $_.name -match '^prv(Delete|Assign|Share)mtc_' -or
+        ($roleXml.Role.name -eq 'MTC Operator' -and $_.name -match '^prv(Create|Write)mtc_(Approved|Business|Verification)') -or
+        ($roleXml.Role.name -eq 'MTC Registrar' -and $_.name -match '^prv(Create|Write)mtc_MailboxEnrollment')
+    })
+    if ($unsafe.Count) { throw "Unexpected registrar/operator privileges: $($roleFile.Name)" }
+}
+$pluginFiles = @(Get-ChildItem -LiteralPath (Join-Path $source 'PluginAssemblies') -Recurse -Filter '*.dll' -File)
+if ($pluginFiles.Count -ne 1 -or $pluginFiles[0].Name -ne 'MtcRegistrar.dll') {
+    throw 'Expected exactly the reviewed registrar assembly.'
+}
+$plugin = [xml](Get-Content -LiteralPath ($pluginFiles[0].FullName + '.data.xml') -Raw)
+$pluginTypes = @($plugin.PluginAssembly.PluginTypes.PluginType)
+$expectedPluginTypes = @(
+    'Mtc.Registrar.VerificationApi', 'Mtc.Registrar.RegistryWriteGuard', 'Mtc.Registrar.MailboxApi'
+)
+if ($plugin.PluginAssembly.IsolationMode -ne '2' -or $plugin.PluginAssembly.SourceType -ne '0' -or
+    (Compare-Object $expectedPluginTypes @($pluginTypes.Name))) {
+    throw 'Unexpected registrar assembly isolation, storage, or exported types.'
+}
+$stepFiles = @(Get-ChildItem -LiteralPath (Join-Path $source 'SdkMessageProcessingSteps') -Filter '*.xml' -File)
+if ($stepFiles.Count -ne 14) { throw 'Expected twelve registry write guards and two relationship guards.' }
+foreach ($stepFile in $stepFiles) {
+    $step = ([xml](Get-Content -LiteralPath $stepFile.FullName -Raw)).SdkMessageProcessingStep
+    if ($step.Stage -ne '10' -or $step.Mode -ne '0' -or $step.Rank -ne '1' -or
+        $step.PluginTypeName -notlike 'Mtc.Registrar.RegistryWriteGuard,*' -or
+        $step.SelectSingleNode('./ImpersonatingUserId')) {
+        throw "Registry guards must remain synchronous and run as the caller: $($stepFile.Name)"
+    }
+}
+$apiDefinitions = @{
+    mtc_VerifySender = @{
+        Type = 'Mtc.Registrar.VerificationApi'
+        Inputs = @('TargetType', 'TargetValue', 'BusinessName', 'VerificationMethod', 'EvidenceReference', 'ExpiresOn')
+    }
+    mtc_RevokeSender = @{
+        Type = 'Mtc.Registrar.VerificationApi'
+        Inputs = @('TargetType', 'RecordId', 'Reason')
+    }
+    mtc_SetMailboxEnrollment = @{
+        Type = 'Mtc.Registrar.MailboxApi'
+        Inputs = @('MailboxReference', 'MailboxType', 'Enrolled')
+    }
+}
+$apiDirectories = @(Get-ChildItem -LiteralPath (Join-Path $source 'customapis') -Directory)
+if ((Compare-Object @($apiDefinitions.Keys) @($apiDirectories.Name))) {
+    throw 'Unexpected registrar custom API definitions.'
+}
+foreach ($directory in $apiDirectories) {
+    $api = ([xml](Get-Content -LiteralPath (Join-Path $directory.FullName 'customapi.xml') -Raw)).customapi
+    $definition = $apiDefinitions[$directory.Name]
+    $handler = $pluginTypes | Where-Object Name -eq $definition.Type
+    if ($api.uniquename -ne $directory.Name -or $api.allowedcustomprocessingsteptype -ne '0' -or
+        $api.isfunction -ne '0' -or $api.bindingtype -ne '0' -or $api.iscustomizable -ne '0' -or
+        $api.plugintypeid.plugintypeexportkey -ne $handler.PluginTypeId) {
+        throw "Unsafe or unbound registrar API: $($directory.Name)"
+    }
+    $parameters = @(Get-ChildItem -LiteralPath (Join-Path $directory.FullName 'customapirequestparameters') -Directory)
+    if ((Compare-Object $definition.Inputs @($parameters.Name))) {
+        throw "Unexpected registrar API inputs: $($directory.Name)"
+    }
+}
+$registrarResourceDirectory = Join-Path $source 'WebResources\mtc_\registrar'
+foreach ($fileName in 'index.html', 'app.js', 'styles.css') {
+    $exported = Join-Path $registrarResourceDirectory $fileName
+    $original = Join-Path (Split-Path $PSScriptRoot -Parent) "src\registrar-app\$fileName"
+    if ((Get-FileHash -LiteralPath $exported).Hash -ne (Get-FileHash -LiteralPath $original).Hash) {
+        throw "Registrar web resource is stale relative to source: $fileName"
+    }
 }
 $workflowDirectory = Join-Path $source 'Workflows'
 $workflowFiles = @(Get-ChildItem -LiteralPath $workflowDirectory -Filter '*.json' -File)

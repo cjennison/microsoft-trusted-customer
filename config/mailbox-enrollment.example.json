@@ -1,0 +1,13 @@
+{
+  "authorizationConfirmed": false,
+  "mailboxes": [
+    {
+      "reference": "operator@customer.example",
+      "type": "User"
+    },
+    {
+      "reference": "service@customer.example",
+      "type": "Shared"
+    }
+  ]
+}

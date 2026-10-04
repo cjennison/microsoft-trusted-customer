@@ -9,8 +9,14 @@
   <EntityRelationships />
   <OrganizationSettings />
   <optionsets />
+  <WebResources />
   <CustomControls />
+  <SolutionPluginAssemblies />
+  <SdkMessageProcessingSteps />
+  <AppModuleSiteMaps />
+  <AppModules />
   <EntityDataProviders />
+  <Connectors />
   <connectionreferences>
     <connectionreference connectionreferencelogicalname="mtc_MTCGraphMail">
       <connectionreferencedisplayname>MTC Microsoft Graph Mail</connectionreferencedisplayname>

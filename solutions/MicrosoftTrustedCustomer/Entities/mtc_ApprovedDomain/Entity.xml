@@ -1120,6 +1120,20 @@
           </Descriptions>
         </attribute>
       </attributes>
+      <EntityKeys>
+        <EntityKey>
+          <Name>mtc_ApprovedDomainIdentity</Name>
+          <LogicalName>mtc_approveddomainidentity</LogicalName>
+          <IntroducedVersion>0.6.0.0</IntroducedVersion>
+          <IsCustomizable>0</IsCustomizable>
+          <EntityKeyAttributes>
+            <AttributeName>mtc_domain</AttributeName>
+          </EntityKeyAttributes>
+          <displaynames>
+            <displayname description="Unique exact identity" languagecode="1033" />
+          </displaynames>
+        </EntityKey>
+      </EntityKeys>
       <EntitySetName>mtc_approveddomains</EntitySetName>
       <IsDuplicateCheckSupported>0</IsDuplicateCheckSupported>
       <IsBusinessProcessEnabled>0</IsBusinessProcessEnabled>

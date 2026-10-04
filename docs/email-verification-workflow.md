@@ -1,11 +1,12 @@
 # Email verification workflow
 
 **Status:** Product requirements and implementation gates, recorded October 2,
-2026. Version 0.6.0.0 contains the six-table development schema, offline
-contracts, disabled manual Not known/retained-message Known reassessment proofs,
-and a disabled scheduled metadata-only shadow flow. The flow has no enrolled
-mailboxes and no category-write action; the app, accepted automatic mailbox
-runtime, and production labels are not implemented. The retained-message proof also demonstrated that expiry removes
+2026. Version 0.7.0.0 now includes a published Sender Registry app with guided
+Verify/Renew/Revoke and operator mailbox enrollment, caller-stamped custom APIs,
+protected registry writes, immutable verification cases, and unique identity
+keys. Existing authorized mailbox records are Paused. The scheduled flow remains Off,
+has no enrolled mailboxes and no category-write action; accepted automatic
+processing and production labels are not implemented. The retained-message proof also demonstrated that expiry removes
 Known and restores Not known on the same message without deleting the records.
 
 ## The business administrator's workflow
@@ -51,8 +52,12 @@ The offline proof supports the explicit single-registrar choice and a registrar
 identifier list. A separate offline verification-transition contract now models
 trusted-caller authorization, actual-caller stamping, evidence, expiry,
 rejection, revocation, and the selected approval mode. These are tested product
-rules, not deployed Dataverse roles or enforcement. The app and live
-server-side integration remain unbuilt.
+rules. The live single-registrar MVP is now enforced by the `MTC Registrar` role,
+custom APIs, and synchronous registry-write guards, with actual-caller/server
+timestamps and immutable verification events. Independent-review mode is not
+yet deployed. Client users still need verified licensing and role assignment
+before access; a presenter can demonstrate the app using their existing licensed
+development account.
 
 ## Verification choices
 

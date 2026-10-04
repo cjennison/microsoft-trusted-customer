@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<WebResource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <WebResourceId>{ba75098b-45c0-f111-aaad-7ced8d6f24ce}</WebResourceId>
+  <Name>mtc_/registrar/index.html</Name>
+  <DisplayName>Sender Registry html</DisplayName>
+  <Description>Portable client-facing registry workspace; no tenant identities or current values.</Description>
+  <WebResourceType>1</WebResourceType>
+  <IntroducedVersion>0.6.0.0</IntroducedVersion>
+  <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+  <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+  <IsCustomizable>1</IsCustomizable>
+  <CanBeDeleted>1</CanBeDeleted>
+  <IsHidden>0</IsHidden>
+  <FileName>/WebResources/mtc_registrarindexhtmlBA75098B-45C0-F111-AAAD-7CED8D6F24CE</FileName>
+</WebResource>

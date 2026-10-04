@@ -1,6 +1,6 @@
 # Reusable deployment pattern
 
-**Implemented development proof:** version 0.6.0.0 contains the six-table
+**Implemented registrar development MVP:** version 0.7.0.0 contains the six-table
 foundation, two disabled manual synthetic message-runtime flows, one disabled
 five-minute shadow flow, portable Outlook/Dataverse/custom Graph connection
 references, and the custom Graph connector. The connector source permits only
@@ -9,8 +9,16 @@ deterministic schema/bootstrap and shadow-flow definitions, reviewed
 managed/unmanaged solution source, export/build scripts, tests, CI,
 configuration examples, and an agent skill.
 
-**Not implemented:** the onboarding/review app, independent approval
-enforcement, custom security roles, accepted operational mailbox classifier,
+The solution now also includes the published **Sender Registry** model-driven
+app, three caller-stamped custom APIs, the signed registrar plug-in assembly,
+fourteen synchronous registry write/relationship guards, unique address/domain/
+mailbox keys, and separate `MTC Registrar`/`MTC Operator` roles. Guided synthetic
+Verify/Renew/Revoke operations were exercised in the actual app. Live exact-domain
+verification/revocation, immutable event data, actual-caller stamping, and
+negative approval scenarios also passed. Existing authorized user/shared mailbox
+records are staged Paused; none is enrolled.
+
+**Not implemented:** live independent-review mode, accepted operational mailbox classifier,
 automatic labels, complete paging/reconciliation, alert delivery, monitoring,
 or production deployment. The scheduled flow is Off, has no enrolled mailbox
 records, and has not run end to end. No live email is being automatically
@@ -102,7 +110,7 @@ They can be used for another customer without re-designing the product.
 | Layer | Portable artifact | Tenant-local work |
 | --- | --- | --- |
 | Registry | Dataverse table/column/relationship metadata in the solution | Independently verified business records, access teams, evidence and retention |
-| Apps/automation | Two disabled manual proofs, one disabled metadata-only shadow flow, portable custom Graph connector/reference, built-in connection references, and variable definitions; operational app still unbuilt | Certificate connection, operational owner, role assignments, mailbox enrollments, alert destination |
+| Apps/automation | Sender Registry app, protected custom APIs, signed plug-in, registrar/operator roles, two disabled manual proofs, one disabled shadow flow, custom Graph connector/reference and variable definitions | Certificate connection, licensed app users, role assignments, operational owner, mailbox enrollments, alert destination |
 | Deployment | The same reviewed managed ZIP and version | Verified target, private PAC deployment settings and approval evidence |
 | Microsoft security | A reviewed baseline/configuration procedure | Recipient entitlement, policy precedence, mailbox topology, authorized policy changes |
 | Optional Azure | Bicep only if an Azure worker is justified | Subscription/region, scoped identities, monitoring, cost approval |
@@ -319,6 +327,55 @@ exported development solution.
 
 ## Export and build
 
+### Registrar app development
+
+The live app currently supports only explicitly selected single-registrar
+operation. Do not use it as an independent-review implementation. Restore the
+reviewed .NET dependencies by building the plug-in after its manifest changes.
+The JavaScript/app implementation has no npm dependencies.
+
+```powershell
+npm test
+.\scripts\Test-RegistrarPlugin.ps1
+.\scripts\Build-RegistrarPlugin.ps1
+.\scripts\Deploy-Registrar.ps1 `
+  -ConfigurationFile .\.local\development.local.json `
+  -VerificationAuthorityMode single-registrar
+```
+
+`Test-RegistrarPlugin.ps1` builds unsigned test binaries into ignored artifacts;
+it does not need a publisher private key and does not replace the signed
+deployment output. `Build-RegistrarPlugin.ps1` requires the approved publisher
+signing key in restricted, Git-ignored storage and forces a signed rebuild.
+For a genuinely new publisher only, `-CreateSigningKey` explicitly generates
+the initial key. Do not generate a different signing identity per customer.
+Neither the private key nor test binaries belong in the public solution.
+
+`Deploy-Registrar.ps1` verifies the approved commercial-cloud origin and exact
+organization, rejects Production, stages the app and API/guard metadata, and
+does not activate any flow. `-AssignCurrentUser` additionally assigns the
+authenticated operator the dedicated roles; use it only after that actual
+operator's licensing and authority are verified. Other app users need separately
+verified entitlements, Basic User/platform access, and tenant-local role
+assignments. The dedicated roles retain Dataverse's automatically supplied
+minimum platform privileges; they do not grant Graph mailbox access.
+
+Copy `config\mailbox-enrollment.example.json` into private approved working
+storage, populate the authorized existing user/shared inventory, and run:
+
+```powershell
+.\scripts\Onboard-DevelopmentMailboxes.ps1 `
+  -ConfigurationFile .\.local\development.local.json `
+  -MailboxInventoryFile .\.local\mailbox-enrollment.local.json
+```
+
+This creates only Paused enrollment records through the operator API. It
+rejects duplicate/conflicting records rather than implicitly pausing an active
+mailbox or changing its type. It does not create Microsoft 365 users, grant mail
+permissions, or turn processing on.
+
+### Portable solution artifacts
+
 The pinned CLI is in `.config/dotnet-tools.json`. Both exports are required;
 do not manufacture managed metadata by hand or package unmanaged source as a
 production solution.
@@ -348,20 +405,26 @@ The checked-in source is the reviewed dual-format export. To rebuild it:
 .\scripts\Build-Solution.ps1
 ```
 
-Reviewed 0.6.0.0 development build:
+The previously recorded 0.6 artifacts are superseded and must not be deployed:
+the old build did not verify the custom connector was embedded in
+`customizations.xml`. The build now checks its actual customization metadata and
+all referenced connector payloads, not just the presence of loose ZIP files.
+
+Reviewed 0.7.0.0 registrar development build (not production acceptance):
 
 - Unmanaged SHA-256:
-  `24A1BC7DF2A86EE947CC72F1C60446A9FBE09EB73AFD067A3D34F5AF4BCCBE19`
+  `3FBB9DE9F4A9EBA891BDC37172368D7FF8BD8E37AFE4145B738204E4E466C54B`
 - Managed SHA-256:
-  `F82FD4C47E654BDE8EC33D3B6583752DC19F3AF36104A1DAF01A3DD12DE5B659`
+  `D51F2EAB5F89971DB7606EBCE1E182B7CF055DD81A3FED08DDC7BE34102E7F70`
 
 The build validates solution identity, six table roots, both manual proofs, the
-disabled scheduled shadow flow, the certificate-only custom connector, three
+disabled scheduled shadow flow, the app, registrar assembly/APIs/roles/guards,
+the certificate-only custom connector, three
 portable connection references, reference-only User dependency, safe defaults,
 absence of current values/tenant bindings, and JSON/XML parsing. It also
 requires that the shadow flow has no category-write operation and only records
 presentation as Not attempted. It packs managed and unmanaged ZIPs and verifies
-their actual manifest managed flags and version. Outputs/hashes are generated
+their actual manifest managed flags, version, and actual embedded connector. Outputs/hashes are generated
 under ignored `artifacts`. Choose a fresh output directory for each repeat
 build.
 
@@ -395,13 +458,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.6.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.7.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.6.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.7.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -428,7 +491,8 @@ single-registrar and independent-review modes, normalizes exact contact/domain
 targets, rejects wholesale consumer-domain approval, requires evidence and a
 future expiry, and server-stamps approval/rejection/revocation audit events.
 It is not yet wired to Dataverse plug-ins, custom APIs, security roles, or the
-administrator app, so it cannot authorize a live registry record.
+administrator app. Live MVP approvals use the separately deployed custom APIs
+and registry guards, not this fixture entry point.
 
 - Fixture recognition requires an exact approved identity, current verification
   and expiry timestamps, and explicit independent-verification evidence.
@@ -460,7 +524,7 @@ live acceptance or production gates.
 
 ## Manual and shadow runtime proof
 
-The version 0.6.0.0 solution includes two Off, manual-only flows for synthetic
+The version 0.7.0.0 solution includes two Off, manual-only flows for synthetic
 development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with

@@ -1,6 +1,6 @@
 # Client pilot: known sender / not known
 
-**Status:** Pilot approval remains blocked. Version 0.6.0.0 has six Dataverse
+**Status:** Automatic-email pilot approval remains blocked. Version 0.7.0.0 has six Dataverse
 tables, two disabled manual proof flows, a certificate-authenticated Graph
 connector, and one disabled scheduled shadow flow. A synthetic external Inbox message
 was shown in Outlook web as `MTC Proof - not known`; repeat processing reused the
@@ -15,7 +15,11 @@ and idempotent assessments on both shared mailboxes; a temporarily excluded
 mailbox returned HTTP 403. After propagation, the permanent Exchange mailbox
 type scope returned HTTP 200 for all 12 current user/shared mailboxes. The
 scheduled flow has no enrolled mailbox records, performs no category writes,
-and has not completed live shadow acceptance.
+and has not completed live shadow acceptance. The Sender Registry app and
+server-side single-registrar controls are now published; existing authorized mailboxes
+are staged Paused. Synthetic UI Verify/Renew/Revoke, exact-domain API
+verification/revocation, actual-caller stamping, and denied direct/unauthorized,
+consumer-domain, expired-evidence, and missing-evidence approvals were observed.
 
 Read the [solution design](solution-design.md) before implementation.
 
@@ -52,8 +56,10 @@ operating ownership, and explicit exclusions.
 ## 3. Build the bounded pilot
 
 - [ ] Create synthetic approved parties, exact contacts, and business domains.
-- [ ] Implement the registrar workflow with evidence, expiry, revocation, and
-  actual-caller audit stamping.
+- [x] Implement and demonstrate the single-registrar workflow with evidence,
+  expiry, revocation, actual-caller stamping, and immutable verification cases.
+- [x] Publish the guided registrar workspace and operator mailbox controls.
+- [x] Stage all existing user/shared mailbox records Paused without activation.
 - [ ] Retrieve immutable message identity and trusted Microsoft receiving
   authentication without message bodies or attachments.
 - [ ] Match exact contact first, then explicitly approved business domain.

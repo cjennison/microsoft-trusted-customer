@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="VerificationCaseId">
+  <displayname default="VerificationCaseId">
+    <label description="VerificationCaseId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_RevokeSender.VerificationCaseId</name>
+  <type>12</type>
+</customapiresponseproperty>

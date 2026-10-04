@@ -4,28 +4,32 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Reusable development proof, version 0.6.0.0. Six Dataverse
-tables now include paused-by-default mailbox enrollment/checkpoint health, and
-the solution contains two disabled manual proofs plus one disabled five-minute
-scheduled shadow flow. A portable custom Microsoft Graph mail connector is
-packaged with certificate-only, tenant-supplied authentication; the development
-tenant has separately proven a certificate connection authorized only by
-Exchange Application RBAC. The shadow flow reads only explicitly enrolled
-mailboxes, requests immutable message metadata and internet headers, evaluates
-the bounded trusted Microsoft authentication shape and exact contact/domain
-registry matches, and creates or updates metadata-only assessments. It has no
-Outlook category-write action, no enrolled mailbox records, and has not been
-run end to end. Existing manual evidence still proves retained-message Not known
-to Known reassessment, expiry back to Not known, shared-mailbox category writes,
-excluded-mailbox HTTP 403, and HTTP 200 across all 12 current user/shared
-mailboxes after Exchange authorization propagation. All three flows remain Off.
-No operational onboarding/review app, production activation, generalized
-authentication parser, paging implementation beyond the fail-closed first-page
-gate, alert delivery, or production reconciliation is complete.
+**Status:** Client-showable registrar development MVP, version 0.7.0.0.
+The published **Sender Registry** model-driven Power App now provides guided
+exact-address/business-domain verification, renewal, revocation, mailbox
+onboarding/pause/enrollment, and a basic service-health view. Three Dataverse
+custom APIs enforce the explicitly selected single-registrar model and separate
+operator membership. Fourteen synchronous guards reject direct registry writes,
+deletion, and relationship changes; active unique keys prevent duplicate sender
+and mailbox identities. New verification events preserve the exact target,
+method, evidence reference, expiry, reason, actual caller, and server time.
+The authorized development target has staged its existing user/shared
+mailboxes in Paused state. Actual app Verify/Renew/Revoke operations and live
+negative approval scenarios have been exercised with synthetic data; additional
+client users still need entitlement/access confirmation.
+
+Automatic Outlook tagging is **not operational**. All three flows remain Off,
+processing mode remains Disabled, and no mailbox is enrolled. The existing
+scheduled shadow definition still needs complete receiving-authentication
+validation, paging, checkpoint/retry handling, alerts, and retained-message
+reconciliation before acceptance or activation. Earlier manual evidence proves
+retained-message Not known/Known reassessment, expiry, shared-mailbox category
+writes, excluded-mailbox HTTP 403, and all-current-mailbox Graph access.
+The environment remains a Sandbox, not a production deployment.
 
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026; disabled shadow
-runtime foundation added October 4, 2026.
+runtime foundation and client-showable registrar app added October 4, 2026.
 
 ## The opportunity
 
@@ -67,9 +71,10 @@ can be compromised, and a genuine email can contain a malicious link.
 ## Reusable implementation
 
 `src\provisioning\dataverse.js` defines and verifies the shared development
-schema; `src\runtime\shadow-flow.js` defines the disabled scheduled shadow
-processor; `solutions\MicrosoftTrustedCustomer` contains the reviewed
-dual-format solution export. PowerShell scripts bootstrap/export through an
+schema; `src\registrar-app` and `src\registrar-plugin` implement the guided
+app and caller-stamped approval controls; `src\runtime\shadow-flow.js` defines
+the disabled scheduled shadow processor; `solutions\MicrosoftTrustedCustomer`
+contains the reviewed dual-format solution export. PowerShell scripts bootstrap/export through an
 isolated, human-authenticated `agent-browser`, and build managed/unmanaged
 packages using the repository-pinned Power Platform CLI. The scheduled flow is
 Off and has no enrolled mailboxes; it is not an operational classifier.
@@ -88,8 +93,10 @@ cannot be applied to an Outlook message. Captured-message assessment always
 remains incomplete until a trusted receiving-system boundary is proven.
 The fixture policy supports an explicitly selected single-registrar model and
 multiple authorized verifier identifiers, while retaining independent-review
-mode by default. Fixture identifiers are not deployed app roles or server-side
-verification enforcement.
+mode by default. The live registrar MVP supports only explicitly selected
+single-registrar operation through the deployed `MTC Registrar` role and custom
+APIs; fixture principal lists cannot grant live access. Live independent-review
+mode is not implemented.
 
 Developer environment creation, solution import, or successful API access does
 not prove the user's license entitlement. Confirm completed Developer Plan

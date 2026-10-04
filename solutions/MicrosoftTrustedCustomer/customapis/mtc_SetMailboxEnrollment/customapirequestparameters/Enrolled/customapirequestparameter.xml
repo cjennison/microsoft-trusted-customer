@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="Enrolled">
+  <displayname default="Enrolled">
+    <label description="Enrolled" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_SetMailboxEnrollment.Enrolled</name>
+  <type>0</type>
+</customapirequestparameter>

@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="MailboxReference">
+  <displayname default="MailboxReference">
+    <label description="MailboxReference" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_SetMailboxEnrollment.MailboxReference</name>
+  <type>10</type>
+</customapirequestparameter>

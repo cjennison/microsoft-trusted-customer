@@ -22,6 +22,9 @@ jobs:
         run: dotnet tool restore
       - name: Check and test provisioning
         run: npm run check && npm test
+      - name: Test registrar authorization and transitions
+        shell: pwsh
+        run: .\scripts\Test-RegistrarPlugin.ps1
       - name: Parse PowerShell scripts
         shell: pwsh
         run: |

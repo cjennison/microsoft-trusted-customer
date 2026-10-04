@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="EvidenceReference">
+  <displayname default="EvidenceReference">
+    <label description="EvidenceReference" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_VerifySender.EvidenceReference</name>
+  <type>10</type>
+</customapirequestparameter>

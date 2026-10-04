@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="BusinessName">
+  <displayname default="BusinessName">
+    <label description="BusinessName" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_VerifySender.BusinessName</name>
+  <type>10</type>
+</customapirequestparameter>

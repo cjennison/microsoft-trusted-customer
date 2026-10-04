@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="TargetType">
+  <displayname default="TargetType">
+    <label description="TargetType" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_RevokeSender.TargetType</name>
+  <type>10</type>
+</customapirequestparameter>

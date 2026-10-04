@@ -79,7 +79,10 @@ present the development foundation as a functioning anti-phishing system.
   retained components and the browser job status before retrying. Never launch
   duplicate jobs or erase resources to hide a failed attempt.
 - Confirm six tables, relationships, four definitions, the custom Graph
-  connector/reference, and all three Off flows in the maker portal.
+  connector/reference, and all three Off flows in the maker portal. For the
+  registrar MVP, also confirm the published Sender Registry app, three custom
+  APIs, registrar/operator roles, fourteen synchronous guards, and active
+  unique address/domain/mailbox keys.
   Keep processing disabled and leave current environment variable values out of
   the development solution that will be exported to public Git.
 
@@ -97,6 +100,15 @@ present the development foundation as a functioning anti-phishing system.
   registrars or that MFA enrollment alone proves a compromised account recovered.
 - Build solution-aware onboarding and review app/flows. Use connection
   references and environment variable definitions, never tenant constants.
+- The live registrar MVP currently supports only explicitly selected
+  single-registrar operation. Use `scripts/Deploy-Registrar.ps1` with that
+  explicit mode after provisioning the matching development schema. Do not
+  imply live independent-review support from the offline fixture contract.
+  Verify/Renew/Revoke must use the caller-stamped APIs; direct registry row
+  writes and approval relationship changes are intentionally rejected.
+- Stage existing mailboxes through the operator API or
+  `scripts/Onboard-DevelopmentMailboxes.ps1`. New rows remain Paused. Adding
+  enrollment records is not authorization to activate processing or labels.
 - Spike trusted receiving-system authentication, exact identity matching,
   assessment persistence, binary category writes, shared mailboxes, and
   excluded-mailbox denial.

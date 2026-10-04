@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="RecordId">
+  <displayname default="RecordId">
+    <label description="RecordId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_RevokeSender.RecordId</name>
+  <type>12</type>
+</customapirequestparameter>

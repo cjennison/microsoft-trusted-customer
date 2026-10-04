@@ -1,6 +1,6 @@
 # Incoming email known-sender qualification
 
-**Status:** Version 0.6.0.0 development architecture with six Dataverse tables,
+**Status:** Version 0.7.0.0 development architecture with six Dataverse tables,
 two disabled manual synthetic proof flows, a portable certificate-authenticated
 Graph connector, and one disabled scheduled shadow flow. One delivered external message
 changed from `MTC Proof - not known` to `MTC Proof - known sender` after an
@@ -10,8 +10,12 @@ Exchange-RBAC proof also categorized one immutable message in each shared
 mailbox, proved HTTP 403 for a temporarily excluded mailbox, and then validated
 HTTP 200 across all 12 current mailboxes under the permanent mailbox-type scope.
 The shadow processor has no enrolled mailboxes, performs no category writes,
-and has not completed live end-to-end shadow acceptance. No onboarding app or
-production activation is complete.
+and has not completed live end-to-end shadow acceptance. Production activation
+is not complete. The Sender Registry app, caller-stamped
+single-registrar APIs, protected registry writes, identity keys, and separate
+registrar/operator roles are now deployed and demonstrated with synthetic data.
+Existing authorized mailbox records are Paused; automatic email classification remains
+unaccepted and Off.
 See the [replication pattern](replication-pattern.md) for exact evidence.
 
 ## 1. Product purpose
@@ -86,7 +90,7 @@ category appears; this is not a pre-delivery gateway.
 
 ## 4. Dataverse records
 
-Version 0.6.0.0 contains six custom user-owned tables:
+Version 0.7.0.0 contains six custom user-owned tables:
 
 | Record | Purpose |
 | --- | --- |
@@ -100,6 +104,22 @@ Version 0.6.0.0 contains six custom user-owned tables:
 Do not store message bodies, attachments, credentials, or customer evidence in
 `MessageAssessment`. Evidence references point to separately approved restricted
 storage.
+
+The registrar MVP implements `mtc_VerifySender`, `mtc_RevokeSender`, and
+`mtc_SetMailboxEnrollment` as caller-context Dataverse custom APIs. Verification
+and revocation require `MTC Registrar` membership; mailbox enrollment requires
+`MTC Operator` membership. The service rejects disabled/application users for
+these interactive operations and impersonated callers. Direct registry
+Create/Update/Delete and approval relationship changes are rejected by
+synchronous plug-ins, rather than relying on form controls. New immutable
+verification cases retain the exact target, method, evidence reference, expiry,
+revocation reason, actual user, and server time.
+
+This live MVP supports only the explicitly selected single-registrar model.
+Independent-review behavior remains an offline contract. The processor still
+needs wiring to approval/revocation events before the app can report completed
+Outlook reassessment. Organization-wide Dataverse auditing remains a separately
+authorized configuration step; immutable cases are not a claim that it is enabled.
 
 Required server-side verification behavior:
 
