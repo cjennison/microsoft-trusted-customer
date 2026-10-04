@@ -30,9 +30,14 @@ web, and persisted one reusable metadata-only Not known assessment. After a
 retained message was reassessed to `MTC Proof - known sender`; two runs reused
 the same assessment row. An accelerated expiry test then returned that same
 message and row to `MTC Proof - not known` without deleting the approval
-records. Both flows remain Off. The proof is not a general
-authentication parser and does not validate shared/all-mailbox permissions,
-automatic triggering, or excluded-mailbox denial.
+records. A certificate-authenticated app-only Graph proof, authorized only by
+Exchange Application RBAC, then read and categorized exact immutable messages
+in both shared mailboxes, preserved unrelated categories, and reused two
+metadata-only assessment rows. A temporarily excluded mailbox returned HTTP
+403. After Exchange authorization propagation, the permanent mailbox-type scope
+returned HTTP 200 for all 12 current user/shared mailboxes and will include
+future mailboxes of those types. Both flows remain Off. The proof is not a general authentication parser
+and does not validate automatic triggering or production reconciliation.
 
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026.

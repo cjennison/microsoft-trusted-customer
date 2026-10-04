@@ -8,7 +8,11 @@ contact, evidence, reviewer binding, and verification case, the same message
 changed to `MTC Proof - known sender`; a repeat run reused the same row. No
 automatic processor or production label is active. An accelerated expiry test
 then reused the same row, removed Known, and restored `MTC Proof - not known`
-in Outlook web without deleting the expired records.
+in Outlook web without deleting the expired records. App-only Graph access also
+proved exact immutable selection, ETag category writes, preservation, readback,
+and idempotent assessments on both shared mailboxes; a temporarily excluded
+mailbox returned HTTP 403. After propagation, the permanent Exchange mailbox
+type scope returned HTTP 200 for all 12 current user/shared mailboxes.
 
 Read the [solution design](solution-design.md) before implementation.
 

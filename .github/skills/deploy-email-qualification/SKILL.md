@@ -106,7 +106,8 @@ present the development foundation as a functioning anti-phishing system.
 - Prove an allowed and excluded mailbox first. Then use an Exchange management
   scope covering UserMailbox and SharedMailbox when every current/future mailbox
   is explicitly authorized. Verify both `Test-ServicePrincipalAuthorization`
-  and real Graph HTTP results; scope changes can require propagation time.
+  and real Graph HTTP results; scope changes can require substantial data-plane
+  propagation time even after Exchange reports `InScope=True`.
 - Implement the complete deterministic policy, durable idempotency keys,
   retries/reconciliation, revocation invalidation, and operator-visible failures.
   Do not create a demo classifier that claims authentication from arbitrary

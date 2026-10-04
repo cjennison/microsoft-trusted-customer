@@ -36,9 +36,8 @@ followed by an accelerated expiry test: the party/contact records were retained
 but made expired, and the same message/assessment returned to
 `MTC Proof - not known` with Known removed. This is still not a complete message path or
 cross-tenant deployment test: the current trusted-header match is bounded to the
-observed Microsoft header shape, and shared/all-mailbox access,
-excluded-mailbox denial, automatic triggering, and reconciliation remain
-unproven.
+observed Microsoft header shape, and automatic triggering and reconciliation
+remain unproven.
 
 The live new-designer attempt to compose the second request from the first
 action's response was discarded because the expression editor rejected even
@@ -212,6 +211,17 @@ Copy `config\mailbox-processor.example.json` to a private `.local` file and run:
 The validator expects HTTP 200 for allowed mailboxes and HTTP 403 for excluded
 mailboxes. App IDs, certificate thumbprints, mailbox addresses, authorization
 results, and certificate material remain tenant-local.
+
+The development tenant proved this path with a certificate-authenticated app
+that had no Entra API permissions and only Exchange
+`Application Mail.ReadWrite`. Both shared mailboxes returned HTTP 200; a
+temporarily excluded user mailbox returned HTTP 403. Exact immutable synthetic
+messages in both shared mailboxes were categorized Not known with ETag
+concurrency, unrelated categories were preserved, and repeat processing reused
+one category and one assessment row per message. After about 55 minutes of
+Exchange data-plane propagation, the permanent UserMailbox/SharedMailbox scope
+returned HTTP 200 for all 12 current mailboxes. The temporary proof group,
+scope, and assignment were then removed.
 
 ## Bootstrap development
 

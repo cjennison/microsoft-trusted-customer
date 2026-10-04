@@ -4,8 +4,12 @@
 and two disabled manual synthetic proof flows. One delivered external message
 changed from `MTC Proof - not known` to `MTC Proof - known sender` after an
 approved 24-hour exact-contact record was added. An accelerated expiry test
-then reconciled the same retained message back to Not known. No automatic processor,
-onboarding app, shared-mailbox deployment, or production activation is complete.
+then reconciled the same retained message back to Not known. An app-only
+Exchange-RBAC proof also categorized one immutable message in each shared
+mailbox, proved HTTP 403 for a temporarily excluded mailbox, and then validated
+HTTP 200 across all 12 current mailboxes under the permanent mailbox-type scope.
+No automatic
+processor, onboarding app, or production activation is complete.
 See the [replication pattern](replication-pattern.md) for exact evidence.
 
 ## 1. Product purpose
