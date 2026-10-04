@@ -99,6 +99,14 @@ present the development foundation as a functioning anti-phishing system.
 - Spike trusted receiving-system authentication, exact identity matching,
   assessment persistence, binary category writes, shared mailboxes, and
   excluded-mailbox denial.
+- A user-delegated Outlook connection is not an all-mailbox design. For approved
+  tenant-wide scope, use a dedicated certificate-authenticated Entra application
+  plus Exchange `Application Mail.ReadWrite` RBAC. Do not add unscoped Entra
+  mail permissions or grant the developer Full Access to every mailbox.
+- Prove an allowed and excluded mailbox first. Then use an Exchange management
+  scope covering UserMailbox and SharedMailbox when every current/future mailbox
+  is explicitly authorized. Verify both `Test-ServicePrincipalAuthorization`
+  and real Graph HTTP results; scope changes can require propagation time.
 - Implement the complete deterministic policy, durable idempotency keys,
   retries/reconciliation, revocation invalidation, and operator-visible failures.
   Do not create a demo classifier that claims authentication from arbitrary

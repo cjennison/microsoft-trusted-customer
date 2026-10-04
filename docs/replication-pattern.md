@@ -161,6 +161,58 @@ connector/action is permitted. Record the advanced rule's actual applied state
 and any access denial; do not turn on Managed Environments or change a policy
 just to inspect or unblock a connector.
 
+## App-only mailbox scope
+
+A maker-owned delegated Outlook connection does not provide tenant-wide mailbox
+access. In the development tenant, it returned `404 itemNotFound` for both shared
+mailboxes because the operator was not an existing Full Access delegate.
+Granting the developer Full Access to every mailbox is not the supported
+all-mailbox architecture.
+
+For authorized all-mailbox processing, use a dedicated single-tenant Entra
+application and Exchange Online RBAC for Applications:
+
+1. Create a certificate credential. Development can use a non-exportable local
+   certificate; production should use approved managed certificate storage and
+   rotation.
+2. Keep Microsoft Entra API permissions empty for mail. Do not add tenant-wide
+   `Mail.ReadWrite`; Entra and Exchange grants are additive, so an unscoped
+   Entra grant defeats Exchange resource scoping.
+3. In Exchange, create the service-principal pointer with the Entra application
+   ID and **enterprise application service-principal object ID**.
+4. Assign `Application Mail.ReadWrite`, which permits mail read/category update
+   but does not include Mail.Send.
+5. Restrict it with a management scope. For automatic current/future coverage:
+
+   ```powershell
+   New-ManagementScope -Name 'MTC All User and Shared Mailboxes' `
+     -RecipientRestrictionFilter "RecipientTypeDetails -eq 'UserMailbox' -or RecipientTypeDetails -eq 'SharedMailbox'"
+
+   New-ManagementRoleAssignment `
+     -Name 'MTC Mailbox Processor Mail.ReadWrite All Mailboxes' `
+     -Role 'Application Mail.ReadWrite' `
+     -App VERIFIED_SERVICE_PRINCIPAL_OBJECT_ID `
+     -CustomResourceScope 'MTC All User and Shared Mailboxes'
+   ```
+
+6. Before broad enrollment, use a direct-membership mail-enabled security-group
+   scope to prove an included mailbox succeeds and an excluded mailbox returns
+   HTTP 403. Nested members do not count.
+7. Verify Exchange configuration with `Test-ServicePrincipalAuthorization`, then
+   verify actual Graph data-plane access using app-only certificate
+   authentication. Allow for authorization propagation after scope changes.
+
+Copy `config\mailbox-processor.example.json` to a private `.local` file and run:
+
+```powershell
+.\scripts\Test-MailboxProcessorAccess.ps1 `
+  -ConfigurationFile .\.local\mailbox-processor.local.json
+```
+
+The validator expects HTTP 200 for allowed mailboxes and HTTP 403 for excluded
+mailboxes. App IDs, certificate thumbprints, mailbox addresses, authorization
+results, and certificate material remain tenant-local.
+
 ## Bootstrap development
 
 Prerequisites: Node.js 22+, PowerShell 7, .NET 10 SDK for the pinned PAC tool,

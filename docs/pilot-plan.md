@@ -54,6 +54,9 @@ operating ownership, and explicit exclusions.
   presentation status.
 - [ ] Preserve unrelated Outlook categories and replace only MTC-owned labels.
 - [ ] Prove shared-mailbox behavior and excluded-mailbox access denial.
+- [ ] For an app-only processor, prove Exchange Application RBAC with app-only
+  certificate authentication, no unscoped Entra mail grant, HTTP 200 for
+  included mailboxes, and HTTP 403 for an excluded mailbox before broad scope.
 - [ ] Add retries, reconciliation, alerts, and service-health visibility.
 - [ ] Keep flows Off until each applicable manual scenario passes.
 

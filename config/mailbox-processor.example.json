@@ -1,0 +1,13 @@
+{
+  "tenantId": "00000000-0000-0000-0000-000000000000",
+  "clientId": "00000000-0000-0000-0000-000000000000",
+  "certificateThumbprint": "0000000000000000000000000000000000000000",
+  "authorizationConfirmed": false,
+  "expectedAllowedMailboxes": [
+    "approved-user@example.com",
+    "approved-shared@example.com"
+  ],
+  "expectedDeniedMailboxes": [
+    "excluded@example.com"
+  ]
+}
