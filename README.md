@@ -28,7 +28,9 @@ existing categories, applied `MTC Proof - not known`, displayed it in Outlook
 web, and persisted one reusable metadata-only Not known assessment. After a
 24-hour exact-address approval with verified party/contact evidence, the same
 retained message was reassessed to `MTC Proof - known sender`; two runs reused
-the same assessment row. Both flows remain Off. The proof is not a general
+the same assessment row. An accelerated expiry test then returned that same
+message and row to `MTC Proof - not known` without deleting the approval
+records. Both flows remain Off. The proof is not a general
 authentication parser and does not validate shared/all-mailbox permissions,
 automatic triggering, or excluded-mailbox denial.
 

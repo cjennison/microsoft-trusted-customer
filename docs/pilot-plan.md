@@ -6,7 +6,9 @@ was shown in Outlook web as `MTC Proof - not known`; repeat processing reused th
 same assessment. After a 24-hour exact-address approval with a verified party,
 contact, evidence, reviewer binding, and verification case, the same message
 changed to `MTC Proof - known sender`; a repeat run reused the same row. No
-automatic processor or production label is active.
+automatic processor or production label is active. An accelerated expiry test
+then reused the same row, removed Known, and restored `MTC Proof - not known`
+in Outlook web without deleting the expired records.
 
 Read the [solution design](solution-design.md) before implementation.
 

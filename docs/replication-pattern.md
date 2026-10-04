@@ -32,7 +32,9 @@ and have no automatic triggers. A 24-hour exact-address approval was then
 created with a fully verified party, contact, evidence reference, current-user
 reviewer binding, and verification case. The same retained message changed to
 `MTC Proof - known sender`; two runs reused the same assessment row. This is
-still not a complete message path or
+followed by an accelerated expiry test: the party/contact records were retained
+but made expired, and the same message/assessment returned to
+`MTC Proof - not known` with Known removed. This is still not a complete message path or
 cross-tenant deployment test: the current trusted-header match is bounded to the
 observed Microsoft header shape, and shared/all-mailbox access,
 excluded-mailbox denial, automatic triggering, and reconciliation remain
@@ -402,6 +404,8 @@ authentication/unrecognized-presentation flow:
 - Fails closed on message, trusted-header, registry, assessment, or category
   readback ambiguity. Two observed runs reused one assessment row, and Outlook
   web visibly displayed the category.
+- On accelerated party/contact expiry, the same immutable message and assessment
+  row returned from Known to Not known without deleting the expired records.
 
 A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;

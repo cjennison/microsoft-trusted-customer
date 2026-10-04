@@ -4,7 +4,8 @@
 2026. Version 0.5.0.0 contains the five-table development schema, offline
 contracts, and disabled manual Not known/retained-message Known reassessment
 proofs; the app, automatic mailbox runtime, and production labels are not
-implemented.
+implemented. The retained-message proof also demonstrated that expiry removes
+Known and restores Not known on the same message without deleting the records.
 
 ## The business administrator's workflow
 
