@@ -1,15 +1,17 @@
 # Incoming email known-sender qualification
 
-**Status:** Version 0.5.0.0 development architecture with five Dataverse tables
-and two disabled manual synthetic proof flows. One delivered external message
+**Status:** Version 0.6.0.0 development architecture with six Dataverse tables,
+two disabled manual synthetic proof flows, a portable certificate-authenticated
+Graph connector, and one disabled scheduled shadow flow. One delivered external message
 changed from `MTC Proof - not known` to `MTC Proof - known sender` after an
 approved 24-hour exact-contact record was added. An accelerated expiry test
 then reconciled the same retained message back to Not known. An app-only
 Exchange-RBAC proof also categorized one immutable message in each shared
 mailbox, proved HTTP 403 for a temporarily excluded mailbox, and then validated
 HTTP 200 across all 12 current mailboxes under the permanent mailbox-type scope.
-No automatic
-processor, onboarding app, or production activation is complete.
+The shadow processor has no enrolled mailboxes, performs no category writes,
+and has not completed live end-to-end shadow acceptance. No onboarding app or
+production activation is complete.
 See the [replication pattern](replication-pattern.md) for exact evidence.
 
 ## 1. Product purpose
@@ -84,7 +86,7 @@ category appears; this is not a pre-delivery gateway.
 
 ## 4. Dataverse records
 
-Version 0.5.0.0 contains five custom user-owned tables:
+Version 0.6.0.0 contains six custom user-owned tables:
 
 | Record | Purpose |
 | --- | --- |
@@ -93,6 +95,7 @@ Version 0.5.0.0 contains five custom user-owned tables:
 | ApprovedContact | Exact approved email address and optional exact Reply-To addresses |
 | VerificationCase | Request, evidence reference, expiry, actual registrar/reviewer, approval/rejection/revocation, and audit history |
 | MessageAssessment | Mailbox reference, immutable message ID, timestamps, registry/rule versions, relationship/authentication state, reason codes, processing status, and presentation outcome |
+| MailboxEnrollment | Tenant-local mailbox type, paused/enrolled state, polling checkpoint, last attempt/success, health, and operator-visible error |
 
 Do not store message bodies, attachments, credentials, or customer evidence in
 `MessageAssessment`. Evidence references point to separately approved restricted
@@ -169,9 +172,11 @@ Failures must remain visible:
 - Connector or subscription outage -> reconciliation queue and service-health
   alert; never an optimistic default.
 
-The two manual proof flows currently export Off. Automatic arrival triggers,
-shared-mailbox behavior, excluded-mailbox denial, generalized authentication
-parsing, alerting, and reconciliation remain production blockers.
+The two manual proofs and scheduled shadow flow currently export Off. The shadow
+flow reads only explicitly enrolled rows and fails closed when Graph reports a
+next page, but no mailbox is enrolled and no live scheduled run is accepted.
+Generalized authentication parsing, paging, alert delivery, visible labels, and
+reconciliation remain production blockers.
 
 ## 8. Access, privacy, and licensing
 

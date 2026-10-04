@@ -1,0 +1,193 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "MTC Microsoft Graph Mail",
+    "description": "Scoped Microsoft Graph mail metadata and category operations for Microsoft Trusted Customer.",
+    "version": "1.0"
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/users/{mailbox}/mailFolders/inbox/messages": {
+      "get": {
+        "operationId": "ListInboxMessages",
+        "summary": "List scoped Inbox message metadata",
+        "parameters": [
+          {
+            "name": "mailbox",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Mailbox"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "OData filter"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Selected fields"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "x-ms-summary": "Maximum messages"
+          },
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "default": "IdType=\"ImmutableId\"",
+            "x-ms-summary": "Graph ID preference"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message collection"
+          }
+        }
+      }
+    },
+    "/users/{mailbox}/messages/{messageId}": {
+      "get": {
+        "operationId": "GetMessageMetadata",
+        "summary": "Get one message and internet headers",
+        "parameters": [
+          {
+            "name": "mailbox",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Mailbox"
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Immutable message ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Selected fields"
+          },
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "default": "IdType=\"ImmutableId\"",
+            "x-ms-summary": "Graph ID preference"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message metadata"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateMessageCategories",
+        "summary": "Update categories on one immutable message",
+        "parameters": [
+          {
+            "name": "mailbox",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Mailbox"
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Immutable message ID"
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Message ETag"
+          },
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "default": "IdType=\"ImmutableId\"",
+            "x-ms-summary": "Graph ID preference"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "categories"
+              ],
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated message"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "security": [
+    {
+      "certOauth": [
+        "https://graph.microsoft.com/.default"
+      ]
+    }
+  ],
+  "tags": [],
+  "securityDefinitions": {
+    "certOauth": {
+      "type": "oauth2",
+      "flow": "application",
+      "tokenUrl": "https://login.microsoftonline.com/organizations/oauth2/v2.0/token",
+      "scopes": {
+        "https://graph.microsoft.com/.default": "https://graph.microsoft.com/.default"
+      }
+    }
+  }
+}

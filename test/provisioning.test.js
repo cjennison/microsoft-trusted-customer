@@ -2,7 +2,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { tables, relationships, environmentVariables, validateTarget, validateTable, bootstrap, exportSolution } =
+const { solutionVersion, tables, relationships, environmentVariables, validateTarget, validateTable, bootstrap, exportSolution } =
   require('../src/provisioning/dataverse.js');
 
 const target = {
@@ -27,6 +27,7 @@ function fakeDataverse() {
   const state = { writes: [], tables: new Map(), relationships: new Map(), variables: new Map() };
   let publisher;
   let solution;
+  state.setSolutionVersion = version => { solution.version = version; };
   const reply = (value, status = 200) => ({
     ok: status >= 200 && status < 300, status,
     json: async () => structuredClone(value),
@@ -38,8 +39,15 @@ function fakeDataverse() {
     assert.equal(options.redirect, 'error');
     const path = url.split('/api/data/v9.2/')[1];
     const body = options.body ? JSON.parse(options.body) : undefined;
-    if (options.method === 'POST') {
+    if (['POST', 'PATCH'].includes(options.method)) {
       state.writes.push({ path, body, headers: options.headers });
+      if (options.method === 'PATCH') {
+        if (path.startsWith('solutions(')) {
+          solution = { ...solution, ...body };
+          return reply(null, 204);
+        }
+        assert.fail(`Unexpected PATCH: ${path}`);
+      }
       if (path === 'publishers') {
         publisher = { ...body, publisherid: '33333333-3333-3333-3333-333333333333' };
         return reply(publisher, 201);
@@ -88,20 +96,27 @@ function fakeDataverse() {
   return state;
 }
 
-test('schema has the five known-sender record types and four safe configuration definitions', () => {
-  assert.equal(tables.length, 5);
+test('schema has six runtime record types and four safe configuration definitions', () => {
+  assert.equal(solutionVersion, '0.6.0.0');
+  assert.equal(tables.length, 6);
   assert.equal(environmentVariables.length, 4);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_ProcessingMode').defaultvalue, 'Disabled');
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_PilotMailbox').defaultvalue, '');
   assert.ok(tables.every(item => item.OwnershipType === 'UserOwned' && item.IsAuditEnabled.Value));
+  const enrollment = tables.find(item => item.SchemaName === 'mtc_MailboxEnrollment');
+  const status = enrollment.Attributes.find(item => item.SchemaName === 'mtc_EnrollmentStatus');
+  const health = enrollment.Attributes.find(item => item.SchemaName === 'mtc_HealthState');
+  assert.equal(status.OptionSet.Options[0].Label.LocalizedLabels[0].Label, 'Paused');
+  assert.equal(health.OptionSet.Options[0].Label.LocalizedLabels[0].Label, 'Not started');
 });
 
-test('review and processing form choices default to pending/incomplete, never approval', () => {
+test('review, processing, and enrollment choices default to non-active states', () => {
   const choices = tables.flatMap(item => item.Attributes.filter(attribute => attribute.OptionSet));
   assert.ok(choices.length > 0);
   for (const attribute of choices) {
     const initial = attribute.OptionSet.Options.find(option => option.Value === attribute.DefaultFormValue);
-    assert.match(initial.Label.LocalizedLabels[0].Label, /^(Pending|Incomplete|Not attempted)$/);
+    assert.match(initial.Label.LocalizedLabels[0].Label,
+      /^(Pending|Incomplete|Not attempted|User|Paused|Not started)$/);
   }
   assert.ok(relationships.every(item => item.CascadeConfiguration.Delete === 'Restrict'));
 });
@@ -172,8 +187,22 @@ test('second bootstrap is idempotent and does not recreate or update schema', as
   state.writes.length = 0;
   const report = await bootstrap(target, context);
   assert.equal(report.created.length, 0);
+  assert.equal(report.updated.length, 0);
   assert.equal(report.existing.length, 2 + tables.length + relationships.length + environmentVariables.length);
   assert.ok(state.writes.every(item => ['AddSolutionComponent', 'PublishXml'].includes(item.path)));
+});
+
+test('bootstrap upgrades the reviewed 0.5 solution only after publishing the new schema', async () => {
+  const state = fakeDataverse();
+  const context = { origin: target.environmentOrigin, fetch: state.fetch };
+  await bootstrap(target, context);
+  state.setSolutionVersion('0.5.0.0');
+  state.writes.length = 0;
+  const report = await bootstrap(target, context);
+  const publishIndex = state.writes.findIndex(item => item.path === 'PublishXml');
+  const upgradeIndex = state.writes.findIndex(item => item.path.startsWith('solutions('));
+  assert.ok(publishIndex >= 0 && upgradeIndex > publishIndex);
+  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.6.0.0']);
 });
 
 test('authorization failures and throttling never become missing-table fallbacks', async () => {

@@ -2,6 +2,8 @@
 
 (function (root) {
   const solutionName = 'MicrosoftTrustedCustomer';
+  const solutionVersion = '0.6.0.0';
+  const upgradeableSolutionVersions = new Set(['0.5.0.0']);
   const prefix = 'mtc';
   const label = text => ({ LocalizedLabels: [{ Label: text, LanguageCode: 1033 }] });
   const required = value => ({ Value: value });
@@ -102,7 +104,17 @@
         choice('RiskState', 'Risk state', ['Incomplete', 'Review required', 'No signal in completed checks']),
         choice('ProcessingStatus', 'Processing status', ['Pending', 'Completed', 'Failed']),
         choice('PresentationStatus', 'Presentation status', ['Not attempted', 'Applied', 'Failed']),
-        text('ReasonCodes', 'Deterministic reason codes', 4000)])
+        text('ReasonCodes', 'Deterministic reason codes', 4000)]),
+    table('MailboxEnrollment', 'Mailbox enrollment', 'Mailbox enrollments',
+      'Tenant-local mailbox polling enrollment and health. New records remain paused until explicitly enrolled.',
+      [text('MailboxReference', 'Mailbox reference', 320),
+        choice('MailboxType', 'Mailbox type', ['User', 'Shared']),
+        choice('EnrollmentStatus', 'Enrollment status', ['Paused', 'Enrolled']),
+        text('Checkpoint', 'Polling checkpoint', 4000),
+        date('LastAttemptOn', 'Last poll attempt'),
+        date('LastSuccessfulPollOn', 'Last successful poll'),
+        choice('HealthState', 'Health state', ['Not started', 'Healthy', 'Degraded', 'Failed']),
+        text('LastError', 'Last operator-visible error', 4000)])
   ];
 
   function relationship(parent, child, column, displayName) {
@@ -204,7 +216,7 @@
     const currentOrigin = context.origin ?? root.location?.origin;
     validateTarget(target, currentOrigin);
     const fetcher = context.fetch ?? root.fetch.bind(root);
-    const report = { solution: solutionName, created: [], existing: [], published: false };
+    const report = { solution: solutionName, version: solutionVersion, created: [], existing: [], updated: [], published: false };
     const headers = {
       Accept: 'application/json', 'Content-Type': 'application/json; charset=utf-8',
       'OData-Version': '4.0', 'OData-MaxVersion': '4.0'
@@ -252,14 +264,17 @@
     if (solutions.value.length > 1) throw new Error('Ambiguous development solution.');
     const existingSolution = solutions.value[0];
     if (existingSolution && (existingSolution.ismanaged ||
-        existingSolution._publisherid_value !== publisher.publisherid || existingSolution.version !== '0.5.0.0')) {
+        existingSolution._publisherid_value !== publisher.publisherid ||
+        (existingSolution.version !== solutionVersion &&
+          !upgradeableSolutionVersions.has(existingSolution.version)))) {
       throw new Error('Existing solution conflicts; use a versioned migration rather than bootstrap.');
     }
+    const upgradeSolution = existingSolution && existingSolution.version !== solutionVersion;
     if (!existingSolution) {
       await request('solutions', 'POST', {
         uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
-        version: '0.5.0.0',
-        description: 'Development known/not-known sender registry foundation. No automatic classifier or active mailbox automation.',
+        version: solutionVersion,
+        description: 'Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation.',
         'publisherid@odata.bind': `/publishers(${publisher.publisherid})`
       });
       report.created.push('solution');
@@ -333,6 +348,13 @@
 
     const entities = tables.map(item => `<entity>${item.SchemaName.toLowerCase()}</entity>`).join('');
     await request('PublishXml', 'POST', { ParameterXml: `<importexportxml><entities>${entities}</entities></importexportxml>` });
+    if (upgradeSolution) {
+      await request(`solutions(${existingSolution.solutionid})`, 'PATCH', {
+        version: solutionVersion,
+        description: 'Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation.'
+      });
+      report.updated.push(`solution ${existingSolution.version} -> ${solutionVersion}`);
+    }
     report.published = true;
     return report;
   }
@@ -380,7 +402,10 @@
     };
   }
 
-  const api = { solutionName, tables, relationships, environmentVariables, validateTarget, validateTable, bootstrap, exportSolution };
+  const api = {
+    solutionName, solutionVersion, tables, relationships, environmentVariables,
+    validateTarget, validateTable, bootstrap, exportSolution
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MtcProvisioning = api;
 })(globalThis);

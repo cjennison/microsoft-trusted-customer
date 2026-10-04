@@ -78,7 +78,8 @@ present the development foundation as a functioning anti-phishing system.
 - Treat its completion report as schema provisioning only. On failure, inspect
   retained components and the browser job status before retrying. Never launch
   duplicate jobs or erase resources to hide a failed attempt.
-- Confirm five tables, relationships, and four definitions in the maker portal.
+- Confirm six tables, relationships, four definitions, the custom Graph
+  connector/reference, and all three Off flows in the maker portal.
   Keep processing disabled and leave current environment variable values out of
   the development solution that will be exported to public Git.
 

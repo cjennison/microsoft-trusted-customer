@@ -1,0 +1,99 @@
+{
+  "uiDefinition": {
+    "displayName": "Authentication type",
+    "description": "The mailbox processor supports app-only client certificate authentication."
+  },
+  "values": [
+    {
+      "name": "certOauth",
+      "uiDefinition": {
+        "displayName": "Client Certificate Auth",
+        "description": "Provide tenant-local Microsoft Entra application credentials using a PFX certificate and password."
+      },
+      "parameters": {
+        "token": {
+          "type": "oauthSetting",
+          "oAuthSettings": {
+            "identityProvider": "aad",
+            "clientId": "00000000-0000-0000-0000-000000000000",
+            "scopes": [
+              "https://graph.microsoft.com/.default"
+            ],
+            "properties": {
+              "IsFirstParty": "False",
+              "AzureActiveDirectoryResourceId": "https://graph.microsoft.com",
+              "IsOnbehalfofLoginSupported": false
+            },
+            "customParameters": {
+              "grantType": {
+                "value": "client_credentials"
+              },
+              "LoginUri": {
+                "value": "https://login.microsoftonline.com"
+              },
+              "TenantId": {
+                "value": "organizations"
+              },
+              "ResourceUri": {
+                "value": "https://graph.microsoft.com"
+              },
+              "EnableOnbehalfOfLogin": {
+                "value": "false"
+              }
+            }
+          },
+          "uiDefinition": {
+            "displayName": "Client certificate authentication",
+            "description": "Authenticate the tenant-local mailbox processor application using its PFX certificate.",
+            "constraints": {
+              "required": "false",
+              "hidden": "true"
+            }
+          }
+        },
+        "token:clientId": {
+          "type": "string",
+          "uiDefinition": {
+            "displayName": "Client ID",
+            "schema": {
+              "type": "string",
+              "description": "Tenant-local Microsoft Entra application (client) ID"
+            },
+            "constraints": {
+              "required": "true",
+              "hidden": "false"
+            }
+          }
+        },
+        "token:clientCertificateSecret": {
+          "type": "clientCertificate",
+          "uiDefinition": {
+            "displayName": "Client certificate",
+            "description": "Tenant-local PFX certificate and password for the mailbox processor application",
+            "constraints": {
+              "required": "true",
+              "hidden": "false"
+            }
+          }
+        },
+        "token:TenantId": {
+          "type": "string",
+          "uiDefinition": {
+            "displayName": "Tenant ID",
+            "schema": {
+              "type": "string",
+              "description": "Tenant-local Microsoft Entra directory (tenant) ID"
+            },
+            "constraints": {
+              "required": "true",
+              "hidden": "false"
+            }
+          }
+        }
+      },
+      "metadata": {
+        "allowSharing": true
+      }
+    }
+  ]
+}

@@ -3,6 +3,7 @@
   <EntityRelationship Name="business_unit_mtc_approvedcontact" />
   <EntityRelationship Name="business_unit_mtc_approveddomain" />
   <EntityRelationship Name="business_unit_mtc_businessparty" />
+  <EntityRelationship Name="business_unit_mtc_mailboxenrollment" />
   <EntityRelationship Name="business_unit_mtc_messageassessment" />
   <EntityRelationship Name="business_unit_mtc_verificationcase" />
   <EntityRelationship Name="lk_mtc_approvedcontact_createdby" />
@@ -11,6 +12,8 @@
   <EntityRelationship Name="lk_mtc_approveddomain_modifiedby" />
   <EntityRelationship Name="lk_mtc_businessparty_createdby" />
   <EntityRelationship Name="lk_mtc_businessparty_modifiedby" />
+  <EntityRelationship Name="lk_mtc_mailboxenrollment_createdby" />
+  <EntityRelationship Name="lk_mtc_mailboxenrollment_modifiedby" />
   <EntityRelationship Name="lk_mtc_messageassessment_createdby" />
   <EntityRelationship Name="lk_mtc_messageassessment_modifiedby" />
   <EntityRelationship Name="lk_mtc_verificationcase_createdby" />
@@ -28,16 +31,19 @@
   <EntityRelationship Name="owner_mtc_approvedcontact" />
   <EntityRelationship Name="owner_mtc_approveddomain" />
   <EntityRelationship Name="owner_mtc_businessparty" />
+  <EntityRelationship Name="owner_mtc_mailboxenrollment" />
   <EntityRelationship Name="owner_mtc_messageassessment" />
   <EntityRelationship Name="owner_mtc_verificationcase" />
   <EntityRelationship Name="team_mtc_approvedcontact" />
   <EntityRelationship Name="team_mtc_approveddomain" />
   <EntityRelationship Name="team_mtc_businessparty" />
+  <EntityRelationship Name="team_mtc_mailboxenrollment" />
   <EntityRelationship Name="team_mtc_messageassessment" />
   <EntityRelationship Name="team_mtc_verificationcase" />
   <EntityRelationship Name="user_mtc_approvedcontact" />
   <EntityRelationship Name="user_mtc_approveddomain" />
   <EntityRelationship Name="user_mtc_businessparty" />
+  <EntityRelationship Name="user_mtc_mailboxenrollment" />
   <EntityRelationship Name="user_mtc_messageassessment" />
   <EntityRelationship Name="user_mtc_verificationcase" />
 </EntityRelationships>

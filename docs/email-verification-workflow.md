@@ -1,10 +1,11 @@
 # Email verification workflow
 
 **Status:** Product requirements and implementation gates, recorded October 2,
-2026. Version 0.5.0.0 contains the five-table development schema, offline
-contracts, and disabled manual Not known/retained-message Known reassessment
-proofs; the app, automatic mailbox runtime, and production labels are not
-implemented. The retained-message proof also demonstrated that expiry removes
+2026. Version 0.6.0.0 contains the six-table development schema, offline
+contracts, disabled manual Not known/retained-message Known reassessment proofs,
+and a disabled scheduled metadata-only shadow flow. The flow has no enrolled
+mailboxes and no category-write action; the app, accepted automatic mailbox
+runtime, and production labels are not implemented. The retained-message proof also demonstrated that expiry removes
 Known and restores Not known on the same message without deleting the records.
 
 ## The business administrator's workflow

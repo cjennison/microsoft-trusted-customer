@@ -1,0 +1,495 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCGraphMail"
+        },
+        "api": {
+          "name": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+          "logicalName": "mtc_mtc-20microsoft-20graph-20mail"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCMicrosoftDataverse"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Minute",
+            "interval": 5
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "List_enrolled_mailboxes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "mtc_mailboxenrollments",
+              "$select": "mtc_mailboxenrollmentid,mtc_mailboxreference,mtc_mailboxtype,mtc_enrollmentstatus,mtc_checkpoint,mtc_healthstate",
+              "$filter": "mtc_enrollmentstatus eq 100000001 and statecode eq 0",
+              "$top": 100
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "For_each_enrolled_mailbox": {
+          "foreach": "@coalesce(body('List_enrolled_mailboxes')?['value'], createArray())",
+          "actions": {
+            "Process_mailbox": {
+              "actions": {
+                "Mark_poll_attempt": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "mtc_mailboxenrollments",
+                      "recordId": "@items('For_each_enrolled_mailbox')?['mtc_mailboxenrollmentid']",
+                      "item/mtc_lastattempton": "@utcNow()",
+                      "item/mtc_lasterror": ""
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "UpdateOnlyRecord",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  }
+                },
+                "List_inbox_messages": {
+                  "runAfter": {
+                    "Mark_poll_attempt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "mailbox": "@items('For_each_enrolled_mailbox')?['mtc_mailboxreference']",
+                      "$filter": "@concat('receivedDateTime ge ', if(empty(items('For_each_enrolled_mailbox')?['mtc_checkpoint']), formatDateTime(addMinutes(utcNow(), -10), 'yyyy-MM-ddTHH:mm:ssZ'), items('For_each_enrolled_mailbox')?['mtc_checkpoint']))",
+                      "$select": "id,receivedDateTime,internetMessageId,parentFolderId,from,sender,replyTo,categories",
+                      "$top": 100,
+                      "Prefer": "IdType=\"ImmutableId\""
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+                      "operationId": "ListInboxMessages",
+                      "connectionName": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26"
+                    }
+                  }
+                },
+                "Require_complete_message_page": {
+                  "actions": {
+                    "For_each_message": {
+                      "foreach": "@coalesce(body('List_inbox_messages')?['value'], createArray())",
+                      "actions": {
+                        "Get_message_metadata": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "mailbox": "@items('For_each_enrolled_mailbox')?['mtc_mailboxreference']",
+                              "messageId": "@items('For_each_message')?['id']",
+                              "$select": "id,receivedDateTime,internetMessageId,parentFolderId,from,sender,replyTo,categories,internetMessageHeaders",
+                              "Prefer": "IdType=\"ImmutableId\""
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+                              "operationId": "GetMessageMetadata",
+                              "connectionName": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26"
+                            }
+                          }
+                        },
+                        "Filter_trusted_microsoft_authentication_results": {
+                          "runAfter": {
+                            "Get_message_metadata": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@coalesce(body('Get_message_metadata')?['internetMessageHeaders'], createArray())",
+                            "where": "@and(equals(toLower(item()?['name']), 'authentication-results'), startsWith(toLower(trim(string(item()?['value']))), 'mx.microsoft.com'), contains(toLower(item()?['value']), 'spf=pass'), contains(toLower(item()?['value']), 'dkim=pass'), contains(toLower(item()?['value']), 'dmarc=pass'), contains(toLower(item()?['value']), 'compauth=pass'))"
+                          }
+                        },
+                        "List_active_contacts": {
+                          "runAfter": {
+                            "Get_message_metadata": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_approvedcontacts",
+                              "$select": "mtc_approvedcontactid,mtc_emailaddress,mtc_expireson,mtc_verifiedon,mtc_verificationmethod,mtc_evidencereference,_mtc_businessparty_value",
+                              "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
+                              "$top": 500
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        },
+                        "Filter_matching_contacts": {
+                          "runAfter": {
+                            "List_active_contacts": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@coalesce(body('List_active_contacts')?['value'], createArray())",
+                            "where": "@and(equals(toLower(item()?['mtc_emailaddress']), toLower(body('Get_message_metadata')?['from']?['emailAddress']?['address'])), not(empty(item()?['_mtc_businessparty_value'])), not(empty(item()?['mtc_verifiedon'])), not(empty(item()?['mtc_verificationmethod'])), not(empty(item()?['mtc_evidencereference'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+                          }
+                        },
+                        "List_active_domains": {
+                          "runAfter": {
+                            "Get_message_metadata": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_approveddomains",
+                              "$select": "mtc_approveddomainid,mtc_domain,mtc_expireson,mtc_verifiedon,mtc_verificationmethod,mtc_evidencereference,_mtc_businessparty_value",
+                              "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
+                              "$top": 500
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        },
+                        "Filter_matching_domains": {
+                          "runAfter": {
+                            "List_active_domains": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@coalesce(body('List_active_domains')?['value'], createArray())",
+                            "where": "@and(equals(toLower(item()?['mtc_domain']), last(split(toLower(body('Get_message_metadata')?['from']?['emailAddress']?['address']), '@'))), not(empty(item()?['_mtc_businessparty_value'])), not(empty(item()?['mtc_verifiedon'])), not(empty(item()?['mtc_verificationmethod'])), not(empty(item()?['mtc_evidencereference'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+                          }
+                        },
+                        "Select_business_party_id": {
+                          "runAfter": {
+                            "Filter_matching_contacts": [
+                              "Succeeded"
+                            ],
+                            "Filter_matching_domains": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "Compose",
+                          "inputs": "@if(equals(length(body('Filter_matching_contacts')), 1), first(body('Filter_matching_contacts'))?['_mtc_businessparty_value'], if(and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1)), first(body('Filter_matching_domains'))?['_mtc_businessparty_value'], ''))"
+                        },
+                        "List_active_parties": {
+                          "runAfter": {
+                            "Select_business_party_id": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_businessparties",
+                              "$select": "mtc_businesspartyid,mtc_expireson,mtc_verifiedon,mtc_verificationmethod,mtc_evidencereference",
+                              "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
+                              "$top": 500
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        },
+                        "Filter_matching_party": {
+                          "runAfter": {
+                            "List_active_parties": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@coalesce(body('List_active_parties')?['value'], createArray())",
+                            "where": "@and(not(empty(outputs('Select_business_party_id'))), equals(item()?['mtc_businesspartyid'], outputs('Select_business_party_id')), not(empty(item()?['mtc_verifiedon'])), not(empty(item()?['mtc_verificationmethod'])), not(empty(item()?['mtc_evidencereference'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+                          }
+                        },
+                        "List_existing_shadow_assessments": {
+                          "runAfter": {
+                            "Get_message_metadata": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "mtc_messageassessments",
+                              "$select": "mtc_messageassessmentid",
+                              "$filter": "@concat('mtc_stablemessageid eq ''', replace(body('Get_message_metadata')?['id'], '''', ''''''), ''' and mtc_mailboxreference eq ''', replace(items('For_each_enrolled_mailbox')?['mtc_mailboxreference'], '''', ''''''), '''')",
+                              "$top": 2
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          }
+                        },
+                        "Require_at_most_one_existing_assessment": {
+                          "actions": {
+                            "Shadow_assessment_exists": {
+                              "actions": {
+                                "Update_shadow_assessment": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "parameters": {
+                                      "entityName": "mtc_messageassessments",
+                                      "recordId": "@first(body('List_existing_shadow_assessments')?['value'])?['mtc_messageassessmentid']",
+                                      "item/mtc_name": "@if(and(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), or(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)))), concat('Shadow known ', substring(body('Get_message_metadata')?['id'], 0, 24)), concat('Shadow not known ', substring(body('Get_message_metadata')?['id'], 0, 24)))",
+                                      "item/mtc_mailboxreference": "@items('For_each_enrolled_mailbox')?['mtc_mailboxreference']",
+                                      "item/mtc_stablemessageid": "@body('Get_message_metadata')?['id']",
+                                      "item/mtc_receivedon": "@body('Get_message_metadata')?['receivedDateTime']",
+                                      "item/mtc_assessedon": "@utcNow()",
+                                      "item/mtc_registryversion": "known-sender-registry-v1",
+                                      "item/mtc_ruleversion": "message-runtime-shadow-1",
+                                      "item/mtc_relationshipstate": "@if(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), 100000003, if(and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)), 100000002, 100000001))",
+                                      "item/mtc_authenticationstate": "@if(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), 100000001, 100000002)",
+                                      "item/mtc_riskstate": 100000000,
+                                      "item/mtc_processingstatus": 100000001,
+                                      "item/mtc_presentationstatus": 100000000,
+                                      "item/mtc_reasoncodes": "@concat(if(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), 'MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS', 'MTC_AUTH_BOUNDARY_MISSING_OR_AMBIGUOUS'), ';', if(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), 'MTC_EXACT_CONTACT_MATCH', if(and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)), 'MTC_EXACT_DOMAIN_MATCH', 'MTC_REGISTRY_NO_UNAMBIGUOUS_MATCH')), ';MTC_SHADOW_NO_PRESENTATION')"
+                                    },
+                                    "host": {
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                      "operationId": "UpdateOnlyRecord",
+                                      "connectionName": "shared_commondataserviceforapps"
+                                    }
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {
+                                  "Create_shadow_assessment": {
+                                    "type": "OpenApiConnection",
+                                    "inputs": {
+                                      "parameters": {
+                                        "entityName": "mtc_messageassessments",
+                                        "item/mtc_name": "@if(and(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), or(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)))), concat('Shadow known ', substring(body('Get_message_metadata')?['id'], 0, 24)), concat('Shadow not known ', substring(body('Get_message_metadata')?['id'], 0, 24)))",
+                                        "item/mtc_mailboxreference": "@items('For_each_enrolled_mailbox')?['mtc_mailboxreference']",
+                                        "item/mtc_stablemessageid": "@body('Get_message_metadata')?['id']",
+                                        "item/mtc_receivedon": "@body('Get_message_metadata')?['receivedDateTime']",
+                                        "item/mtc_assessedon": "@utcNow()",
+                                        "item/mtc_registryversion": "known-sender-registry-v1",
+                                        "item/mtc_ruleversion": "message-runtime-shadow-1",
+                                        "item/mtc_relationshipstate": "@if(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), 100000003, if(and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)), 100000002, 100000001))",
+                                        "item/mtc_authenticationstate": "@if(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), 100000001, 100000002)",
+                                        "item/mtc_riskstate": 100000000,
+                                        "item/mtc_processingstatus": 100000001,
+                                        "item/mtc_presentationstatus": 100000000,
+                                        "item/mtc_reasoncodes": "@concat(if(equals(length(body('Filter_trusted_microsoft_authentication_results')), 1), 'MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS', 'MTC_AUTH_BOUNDARY_MISSING_OR_AMBIGUOUS'), ';', if(and(equals(length(body('Filter_matching_contacts')), 1), equals(length(body('Filter_matching_party')), 1)), 'MTC_EXACT_CONTACT_MATCH', if(and(equals(length(body('Filter_matching_contacts')), 0), equals(length(body('Filter_matching_domains')), 1), equals(length(body('Filter_matching_party')), 1)), 'MTC_EXACT_DOMAIN_MATCH', 'MTC_REGISTRY_NO_UNAMBIGUOUS_MATCH')), ';MTC_SHADOW_NO_PRESENTATION')"
+                                      },
+                                      "host": {
+                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                        "operationId": "CreateRecord",
+                                        "connectionName": "shared_commondataserviceforapps"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "expression": {
+                                "and": [
+                                  {
+                                    "equals": [
+                                      "@length(body('List_existing_shadow_assessments')?['value'])",
+                                      1
+                                    ]
+                                  }
+                                ]
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {
+                            "Filter_trusted_microsoft_authentication_results": [
+                              "Succeeded"
+                            ],
+                            "Filter_matching_party": [
+                              "Succeeded"
+                            ],
+                            "List_existing_shadow_assessments": [
+                              "Succeeded"
+                            ]
+                          },
+                          "else": {
+                            "actions": {
+                              "Fail_duplicate_assessments": {
+                                "type": "Terminate",
+                                "inputs": {
+                                  "runStatus": "Failed",
+                                  "runError": {
+                                    "code": "MTC_DUPLICATE_ASSESSMENT",
+                                    "message": "More than one assessment exists for the mailbox and immutable message ID."
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "expression": {
+                            "and": [
+                              {
+                                "lessOrEquals": [
+                                  "@length(body('List_existing_shadow_assessments')?['value'])",
+                                  1
+                                ]
+                              }
+                            ]
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "type": "Foreach",
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 1
+                        }
+                      }
+                    },
+                    "Mark_mailbox_healthy": {
+                      "runAfter": {
+                        "For_each_message": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "mtc_mailboxenrollments",
+                          "recordId": "@items('For_each_enrolled_mailbox')?['mtc_mailboxenrollmentid']",
+                          "item/mtc_checkpoint": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
+                          "item/mtc_lastsuccessfulpollon": "@utcNow()",
+                          "item/mtc_healthstate": 100000001,
+                          "item/mtc_lasterror": ""
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord",
+                          "connectionName": "shared_commondataserviceforapps"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "List_inbox_messages": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Mark_mailbox_page_limit": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "mtc_mailboxenrollments",
+                            "recordId": "@items('For_each_enrolled_mailbox')?['mtc_mailboxenrollmentid']",
+                            "item/mtc_healthstate": 100000003,
+                            "item/mtc_lasterror": "Graph returned another message page; checkpoint was not advanced. Increase paging support before enrolling this mailbox."
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "UpdateOnlyRecord",
+                            "connectionName": "shared_commondataserviceforapps"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "empty": [
+                          "@body('List_inbox_messages')?['@odata.nextLink']"
+                        ]
+                      }
+                    ]
+                  },
+                  "type": "If"
+                }
+              },
+              "type": "Scope"
+            },
+            "Mark_mailbox_failed": {
+              "runAfter": {
+                "Process_mailbox": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mtc_mailboxenrollments",
+                  "recordId": "@items('For_each_enrolled_mailbox')?['mtc_mailboxenrollmentid']",
+                  "item/mtc_healthstate": 100000003,
+                  "item/mtc_lasterror": "Shadow polling failed. Inspect the Power Automate run history; the checkpoint was not advanced."
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "List_enrolled_mailboxes": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

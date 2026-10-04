@@ -4,43 +4,28 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Reusable development proof, version 0.5.0.0. Five Dataverse
-tables, relationships, and disabled-by-default configuration have been
-provisioned in authorized development environments. An offline, synthetic-only
-qualification proof policy and an offline verification-transition contract are
-available. The transition contract fail-closes unauthorized approval, stamps
-the trusted caller, and models evidence, expiry, rejection, and revocation; it
-is not deployed Dataverse enforcement. No operational onboarding/review
-application, live email classifier, or production deployment exists yet. The
-reviewed solution has also been imported into a separately authorized customer
-development Sandbox; this is development proof, not operational email tagging.
-A disabled, manual-only solution flow now dynamically finds the synthetic proof
-folder and exactly one categorized proof message, requests a Graph immutable ID,
-uses ETag concurrency, preserves the unrelated `Personal` category, applies only
-the non-positive MTC category, verifies the write, and persists metadata-only
-`MessageAssessment` state through portable Outlook and Dataverse connection
-references. Two repeated runs succeeded while reusing one assessment row. The
-solution also includes a second disabled manual proof for one synthetic external
-Inbox message. It required exactly one Microsoft receiving
-`Authentication-Results` header with SPF, DKIM, DMARC, and composite
-authentication pass, confirmed no active approved exact contact, preserved
-existing categories, applied `MTC Proof - not known`, displayed it in Outlook
-web, and persisted one reusable metadata-only Not known assessment. After a
-24-hour exact-address approval with verified party/contact evidence, the same
-retained message was reassessed to `MTC Proof - known sender`; two runs reused
-the same assessment row. An accelerated expiry test then returned that same
-message and row to `MTC Proof - not known` without deleting the approval
-records. A certificate-authenticated app-only Graph proof, authorized only by
-Exchange Application RBAC, then read and categorized exact immutable messages
-in both shared mailboxes, preserved unrelated categories, and reused two
-metadata-only assessment rows. A temporarily excluded mailbox returned HTTP
-403. After Exchange authorization propagation, the permanent mailbox-type scope
-returned HTTP 200 for all 12 current user/shared mailboxes and will include
-future mailboxes of those types. Both flows remain Off. The proof is not a general authentication parser
-and does not validate automatic triggering or production reconciliation.
+**Status:** Reusable development proof, version 0.6.0.0. Six Dataverse
+tables now include paused-by-default mailbox enrollment/checkpoint health, and
+the solution contains two disabled manual proofs plus one disabled five-minute
+scheduled shadow flow. A portable custom Microsoft Graph mail connector is
+packaged with certificate-only, tenant-supplied authentication; the development
+tenant has separately proven a certificate connection authorized only by
+Exchange Application RBAC. The shadow flow reads only explicitly enrolled
+mailboxes, requests immutable message metadata and internet headers, evaluates
+the bounded trusted Microsoft authentication shape and exact contact/domain
+registry matches, and creates or updates metadata-only assessments. It has no
+Outlook category-write action, no enrolled mailbox records, and has not been
+run end to end. Existing manual evidence still proves retained-message Not known
+to Known reassessment, expiry back to Not known, shared-mailbox category writes,
+excluded-mailbox HTTP 403, and HTTP 200 across all 12 current user/shared
+mailboxes after Exchange authorization propagation. All three flows remain Off.
+No operational onboarding/review app, production activation, generalized
+authentication parser, paging implementation beyond the fail-closed first-page
+gate, alert delivery, or production reconciliation is complete.
 
 **Documented:** September 30, 2026. Development foundation added October 1,
-2026; manual message-runtime proof added October 3, 2026.
+2026; manual message-runtime proof added October 3, 2026; disabled shadow
+runtime foundation added October 4, 2026.
 
 ## The opportunity
 
@@ -82,11 +67,12 @@ can be compromised, and a genuine email can contain a malicious link.
 ## Reusable implementation
 
 `src\provisioning\dataverse.js` defines and verifies the shared development
-schema; `solutions\MicrosoftTrustedCustomer` contains the reviewed dual-format
-solution export. PowerShell scripts bootstrap/export through an isolated,
-human-authenticated `agent-browser`, and build managed/unmanaged packages using
-the repository-pinned Power Platform CLI. The solution flows are disabled
-manual synthetic proofs, not arrival triggers or an operational classifier.
+schema; `src\runtime\shadow-flow.js` defines the disabled scheduled shadow
+processor; `solutions\MicrosoftTrustedCustomer` contains the reviewed
+dual-format solution export. PowerShell scripts bootstrap/export through an
+isolated, human-authenticated `agent-browser`, and build managed/unmanaged
+packages using the repository-pinned Power Platform CLI. The scheduled flow is
+Off and has no enrolled mailboxes; it is not an operational classifier.
 
 Use the same managed release across customers with private per-tenant settings,
 not client-specific code branches. Bicep is reserved for Azure resources if a

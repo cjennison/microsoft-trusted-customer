@@ -19,28 +19,36 @@ if ($solution.Version -notmatch '^\d+\.\d+\.\d+\.\d+$' -or $solution.Managed -ne
 }
 $expectedTables = @(
     'mtc_approvedcontact', 'mtc_approveddomain', 'mtc_businessparty',
-    'mtc_messageassessment', 'mtc_verificationcase'
+    'mtc_mailboxenrollment', 'mtc_messageassessment', 'mtc_verificationcase'
 )
 $actualTables = @($solution.RootComponents.RootComponent |
     Where-Object { $_.type -eq '1' -and $_.schemaName -ne 'systemuser' } |
     ForEach-Object { $_.schemaName })
 if (Compare-Object $expectedTables $actualTables) {
-    throw 'The solution must contain exactly the five reviewed known-sender table roots.'
+    throw 'The solution must contain exactly the six reviewed known-sender runtime table roots.'
 }
 $workflowRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '29' })
 $expectedWorkflowIds = @(
     '{4de55d19-e43c-44ba-be99-856d9a672e88}',
+    '{81b229c4-d759-49a7-93da-816056e8841c}',
     '{be76ff86-2bbf-f111-aaaf-000d3a31bda5}'
 )
 $workflowDifference = Compare-Object $expectedWorkflowIds @($workflowRoots.id)
 if ($workflowDifference -or
     @($workflowRoots | Where-Object { $_.behavior -ne '0' }).Count) {
-    throw 'Expected exactly the two reviewed manual proof workflow roots.'
+    throw 'Expected the two reviewed manual proofs and one disabled scheduled shadow workflow root.'
+}
+$connectorRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '372' })
+if ($connectorRoots.Count -ne 1 -or
+    $connectorRoots[0].id -ne '{8da23315-b15c-46d9-9f6f-dc85080b0276}' -or
+    $connectorRoots[0].schemaName -ne 'mtc_mtc-20microsoft-20graph-20mail' -or
+    $connectorRoots[0].behavior -ne '0') {
+    throw 'Expected exactly the reviewed Graph mail custom connector root.'
 }
 $unexpectedRoots = @($solution.RootComponents.RootComponent | Where-Object {
     ($_.type -eq '1' -and $_.schemaName -eq 'systemuser' -and $_.behavior -ne '1') -or
     ($_.type -eq '1' -and $_.schemaName -ne 'systemuser' -and $_.schemaName -notin $expectedTables) -or
-    ($_.type -notin @('1', '29'))
+    ($_.type -notin @('1', '29', '372'))
 })
 if ($unexpectedRoots.Count) {
     throw 'Unreviewed solution root components were found.'
@@ -77,11 +85,17 @@ foreach ($file in Get-ChildItem -LiteralPath $source -Recurse -File) {
         Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json | Out-Null
         continue
     }
+    if ($file.Extension -ieq '.png' -and
+        $file.Name -eq 'mtc_mtc-20microsoft-20graph-20mail_iconblob.Png' -and
+        $file.Directory.Name -eq 'Connectors') {
+        continue
+    }
     throw "Unreviewed file type in solution source: $($file.Name)"
 }
 $customizationsPath = Join-Path $source 'Other\Customizations.xml'
 $customizations = [xml](Get-Content -LiteralPath $customizationsPath -Raw)
 $expectedConnections = @{
+    mtc_MTCGraphMail = '/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26'
     mtc_MTCMicrosoftDataverse = '/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps'
     mtc_MTCOffice365Outlook = '/providers/Microsoft.PowerApps/apis/shared_office365'
 }
@@ -96,10 +110,52 @@ foreach ($reference in $connectionReferences) {
         throw "Unsafe or unexpected connection reference: $($reference.connectionreferencelogicalname)"
     }
 }
+$graphReference = $connectionReferences | Where-Object connectionreferencelogicalname -eq 'mtc_MTCGraphMail'
+if ($graphReference.customconnectorid.connectorid -ne '8da23315-b15c-46d9-9f6f-dc85080b0276') {
+    throw 'The Graph mail connection reference is not bound to the reviewed custom connector.'
+}
+$connectorDirectory = Join-Path $source 'Connectors'
+$connectorPrefix = 'mtc_mtc-20microsoft-20graph-20mail'
+$connectorFiles = @(Get-ChildItem -LiteralPath $connectorDirectory -File)
+if ($connectorFiles.Count -ne 6 -or
+    @($connectorFiles.Name | Where-Object { $_ -notlike "$connectorPrefix*" }).Count) {
+    throw 'Unexpected custom connector source files.'
+}
+$connectorParameters = Get-Content -LiteralPath (Join-Path $connectorDirectory "${connectorPrefix}_connectionparameters.json") -Raw | ConvertFrom-Json
+$connectorSets = Get-Content -LiteralPath (Join-Path $connectorDirectory "${connectorPrefix}_connectionparametersets.json") -Raw | ConvertFrom-Json
+$connectorOpenApi = Get-Content -LiteralPath (Join-Path $connectorDirectory "${connectorPrefix}_openapidefinition.json") -Raw | ConvertFrom-Json
+$authSets = @($connectorSets.values)
+if ($authSets.Count -ne 1 -or $authSets[0].name -ne 'certOauth' -or
+    $authSets[0].parameters.token.oAuthSettings.clientId -ne '00000000-0000-0000-0000-000000000000' -or
+    $authSets[0].parameters.token.oAuthSettings.customParameters.TenantId.value -ne 'organizations' -or
+    -not $authSets[0].parameters.'token:clientId' -or
+    -not $authSets[0].parameters.'token:clientCertificateSecret' -or
+    -not $authSets[0].parameters.'token:TenantId') {
+    throw 'The Graph connector must expose only tenant-supplied client certificate authentication.'
+}
+if ($connectorParameters.token.oAuthSettings.clientId -ne '00000000-0000-0000-0000-000000000000' -or
+    $connectorParameters.token.oAuthSettings.customParameters.TenantId.value -ne 'organizations' -or
+    -not $connectorParameters.'token:clientId' -or
+    -not $connectorParameters.'token:clientCertificateSecret' -or
+    -not $connectorParameters.'token:TenantId') {
+    throw 'The default Graph connector authentication contains tenant-local values.'
+}
+$securityNames = @($connectorOpenApi.security | ForEach-Object { $_.PSObject.Properties.Name })
+$definitionNames = @($connectorOpenApi.securityDefinitions.PSObject.Properties.Name)
+if ((Compare-Object @('certOauth') $securityNames) -or
+    (Compare-Object @('certOauth') $definitionNames)) {
+    throw 'The Graph connector must not expose delegated or client-secret authentication.'
+}
+$connectorText = ($connectorFiles | Where-Object Extension -in @('.json', '.xml') |
+    ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+if ($connectorText -match 'GenericFederatedIdentityCredential|clientSecret|authorization_code|@' -or
+    $connectorText -match '(?i)sesturbo|\.crm\d*\.dynamics\.com') {
+    throw 'Tenant-local or unsupported authentication data was found in the Graph connector source.'
+}
 $workflowDirectory = Join-Path $source 'Workflows'
 $workflowFiles = @(Get-ChildItem -LiteralPath $workflowDirectory -Filter '*.json' -File)
-if ($workflowFiles.Count -ne 2) {
-    throw 'Expected exactly two reviewed cloud-flow definitions.'
+if ($workflowFiles.Count -ne 3) {
+    throw 'Expected exactly three reviewed cloud-flow definitions.'
 }
 foreach ($workflowFile in $workflowFiles) {
     $workflowText = Get-Content -LiteralPath $workflowFile.FullName -Raw
@@ -110,7 +166,7 @@ foreach ($workflowFile in $workflowFiles) {
     }
     $workflowMetadata = [xml](Get-Content -LiteralPath ($workflowFile.FullName + '.data.xml') -Raw)
     if ($workflowMetadata.Workflow.StateCode -ne '0' -or $workflowMetadata.Workflow.StatusCode -ne '1') {
-        throw "The portable proof flow must remain Off: $($workflowFile.Name)"
+        throw "Every portable flow must remain Off: $($workflowFile.Name)"
     }
 }
 $workflowFile = $workflowFiles | Where-Object { $_.Name -like 'MTCProcessor-manualimmutablecategoryproof-*' }
@@ -183,6 +239,44 @@ if ($authWorkflowText -notmatch 'Prefer: IdType=\\"ImmutableId\\"' -or
     $authWorkflowText -notmatch '"item/mtc_mailboxreference"\s*:\s*"me"') {
     throw 'The authentication proof lost a trusted-boundary, registry, concurrency, or persistence safeguard.'
 }
+$shadowWorkflowFile = $workflowFiles | Where-Object { $_.Name -like 'MTCProcessor-scheduledshadowassessment-*' }
+$shadowWorkflowText = Get-Content -LiteralPath $shadowWorkflowFile.FullName -Raw
+$shadowWorkflow = $shadowWorkflowText | ConvertFrom-Json
+$shadowConnections = $shadowWorkflow.properties.connectionReferences
+$graphApiName = 'shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26'
+if ($shadowConnections.$graphApiName.runtimeSource -ne 'embedded' -or
+    $shadowConnections.$graphApiName.connection.connectionReferenceLogicalName -ne 'mtc_MTCGraphMail' -or
+    $shadowConnections.shared_commondataserviceforapps.runtimeSource -ne 'embedded' -or
+    $shadowConnections.shared_commondataserviceforapps.connection.connectionReferenceLogicalName -ne 'mtc_MTCMicrosoftDataverse') {
+    throw 'Unexpected scheduled shadow connection-reference binding.'
+}
+$shadowTriggers = @($shadowWorkflow.properties.definition.triggers.PSObject.Properties)
+if ($shadowTriggers.Count -ne 1 -or $shadowTriggers[0].Name -ne 'Recurrence' -or
+    $shadowTriggers[0].Value.type -ne 'Recurrence' -or
+    $shadowTriggers[0].Value.recurrence.frequency -ne 'Minute' -or
+    $shadowTriggers[0].Value.recurrence.interval -ne 5) {
+    throw 'The shadow processor must use only the reviewed five-minute schedule.'
+}
+$shadowActions = $shadowWorkflow.properties.definition.actions
+if (-not $shadowActions.List_enrolled_mailboxes -or -not $shadowActions.For_each_enrolled_mailbox -or
+    -not $shadowWorkflowText.Contains('ListInboxMessages') -or
+    -not $shadowWorkflowText.Contains('GetMessageMetadata') -or
+    -not $shadowWorkflowText.Contains('MTC_SHADOW_NO_PRESENTATION') -or
+    -not $shadowWorkflowText.Contains('MTC_DUPLICATE_ASSESSMENT') -or
+    -not $shadowWorkflowText.Contains('MTC_AUTH_BOUNDARY_MISSING_OR_AMBIGUOUS') -or
+    -not $shadowWorkflowText.Contains('mtc_enrollmentstatus eq 100000001') -or
+    -not $shadowWorkflowText.Contains('@odata.nextLink')) {
+    throw 'The scheduled shadow flow lost a mailbox-scope, paging, authentication, or persistence safeguard.'
+}
+$shadowPresentationValues = [regex]::Matches(
+    $shadowWorkflowText,
+    '"item/mtc_presentationstatus"\s*:\s*([^,\r\n]+)'
+)
+if ($shadowWorkflowText -match 'UpdateMessageCategories|MTC Proof - known sender|MTC Proof - not known' -or
+    $shadowPresentationValues.Count -ne 2 -or
+    @($shadowPresentationValues | Where-Object { $_.Groups[1].Value.Trim() -ne '100000000' }).Count) {
+    throw 'The shadow processor must not write Outlook categories or claim presentation success.'
+}
 $userPath = Join-Path $source 'Entities\systemuser\Entity.xml'
 if (Test-Path -LiteralPath $userPath) {
     $user = [xml](Get-Content -LiteralPath $userPath -Raw)
@@ -190,4 +284,4 @@ if (Test-Path -LiteralPath $userPath) {
         throw 'The built-in User dependency must be a reference-only shell.'
     }
 }
-Write-Output "Reviewed solution source: $($solution.UniqueName) $($solution.Version); manual proofs Off and tenant-local values absent."
+Write-Output "Reviewed solution source: $($solution.UniqueName) $($solution.Version); all flows Off and tenant-local values absent."

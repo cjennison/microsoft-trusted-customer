@@ -12,6 +12,18 @@
   <CustomControls />
   <EntityDataProviders />
   <connectionreferences>
+    <connectionreference connectionreferencelogicalname="mtc_MTCGraphMail">
+      <connectionreferencedisplayname>MTC Microsoft Graph Mail</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26</connectorid>
+      <customconnectorid>
+        <connectorid>8da23315-b15c-46d9-9f6f-dc85080b0276</connectorid>
+      </customconnectorid>
+      <description>Portable custom Graph mail connector reference for app-only mailbox processing.</description>
+      <iscustomizable>1</iscustomizable>
+      <promptingbehavior>0</promptingbehavior>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
     <connectionreference connectionreferencelogicalname="mtc_MTCMicrosoftDataverse">
       <connectionreferencedisplayname>MTC Microsoft Dataverse</connectionreferencedisplayname>
       <connectorid>/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps</connectorid>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Connector xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <connectorid>8da23315-b15c-46d9-9f6f-dc85080b0276</connectorid>
+  <description>Scoped Microsoft Graph mail metadata and category operations for Microsoft Trusted Customer.</description>
+  <displayname>MTC Microsoft Graph Mail</displayname>
+  <iconbrandcolor>#007ee5</iconbrandcolor>
+  <name>mtc_mtc-20microsoft-20graph-20mail</name>
+  <connectortype>1</connectortype>
+  <openapidefinition>/Connector/mtc_mtc-20microsoft-20graph-20mail_openapidefinition.json</openapidefinition>
+  <connectionparameters>/Connector/mtc_mtc-20microsoft-20graph-20mail_connectionparameters.json</connectionparameters>
+  <connectionparametersets>/Connector/mtc_mtc-20microsoft-20graph-20mail_connectionparametersets.json</connectionparametersets>
+  <policytemplateinstances>/Connector/mtc_mtc-20microsoft-20graph-20mail_policytemplateinstances.json</policytemplateinstances>
+  <iconblob>/Connector/mtc_mtc-20microsoft-20graph-20mail_iconblob.Png</iconblob>
+</Connector>

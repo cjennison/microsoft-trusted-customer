@@ -6,9 +6,9 @@
       <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Development binary Known sender / Not known foundation with disabled manual reassessment proofs. Known requires a fully verified exact contact and party plus trusted receiving authentication." languagecode="1033" />
+      <Description description="Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation." languagecode="1033" />
     </Descriptions>
-    <Version>0.5.0.0</Version>
+    <Version>0.6.0.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>
@@ -83,11 +83,14 @@
       <RootComponent type="1" schemaName="mtc_approvedcontact" behavior="0" />
       <RootComponent type="1" schemaName="mtc_approveddomain" behavior="0" />
       <RootComponent type="1" schemaName="mtc_businessparty" behavior="0" />
+      <RootComponent type="1" schemaName="mtc_mailboxenrollment" behavior="0" />
       <RootComponent type="1" schemaName="mtc_messageassessment" behavior="0" />
       <RootComponent type="1" schemaName="mtc_verificationcase" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="1" />
       <RootComponent type="29" id="{4de55d19-e43c-44ba-be99-856d9a672e88}" behavior="0" />
+      <RootComponent type="29" id="{81b229c4-d759-49a7-93da-816056e8841c}" behavior="0" />
       <RootComponent type="29" id="{be76ff86-2bbf-f111-aaaf-000d3a31bda5}" behavior="0" />
+      <RootComponent type="372" id="{8da23315-b15c-46d9-9f6f-dc85080b0276}" schemaName="mtc_mtc-20microsoft-20graph-20mail" behavior="0" />
     </RootComponents>
     <MissingDependencies />
   </SolutionManifest>

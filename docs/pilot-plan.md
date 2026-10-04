@@ -1,7 +1,8 @@
 # Client pilot: known sender / not known
 
-**Status:** Pilot approval remains blocked. Version 0.5.0.0 has five Dataverse
-tables and two disabled manual proof flows. A synthetic external Inbox message
+**Status:** Pilot approval remains blocked. Version 0.6.0.0 has six Dataverse
+tables, two disabled manual proof flows, a certificate-authenticated Graph
+connector, and one disabled scheduled shadow flow. A synthetic external Inbox message
 was shown in Outlook web as `MTC Proof - not known`; repeat processing reused the
 same assessment. After a 24-hour exact-address approval with a verified party,
 contact, evidence, reviewer binding, and verification case, the same message
@@ -12,7 +13,9 @@ in Outlook web without deleting the expired records. App-only Graph access also
 proved exact immutable selection, ETag category writes, preservation, readback,
 and idempotent assessments on both shared mailboxes; a temporarily excluded
 mailbox returned HTTP 403. After propagation, the permanent Exchange mailbox
-type scope returned HTTP 200 for all 12 current user/shared mailboxes.
+type scope returned HTTP 200 for all 12 current user/shared mailboxes. The
+scheduled flow has no enrolled mailbox records, performs no category writes,
+and has not completed live shadow acceptance.
 
 Read the [solution design](solution-design.md) before implementation.
 
@@ -62,6 +65,8 @@ operating ownership, and explicit exclusions.
   certificate authentication, no unscoped Entra mail grant, HTTP 200 for
   included mailboxes, and HTTP 403 for an excluded mailbox before broad scope.
 - [ ] Add retries, reconciliation, alerts, and service-health visibility.
+- [x] Add paused-by-default mailbox enrollment/checkpoint/health records and a
+  disabled scheduled metadata-only shadow flow with no category writes.
 - [ ] Keep flows Off until each applicable manual scenario passes.
 
 ## 4. Acceptance scenarios
