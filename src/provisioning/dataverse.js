@@ -252,13 +252,13 @@
     if (solutions.value.length > 1) throw new Error('Ambiguous development solution.');
     const existingSolution = solutions.value[0];
     if (existingSolution && (existingSolution.ismanaged ||
-        existingSolution._publisherid_value !== publisher.publisherid || existingSolution.version !== '0.4.0.0')) {
+        existingSolution._publisherid_value !== publisher.publisherid || existingSolution.version !== '0.5.0.0')) {
       throw new Error('Existing solution conflicts; use a versioned migration rather than bootstrap.');
     }
     if (!existingSolution) {
       await request('solutions', 'POST', {
         uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
-        version: '0.4.0.0',
+        version: '0.5.0.0',
         description: 'Development known/not-known sender registry foundation. No automatic classifier or active mailbox automation.',
         'publisherid@odata.bind': `/publishers(${publisher.publisherid})`
       });

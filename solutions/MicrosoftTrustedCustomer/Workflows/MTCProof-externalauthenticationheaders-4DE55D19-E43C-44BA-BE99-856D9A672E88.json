@@ -132,7 +132,7 @@
               "inputs": {
                 "parameters": {
                   "entityName": "mtc_approvedcontacts",
-                  "$select": "mtc_approvedcontactid,mtc_emailaddress,mtc_expireson",
+                  "$select": "mtc_approvedcontactid,mtc_emailaddress,mtc_expireson,mtc_verifiedon,mtc_verificationmethod,mtc_evidencereference,_mtc_businessparty_value",
                   "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
                   "$top": 100
                 },
@@ -152,7 +152,40 @@
               "type": "Query",
               "inputs": {
                 "from": "@coalesce(body('List_active_approved_contacts')?['value'], createArray())",
-                "where": "@and(equals(toLower(item()?['mtc_emailaddress']), toLower(body('Get_message_authentication_headers')?['from']?['emailAddress']?['address'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+                "where": "@and(equals(toLower(item()?['mtc_emailaddress']), toLower(body('Get_message_authentication_headers')?['from']?['emailAddress']?['address'])), not(empty(item()?['_mtc_businessparty_value'])), not(empty(item()?['mtc_verifiedon'])), not(empty(item()?['mtc_verificationmethod'])), not(empty(item()?['mtc_evidencereference'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
+              }
+            },
+            "List_active_approved_parties": {
+              "runAfter": {
+                "Filter_matching_approved_contacts": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mtc_businessparties",
+                  "$select": "mtc_businesspartyid,mtc_expireson,mtc_verifiedon,mtc_verificationmethod,mtc_evidencereference",
+                  "$filter": "mtc_verificationstatus eq 100000001 and statecode eq 0",
+                  "$top": 100
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Filter_matching_approved_party": {
+              "runAfter": {
+                "List_active_approved_parties": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@coalesce(body('List_active_approved_parties')?['value'], createArray())",
+                "where": "@and(equals(item()?['mtc_businesspartyid'], first(body('Filter_matching_approved_contacts'))?['_mtc_businessparty_value']), not(empty(item()?['mtc_verifiedon'])), not(empty(item()?['mtc_verificationmethod'])), not(empty(item()?['mtc_evidencereference'])), not(empty(item()?['mtc_expireson'])), greater(ticks(item()?['mtc_expireson']), ticks(utcNow())))"
               }
             },
             "Require_unrecognized_trusted_sender": {
@@ -164,6 +197,9 @@
                   "Succeeded"
                 ],
                 "Filter_matching_approved_contacts": [
+                  "Succeeded"
+                ],
+                "Filter_matching_approved_party": [
                   "Succeeded"
                 ]
               },
@@ -177,9 +213,15 @@
                     ]
                   },
                   {
-                    "equals": [
+                    "lessOrEquals": [
                       "@length(body('Filter_matching_approved_contacts'))",
-                      0
+                      1
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@length(body('Filter_matching_approved_party'))",
+                      "@length(body('Filter_matching_approved_contacts'))"
                     ]
                   }
                 ]
@@ -238,19 +280,19 @@
                             "parameters": {
                               "entityName": "mtc_messageassessments",
                               "recordId": "@first(body('List_existing_unrecognized_assessments')?['value'])?['mtc_messageassessmentid']",
-                              "item/mtc_name": "@concat('External unrecognized ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24))",
+                              "item/mtc_name": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), concat('External known ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24)), concat('External not known ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24)))",
                               "item/mtc_mailboxreference": "me",
                               "item/mtc_stablemessageid": "@first(body('List_external_auth_candidates')?['value'])?['id']",
                               "item/mtc_receivedon": "@first(body('List_external_auth_candidates')?['value'])?['receivedDateTime']",
                               "item/mtc_assessedon": "@utcNow()",
-                              "item/mtc_registryversion": "approved-contact-registry-v1",
-                              "item/mtc_ruleversion": "message-runtime-2",
-                              "item/mtc_relationshipstate": 100000001,
+                              "item/mtc_registryversion": "known-sender-registry-v1",
+                              "item/mtc_ruleversion": "message-runtime-3",
+                              "item/mtc_relationshipstate": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 100000003, 100000001)",
                               "item/mtc_authenticationstate": 100000001,
                               "item/mtc_riskstate": 100000000,
                               "item/mtc_processingstatus": 100000000,
                               "item/mtc_presentationstatus": 100000000,
-                              "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED"
+                              "item/mtc_reasoncodes": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_EXACT_CONTACT_MATCH', 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH')"
                             },
                             "host": {
                               "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
@@ -267,19 +309,19 @@
                             "inputs": {
                               "parameters": {
                                 "entityName": "mtc_messageassessments",
-                                "item/mtc_name": "@concat('External unrecognized ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24))",
+                                "item/mtc_name": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), concat('External known ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24)), concat('External not known ', substring(first(body('List_external_auth_candidates')?['value'])?['id'], 0, 24)))",
                                 "item/mtc_mailboxreference": "me",
                                 "item/mtc_stablemessageid": "@first(body('List_external_auth_candidates')?['value'])?['id']",
                                 "item/mtc_receivedon": "@first(body('List_external_auth_candidates')?['value'])?['receivedDateTime']",
                                 "item/mtc_assessedon": "@utcNow()",
-                                "item/mtc_registryversion": "approved-contact-registry-v1",
-                                "item/mtc_ruleversion": "message-runtime-2",
-                                "item/mtc_relationshipstate": 100000001,
+                                "item/mtc_registryversion": "known-sender-registry-v1",
+                                "item/mtc_ruleversion": "message-runtime-3",
+                                "item/mtc_relationshipstate": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 100000003, 100000001)",
                                 "item/mtc_authenticationstate": 100000001,
                                 "item/mtc_riskstate": 100000000,
                                 "item/mtc_processingstatus": 100000000,
                                 "item/mtc_presentationstatus": 100000000,
-                                "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED"
+                                "item/mtc_reasoncodes": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_EXACT_CONTACT_MATCH', 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH')"
                               },
                               "host": {
                                 "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
@@ -317,7 +359,7 @@
                           "CustomHeader1": "@concat('If-Match: ', first(body('List_external_auth_candidates')?['value'])?['@odata.etag'])",
                           "CustomHeader2": "Prefer: IdType=\"ImmutableId\"",
                           "Body": {
-                            "categories": "@union(body('Filter_existing_non_mtc_categories'), createArray('MTC Proof - not known'))"
+                            "categories": "@union(body('Filter_existing_non_mtc_categories'), createArray(if(equals(length(body('Filter_matching_approved_contacts')), 1), 'MTC Proof - known sender', 'MTC Proof - not known')))"
                           },
                           "ContentType": "application/json"
                         },
@@ -361,7 +403,7 @@
                           {
                             "contains": [
                               "@coalesce(body('Verify_unrecognized_category')?['categories'], createArray())",
-                              "MTC Proof - not known"
+                              "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 'MTC Proof - known sender', 'MTC Proof - not known')"
                             ]
                           }
                         ]
@@ -376,7 +418,7 @@
                               "item/mtc_assessedon": "@utcNow()",
                               "item/mtc_processingstatus": 100000001,
                               "item/mtc_presentationstatus": 100000001,
-                              "item/mtc_reasoncodes": "MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_CONTENT_UNINSPECTED;MTC_UNRECOGNIZED_CATEGORY_APPLIED"
+                              "item/mtc_reasoncodes": "@if(equals(length(body('Filter_matching_approved_contacts')), 1), 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_EXACT_CONTACT_MATCH;MTC_KNOWN_CATEGORY_APPLIED', 'MTC_EXTERNAL_SYNTHETIC;MTC_TRUSTED_MICROSOFT_AUTH_RESULTS;MTC_SPF_PASS;MTC_DKIM_PASS;MTC_DMARC_PASS;MTC_COMPAUTH_PASS;MTC_REGISTRY_NO_MATCH;MTC_NOT_KNOWN_CATEGORY_APPLIED')"
                             },
                             "host": {
                               "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
@@ -393,8 +435,8 @@
                             "inputs": {
                               "runStatus": "Failed",
                               "runError": {
-                                "code": "MTC_UNRECOGNIZED_CATEGORY_READBACK",
-                                "message": "The unrecognized-sender category was not present during verification."
+                                "code": "MTC_BINARY_CATEGORY_READBACK",
+                                "message": "The expected Known or Not known category was not present during verification."
                               }
                             }
                           }
@@ -409,7 +451,7 @@
                         "inputs": {
                           "runStatus": "Failed",
                           "runError": {
-                            "code": "MTC_UNRECOGNIZED_ASSESSMENT_CARDINALITY",
+                            "code": "MTC_BINARY_ASSESSMENT_CARDINALITY",
                             "message": "Expected at most one assessment for the scoped mailbox and immutable message identifier."
                           }
                         }
@@ -425,8 +467,8 @@
                     "inputs": {
                       "runStatus": "Failed",
                       "runError": {
-                        "code": "MTC_UNRECOGNIZED_PRECONDITION",
-                        "message": "Expected one trusted Microsoft Authentication-Results header and no active approved exact contact."
+                        "code": "MTC_BINARY_PRECONDITION",
+                        "message": "Expected one trusted Microsoft Authentication-Results header and at most one fully verified exact contact with one fully verified party."
                       }
                     }
                   }

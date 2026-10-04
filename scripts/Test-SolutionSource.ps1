@@ -167,6 +167,7 @@ if (-not $authActions.List_external_auth_candidates -or -not $externalScope -or
     -not $externalScope.actions.Get_message_authentication_headers -or
     -not $externalScope.actions.Filter_trusted_microsoft_authentication_results -or
     -not $externalScope.actions.Filter_matching_approved_contacts -or -not $unrecognizedScope -or
+    -not $externalScope.actions.Filter_matching_approved_party -or
     -not $assessmentScope -or -not $assessmentScope.actions.Apply_unrecognized_category -or
     -not $assessmentScope.actions.Verify_unrecognized_category -or
     -not $assessmentScope.actions.Require_unrecognized_category_readback) {
@@ -175,8 +176,10 @@ if (-not $authActions.List_external_auth_candidates -or -not $externalScope -or
 if ($authWorkflowText -notmatch 'Prefer: IdType=\\"ImmutableId\\"' -or
     $authWorkflowText -notmatch 'If-Match:' -or
     $authWorkflowText -notmatch 'startsWith\(toLower\(trim\(string\(item\(\)\?\[''value''\]\)\)\), ''mx\.microsoft\.com''\)' -or
+    $authWorkflowText -notmatch 'MTC Proof - known sender' -or
     $authWorkflowText -notmatch 'MTC Proof - not known' -or
-    $authWorkflowText -notmatch 'MTC_REGISTRY_NO_MATCH' -or
+    $authWorkflowText -notmatch 'MTC_EXACT_CONTACT_MATCH' -or
+    $authWorkflowText -notmatch 'message-runtime-3' -or
     $authWorkflowText -notmatch '"item/mtc_mailboxreference"\s*:\s*"me"') {
     throw 'The authentication proof lost a trusted-boundary, registry, concurrency, or persistence safeguard.'
 }

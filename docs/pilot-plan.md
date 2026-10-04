@@ -1,9 +1,12 @@
 # Client pilot: known sender / not known
 
-**Status:** Pilot approval remains blocked. Version 0.4.0.0 has five Dataverse
+**Status:** Pilot approval remains blocked. Version 0.5.0.0 has five Dataverse
 tables and two disabled manual proof flows. A synthetic external Inbox message
 was shown in Outlook web as `MTC Proof - not known`; repeat processing reused the
-same assessment. No automatic processor or production label is active.
+same assessment. After a 24-hour exact-address approval with a verified party,
+contact, evidence, reviewer binding, and verification case, the same message
+changed to `MTC Proof - known sender`; a repeat run reused the same row. No
+automatic processor or production label is active.
 
 Read the [solution design](solution-design.md) before implementation.
 

@@ -1,6 +1,6 @@
 # Reusable deployment pattern
 
-**Implemented development proof:** version 0.4.0.0 contains the five-table
+**Implemented development proof:** version 0.5.0.0 contains the five-table
 foundation plus two disabled manual synthetic message-runtime flows and portable
 Outlook/Dataverse connection references. The repository contains the
 deterministic schema bootstrap, reviewed managed/unmanaged solution source,
@@ -28,11 +28,15 @@ composite-authentication pass, and confirmed there was no active approved exact
 contact. It applied and verified `MTC Proof - not known`, displayed the category
 in Outlook web, and persisted one Unrecognized/Aligned pass/Incomplete
 assessment. A repeat run reused the same row. Both flows are Off
-and have no automatic triggers. This is still not a complete message path or
+and have no automatic triggers. A 24-hour exact-address approval was then
+created with a fully verified party, contact, evidence reference, current-user
+reviewer binding, and verification case. The same retained message changed to
+`MTC Proof - known sender`; two runs reused the same assessment row. This is
+still not a complete message path or
 cross-tenant deployment test: the current trusted-header match is bounded to the
 observed Microsoft header shape, and shared/all-mailbox access,
-excluded-mailbox denial, automatic triggering, reconciliation, and positive
-qualification remain unproven.
+excluded-mailbox denial, automatic triggering, and reconciliation remain
+unproven.
 
 The live new-designer attempt to compose the second request from the first
 action's response was discarded because the expression editor rejected even
@@ -301,13 +305,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.4.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.5.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.4.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.5.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -343,7 +347,7 @@ administrator app, so it cannot authorize a live registry record.
   with `authorizedRegistrarIds`; only listed verifiers are eligible, including
   when creating their own entries. Multiple verifiers are supported. This
   fixture configuration is not server-side role enforcement, and captured mail
-  still cannot receive positive qualification under either mode.
+  still cannot receive a live Known category under either mode.
   Consumer provider domains cannot grant wholesale recognition.
 - Missing, failed, conflicting, expired, revoked, or ambiguous identity evidence
   produces **Not known**. Known requires an active exact address/domain match
@@ -366,7 +370,7 @@ live acceptance or production gates.
 
 ## Manual synthetic runtime proof
 
-The version 0.4.0.0 solution includes two Off, manual-only flows for synthetic
+The version 0.5.0.0 solution includes two Off, manual-only flows for synthetic
 development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with
@@ -389,12 +393,12 @@ authentication/unrecognized-presentation flow:
 - Requires exactly one Microsoft `Authentication-Results` header beginning with
   the observed `mx.microsoft.com` auth service marker and containing SPF, DKIM,
   DMARC, and composite-authentication pass.
-- Lists active approved contacts, matches the exact sender in-flow, and proceeds
-  only when no unexpired approved exact contact exists.
-- Removes prior MTC-owned labels, applies and verifies `MTC Proof - not known`,
-  while preserving other
-  categories, then persists Unrecognized relationship, Aligned pass
-  authentication, and Incomplete risk as separate dimensions.
+- Lists active approved contacts and parties, requires complete evidence,
+  verification timestamps, future expiry, and exactly one matching party/contact
+  pair, then chooses Known; zero valid matches chooses Not known.
+- Removes prior MTC-owned labels, applies and verifies either
+  `MTC Proof - known sender` or `MTC Proof - not known` while preserving other
+  categories, then persists the relationship and authentication dimensions.
 - Fails closed on message, trusted-header, registry, assessment, or category
   readback ambiguity. Two observed runs reused one assessment row, and Outlook
   web visibly displayed the category.
@@ -406,8 +410,8 @@ in embedded owner context while retaining the Outlook run-only connection for
 manual proof execution. This does not establish the future operational ownership
 model. The current header match and 100-row contact listing are bounded proof
 logic, not the final parser/query design. Automatic triggering, shared mailboxes,
-excluded-mailbox denial, failure reconciliation, and live Known presentation
-remain blocked.
+excluded-mailbox denial, failure reconciliation, and expiry/revocation-triggered
+reassessment remain blocked.
 
 ## Official platform references
 

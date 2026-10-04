@@ -4,7 +4,7 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Reusable development proof, version 0.4.0.0. Five Dataverse
+**Status:** Reusable development proof, version 0.5.0.0. Five Dataverse
 tables, relationships, and disabled-by-default configuration have been
 provisioned in authorized development environments. An offline, synthetic-only
 qualification proof policy and an offline verification-transition contract are
@@ -25,11 +25,12 @@ Inbox message. It required exactly one Microsoft receiving
 `Authentication-Results` header with SPF, DKIM, DMARC, and composite
 authentication pass, confirmed no active approved exact contact, preserved
 existing categories, applied `MTC Proof - not known`, displayed it in Outlook
-web, and persisted one reusable metadata-only Not known assessment. Both flows
-remain Off. The proof is not a general
-authentication parser and does
-not validate shared/all-mailbox permissions, automatic triggering,
-excluded-mailbox denial, or any live positive qualification.
+web, and persisted one reusable metadata-only Not known assessment. After a
+24-hour exact-address approval with verified party/contact evidence, the same
+retained message was reassessed to `MTC Proof - known sender`; two runs reused
+the same assessment row. Both flows remain Off. The proof is not a general
+authentication parser and does not validate shared/all-mailbox permissions,
+automatic triggering, or excluded-mailbox denial.
 
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026.
