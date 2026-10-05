@@ -1,7 +1,7 @@
 # Email verification workflow
 
 **Status:** Product requirements and implementation gates, recorded October 2,
-2026. Version 0.9.0.0 now includes a published Sender Registry app with guided
+2026. Version 0.9.1.0 now includes a published Sender Registry app with guided
 Verify/Renew/Revoke and operator mailbox enrollment, caller-stamped custom APIs,
 protected registry writes, immutable verification cases, and unique identity
 keys. An explicitly authorized development shadow pilot is running across
@@ -78,7 +78,16 @@ documentation. Actual addresses, domain approvals, and evidence stay private.
 ## Outlook presentation and delivery
 
 Use explicit text categories, not color alone. The product has exactly two
-user-facing states: **Known sender** and **Not known**.
+user-facing states: **✓ Known sender** (blue) and **Unknown sender** (gray).
+The stored non-positive decision remains Not known. The checkmark is category
+text, not Microsoft's verified-sender badge.
+
+Set up names/colors in each approved mailbox's master category list, checking
+for collisions with existing user categories. The operator-mailbox proof used
+native Outlook Sky blue/Silver presets and exercised both states through the
+actual worker; no new application permission was granted. Color appearance
+varies by client, so text remains primary. Wider mailbox/client setup remains
+an acceptance gate.
 
 Known requires an active approved exact address or business-domain match plus
 trusted receiving authentication aligned to the visible From domain. It never

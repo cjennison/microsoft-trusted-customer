@@ -1,6 +1,6 @@
 # Reusable deployment pattern
 
-**Implemented development MVP:** version 0.9.0.0 contains the six-table
+**Implemented development MVP:** version 0.9.1.0 contains the six-table
 foundation, two disabled manual synthetic message-runtime flows, a five-minute
 shadow worker, a separately authorized Outlook presentation worker, portable Outlook/Dataverse/custom Graph connection
 references, and the custom Graph connector. The connector source permits only
@@ -475,6 +475,17 @@ bytes and hashes can differ between builds; choose one reviewed artifact and
 reuse its exact bytes across deployments rather than treating the version as a
 hash guarantee.
 
+Reviewed 0.9.1.0 colored-label development build (not production acceptance):
+
+- Unmanaged SHA-256:
+  `B328D44EEA7910563DF6ED257BAA69DE18C5669D72E73B038AF2A283BC1A32E3`
+- Managed SHA-256:
+  `2830BA25ACD4A5EEB4A7BA049B9375DD3D820F6F19EF765F5CDE32CA4225B621`
+
+The signed exported assembly matches the signed source build. The release
+retains the reviewed portable connector authentication and Off/default-disabled
+metadata; private current values and mailbox category settings are not included.
+
 The build validates solution identity, six table roots, both manual proofs, the
 disabled scheduled shadow and presentation flows, the app, registrar assembly/APIs/roles/guards,
 the certificate-only custom connector, three
@@ -518,13 +529,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.9.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.9.1.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.9.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.9.1.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -584,7 +595,7 @@ live acceptance or production gates.
 
 ## Manual and shadow runtime proof
 
-The version 0.9.0.0 solution includes two Off, manual-only flows for synthetic
+The version 0.9.1.0 solution includes two Off, manual-only flows for synthetic
 development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with
@@ -667,13 +678,39 @@ immutable email. No other message was eligible for the presentation query.
 After successful runs, labeling was Disabled first, the presentation worker was
 turned Off, and only then was its exact original definition restored.
 
-`Pilot` selects proof-category names; it is not a one-message or one-mailbox
-allowlist. Do not enable the unmodified worker under a narrower authorization
+`Pilot` authorizes presentation; it is not a one-message or one-mailbox
+allowlist. Both modes now use the same current names. Do not enable the
+unmodified worker under a narrower authorization
 than its pending-assessment query. Save the original definition and private
 scope/restoration evidence before a bounded test, confirm no active presentation
 run before restoring the broader query, and leave native protections and the
 separately authorized shadow pilot unchanged. This transport proof does not
 accept the wider negative/failure matrix, other Outlook clients, or production.
+
+### Clear labels and mailbox-local colors
+
+Version 0.9.1.0 uses `✓ Known sender` and `Unknown sender` in both authorized
+modes. The internal Not known decision and receiving-authentication/approval
+policy are unchanged. Four legacy MTC category names are removed only during
+exact service-owned reconciliation; unrelated categories are preserved.
+
+Before visible activation, inspect each approved mailbox's master category list.
+Check exact-name ownership before creating categories; stop on an unrelated
+existing-name collision rather than taking it over. In native Outlook category
+settings, create the checkmark name with blue and Unknown sender with gray.
+Outlook web calls the observed presets Sky blue and Silver. These settings are
+mailbox-local and are not copied by a solution import. Automating them through
+Graph requires separately approved `MailboxSettings.ReadWrite`; do not add an
+unscoped Entra grant or assume `Mail.ReadWrite` covers category administration.
+
+The operator-mailbox proof created both categories through native settings,
+ran the real scoped worker to Known, revoked the exact test contact, and ran it
+back to Unknown. Both native runs and server readbacks succeeded. Outlook web
+showed the checkmark, blue/gray backgrounds, and removal of the prior legacy
+label. The test left the contact Revoked and restored the exact original worker
+Off with labeling Disabled; the authorized all-mailbox shadow pilot remained
+healthy. Private scope, rendering and restoration evidence stays outside Git.
+Desktop/mobile/shared-mailbox color behavior and wider activation remain gated.
 
 A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;

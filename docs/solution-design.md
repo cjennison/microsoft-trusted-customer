@@ -1,6 +1,6 @@
 # Incoming email known-sender qualification
 
-**Status:** Version 0.9.0.0 development architecture with six Dataverse tables,
+**Status:** Version 0.9.1.0 development architecture with six Dataverse tables,
 two disabled manual synthetic proof flows, a portable certificate-authenticated
 Graph connector, and separate shadow/presentation workers exported Off.
 One delivered external message
@@ -38,8 +38,11 @@ The visible answer is binary:
 
 | Presentation | Meaning |
 | --- | --- |
-| `Known sender` | Active exact contact or approved business-domain match, plus trusted receiving authentication aligned to the visible From domain |
-| `Not known` | No active match, missing/failed/ambiguous authentication, expired/revoked evidence, conflicting sender identity, unsupported evidence, or processing failure |
+| `✓ Known sender` | Active exact contact or approved business-domain match, plus trusted receiving authentication aligned to the visible From domain |
+| `Unknown sender` | No active match, missing/failed/ambiguous authentication, expired/revoked evidence, conflicting sender identity, unsupported evidence, or processing failure |
+
+The stored non-positive Dataverse decision remains `Not known`; `Unknown sender`
+is the improved Outlook presentation, not a policy or schema change.
 
 `Known sender` is business context, not a safety verdict. It does not replace
 Exchange Online, Defender for Office 365, spam/phishing filtering, Safe Links,
@@ -99,7 +102,7 @@ category appears; this is not a pre-delivery gateway.
 
 ## 4. Dataverse records
 
-Version 0.9.0.0 contains six custom user-owned tables:
+Version 0.9.1.0 contains six custom user-owned tables:
 
 | Record | Purpose |
 | --- | --- |
@@ -171,15 +174,18 @@ parser.
 
 ## 6. Outlook presentation
 
-The service reconciles exactly four owned category names across two modes:
+Both authorized presentation modes use the same current names:
 
-| Mode | Known | Not known |
-| --- | --- | --- |
-| Pilot | `MTC Proof - known sender` | `MTC Proof - not known` |
-| Production | `MTC - known sender` | `MTC - not known` |
+| Category | Recommended color |
+| --- | --- |
+| `✓ Known sender` | Blue (Outlook web: Sky blue) |
+| `Unknown sender` | Gray (Outlook web: Silver) |
 
-Only one current category is applied to a message. Production mode requires
-separate acceptance and activation approval.
+The four legacy `MTC Proof - known sender`, `MTC Proof - not known`,
+`MTC - known sender`, and `MTC - not known` names remain exact owned migration
+aliases. Reconciliation removes these and any prior current service label before
+applying one current category. Neither Pilot nor Production is a mailbox
+allowlist; production still requires separate acceptance and activation approval.
 Category reconciliation must:
 
 - Preserve every unrelated user category.
@@ -189,6 +195,13 @@ Category reconciliation must:
 - Record assessment success separately from presentation success.
 
 Outlook categories are user-editable presentation hints, not security controls.
+The checkmark is plain category text, not Outlook's native verification badge.
+Colors belong to each mailbox's master category list, not the solution or
+message PATCH. Set up the exact names/colors under authorized mailbox access
+before visible activation, checking for existing-name collisions. Native Outlook
+setup does not require granting the processor additional permissions. Automated
+master-category creation would require separately authorized
+`MailboxSettings.ReadWrite`; current mail-processing access does not grant it.
 Verify text/color behavior in supported desktop, web, mobile, tablet, and shared
 mailbox clients. A future Outlook add-in can provide richer presentation, but it
 is not required for the first pilot.

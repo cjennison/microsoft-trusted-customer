@@ -11,9 +11,12 @@ namespace Mtc.Registrar
 {
     public sealed class LabelRuntime : IPlugin
     {
+        private const string KnownCategory = "\u2713 Known sender";
+        private const string UnknownCategory = "Unknown sender";
         private static readonly string[] OwnedCategories = {
             "MTC Proof - known sender", "MTC Proof - not known",
-            "MTC - known sender", "MTC - not known"
+            "MTC - known sender", "MTC - not known",
+            KnownCategory, UnknownCategory
         };
 
         public void Execute(IServiceProvider provider)
@@ -113,8 +116,7 @@ namespace Mtc.Registrar
                     message.ReplyTo?.Select(reply => reply?.EmailAddress?.Address).ToArray(),
                     message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),
                     currentRegistry?.Approved == true);
-                var currentLabel = (mode == "Pilot" ? "MTC Proof - " : "MTC - ") +
-                    (currentDecision.Known ? "known sender" : "not known");
+                var currentLabel = currentDecision.Known ? KnownCategory : UnknownCategory;
                 if (!message.Categories.Contains(currentLabel, StringComparer.Ordinal) ||
                     message.Categories.Any(category => OwnedCategories.Contains(category, StringComparer.Ordinal) && category != currentLabel))
                     throw new InvalidPluginExecutionException("Registry/authentication eligibility changed before readback. Presentation requires reassessment.");
@@ -135,8 +137,7 @@ namespace Mtc.Registrar
                 message.ReplyTo?.Select(reply => reply?.EmailAddress?.Address).ToArray(),
                 message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),
                 registry?.Approved == true);
-            var prefix = mode == "Pilot" ? "MTC Proof - " : "MTC - ";
-            var label = prefix + (decision.Known ? "known sender" : "not known");
+            var label = decision.Known ? KnownCategory : UnknownCategory;
             var categoriesToApply = message.Categories.Where(category => !OwnedCategories.Contains(category, StringComparer.Ordinal))
                 .Concat(new[] { label }).Distinct(StringComparer.Ordinal).ToArray();
             string plan;

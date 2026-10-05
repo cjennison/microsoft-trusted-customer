@@ -4,7 +4,7 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Client-showable development MVP, version 0.9.0.0.
+**Status:** Client-showable development MVP, version 0.9.1.0.
 The published **Sender Registry** model-driven Power App now provides guided
 exact-address/business-domain verification, renewal, revocation, mailbox
 onboarding/pause/enrollment, and a basic service-health view. Twelve Dataverse
@@ -41,6 +41,14 @@ contact Revoked. Tenant-wide label execution and production conversion remain
 separately gated. The environment remains a Sandbox. Portable
 managed/unmanaged artifacts export every flow Off with both modes Disabled.
 
+The current Outlook labels are **✓ Known sender** (blue) and **Unknown sender**
+(gray). The real worker displayed both on one authorized retained proof email
+in the operator's Outlook web mailbox, including revocation and legacy-label
+replacement. Colors were configured in that mailbox's native category list;
+no mailbox-settings application permission was added. Other mailboxes/clients
+still need category setup and acceptance. The checkmark is our category text,
+not a Microsoft verification badge or a safe-email verdict.
+
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026; disabled shadow
 runtime foundation and client-showable registrar app added October 4, 2026;
@@ -66,8 +74,8 @@ can be compromised, and a genuine email can contain a malicious link.
 | Question | Working answer |
 | --- | --- |
 | Does this already exist? | Microsoft already provides spoofing detection, Defender for Office 365 impersonation protection, safety tips, Safe Links, and Safe Attachments. This proposal adds a business-managed known-sender registry and Outlook presentation; it is not a replacement email security product. |
-| Is it valuable? | Potentially. It gives nontechnical staff an immediate Known sender or Not known indicator while new legitimate contacts remain delivered and available for onboarding. |
-| What does it look like? | Microsoft email protection + approved exact contacts/domains in Dataverse + Power Apps onboarding + post-delivery Known/Not known Outlook categories. Dynamics 365 can optionally supply candidate records, but imported records are not automatically approved. |
+| Is it valuable? | Potentially. It gives nontechnical staff an immediate Known sender or Unknown sender indicator while new legitimate contacts remain delivered and available for onboarding. |
+| What does it look like? | Microsoft email protection + approved exact contacts/domains in Dataverse + Power Apps onboarding + post-delivery colored Outlook categories. Dynamics 365 can optionally supply candidate records, but imported records are not automatically approved. |
 
 ## Documentation
 

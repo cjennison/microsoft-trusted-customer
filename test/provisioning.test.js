@@ -107,7 +107,7 @@ function fakeDataverse() {
 }
 
 test('schema has six runtime record types and five safe configuration definitions', () => {
-  assert.equal(solutionVersion, '0.9.0.0');
+  assert.equal(solutionVersion, '0.9.1.0');
   assert.equal(tables.length, 6);
   assert.equal(environmentVariables.length, 5);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_ProcessingMode').defaultvalue, 'Disabled');
@@ -212,7 +212,7 @@ test('bootstrap upgrades the reviewed 0.5 solution only after publishing the new
   const publishIndex = state.writes.findIndex(item => item.path === 'PublishXml');
   const upgradeIndex = state.writes.findIndex(item => item.path.startsWith('solutions('));
   assert.ok(publishIndex >= 0 && upgradeIndex > publishIndex);
-  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.9.0.0']);
+  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.9.1.0']);
 });
 
 test('0.6 migration adds only the new immutable verification event columns', async () => {
@@ -306,7 +306,7 @@ test('explicit development migration preserves current settings without writing 
   }
   const report = await bootstrap(target, { ...context, preserveOperationalSettings: true });
   assert.equal(report.published, true);
-  assert.deepEqual(report.updated, ['solution 0.8.0.0 -> 0.9.0.0']);
+  assert.deepEqual(report.updated, ['solution 0.8.0.0 -> 0.9.1.0']);
   assert.ok(!state.writes.some(write => write.path.startsWith('environmentvariablevalues')));
   state.writes.length = 0;
   await assert.rejects(bootstrap({ ...target, environmentType: 'Production' },
@@ -316,6 +316,18 @@ test('explicit development migration preserves current settings without writing 
   await assert.rejects(bootstrap({ ...target, organizationId: '55555555-5555-5555-5555-555555555555' },
     { ...context, preserveOperationalSettings: true }), /no writes performed/);
   assert.equal(state.writes.length, 0);
+});
+
+test('0.9 presentation release migration only publishes and versions unchanged schema', async () => {
+  const state = fakeDataverse();
+  const context = { origin: target.environmentOrigin, fetch: state.fetch };
+  await bootstrap(target, context);
+  state.setSolutionVersion('0.9.0.0');
+  state.writes.length = 0;
+  const report = await bootstrap(target, context);
+  assert.deepEqual(report.updated, ['solution 0.9.0.0 -> 0.9.1.0']);
+  assert.ok(state.writes.every(write => ['AddSolutionComponent', 'PublishXml'].includes(write.path) ||
+    write.path.startsWith('solutions(')));
 });
 
 test('private review export requires literal consent and retains identity and export guards', async () => {

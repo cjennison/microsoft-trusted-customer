@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Proxies;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Xrm.Sdk;
@@ -39,6 +42,7 @@ internal static class Program
             PolicyTests();
             ApiTests();
             GuardTests();
+            LabelTests();
             PagingTests();
             MessagePolicyChecks.Run(Check);
             Console.WriteLine("Registrar plugin: " + passed + " checks passed.");
@@ -225,6 +229,118 @@ internal static class Program
         }
     }
 
+    private static string Json<T>(T value)
+    {
+        using (var stream = new MemoryStream())
+        {
+            new DataContractJsonSerializer(typeof(T)).WriteObject(stream, value);
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+    }
+
+    private static void LabelTests()
+    {
+        var service = new FakeService { HasRegistrarRole = true, HasProcessorRole = true };
+        new VerificationApi().Execute(new Provider(Verification(service).Value, service));
+        var contact = service.Rows.Single(row => row.LogicalName == "mtc_approvedcontact");
+        var definition = new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_LabelingMode", ["defaultvalue"] = "Pilot"
+        };
+        service.Create(definition);
+        service.Create(new Entity("mtc_mailboxenrollment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_enrollmentstatus"] = new OptionSetValue(100000001),
+            ["mtc_excludedfolderids"] = "sent\ndrafts\noutbox\ndeleted"
+        });
+        var assessment = new Entity("mtc_messageassessment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_stablemessageid"] = "OpaqueAaID", ["mtc_receivedon"] = DateTime.UtcNow.AddDays(-1)
+        };
+        service.Create(assessment);
+        var message = new GraphMessage
+        {
+            Id = "OpaqueAaID", ETag = "fixture-etag", ParentFolderId = "inbox",
+            From = new GraphParty { EmailAddress = new GraphAddress { Address = "proof@business.example" } },
+            Sender = new GraphParty { EmailAddress = new GraphAddress { Address = "proof@business.example" } },
+            ReplyTo = Array.Empty<GraphParty>(),
+            Headers = new[] {
+                new GraphHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; spf=pass; dkim=pass; dmarc=pass header.from=business.example; compauth=pass" },
+                new GraphHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "receiver.prod.outlook.com" },
+                new GraphHeader { Name = "X-MS-Exchange-Organization-MessageDirectionality", Value = "Incoming" }
+            }
+        };
+        var context = new ContextProxy(new Dictionary<string, object>
+        {
+            ["MessageName"] = "mtc_GetMessageLabelPlan", ["UserId"] = service.UserId,
+            ["InitiatingUserId"] = service.UserId,
+            ["InputParameters"] = new ParameterCollection { ["AssessmentId"] = assessment.Id },
+            ["OutputParameters"] = new ParameterCollection()
+        });
+        var input = (ParameterCollection)context.Values["InputParameters"];
+        var output = (ParameterCollection)context.Values["OutputParameters"];
+        var provider = new Provider(context.Value, service);
+        var runtime = new LabelRuntime();
+        Action plan = () => { input["MessageJson"] = Json(message); runtime.Execute(provider); };
+        var known = new[] { "Personal", "\u2713 Known sender" };
+        var unknown = new[] { "Personal", "Unknown sender" };
+        foreach (var mode in new[] { "Pilot", "Production" })
+        {
+            definition["defaultvalue"] = mode;
+            message.Categories = new[] { "Personal", "MTC Proof - known sender", "MTC Proof - not known",
+                "MTC - known sender", "MTC - not known", "Unknown sender" };
+            plan();
+            Check((string)output["CategoriesJson"] == Json(known),
+                "Both modes must use one checkmark label, remove legacy-owned labels, and preserve Personal.");
+            Check((bool)output["NeedsWrite"] && (string)output["ETag"] == message.ETag,
+                "Renamed presentation must retain conditional ETag transport.");
+            message.Categories = known;
+            plan();
+            Check(!(bool)output["NeedsWrite"], "A current checkmark category must not require another write.");
+        }
+        context.Values["MessageName"] = "mtc_VerifyMessagePresentation";
+        input["ExpectedCategoriesJson"] = Json(known);
+        input["MessageJson"] = Json(message);
+        runtime.Execute(provider);
+        Check(assessment.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000001,
+            "Readback must accept the exact new Known category.");
+        message.Categories = new[] { "Personal", "MTC - known sender" };
+        input["MessageJson"] = Json(message);
+        input["ExpectedCategoriesJson"] = Json(message.Categories);
+        Reject(() => runtime.Execute(provider), "eligibility changed");
+        contact["mtc_verificationstatus"] = new OptionSetValue(100000003);
+        context.Values["MessageName"] = "mtc_GetMessageLabelPlan";
+        message.Categories = known;
+        plan();
+        Check((string)output["CategoriesJson"] == Json(unknown),
+            "Revocation must replace the checkmark with Unknown sender and preserve Personal.");
+        context.Values["MessageName"] = "mtc_VerifyMessagePresentation";
+        input["ExpectedCategoriesJson"] = Json(known);
+        input["MessageJson"] = Json(message);
+        Reject(() => runtime.Execute(provider), "eligibility changed");
+        message.Categories = unknown;
+        input["ExpectedCategoriesJson"] = Json(unknown);
+        input["MessageJson"] = Json(message);
+        runtime.Execute(provider);
+        Check(assessment.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000001,
+            "Readback must accept the exact new Unknown category after revocation.");
+        contact["mtc_verificationstatus"] = new OptionSetValue(100000001);
+        message.Headers[0].Value = message.Headers[0].Value.Replace("dmarc=pass", "dmarc=fail");
+        context.Values["MessageName"] = "mtc_GetMessageLabelPlan";
+        plan();
+        Check((string)output["CategoriesJson"] == Json(unknown), "Failed authentication must still use Unknown sender.");
+        definition["defaultvalue"] = "Disabled";
+        Reject(plan, "disabled");
+        definition["defaultvalue"] = "Pilot";
+        message.Id = "OpaqueAAID";
+        Reject(plan, "Exact immutable identity");
+        message.Id = "OpaqueAaID";
+        service.HasProcessorRole = false;
+        Reject(plan, "not an authorized");
+    }
+
     private sealed class PagingContext : IScriptContext
     {
         public string OperationId => "ListMailboxMessages";
@@ -273,7 +389,7 @@ internal static class Program
     {
         public readonly Guid UserId = Guid.NewGuid();
         public readonly List<Entity> Rows = new List<Entity>();
-        public bool HasRegistrarRole, Disabled;
+        public bool HasRegistrarRole, HasProcessorRole, Disabled;
         public Guid ApplicationId;
         public bool KeyActive = true;
         public Guid Create(Entity entity)
@@ -300,12 +416,19 @@ internal static class Program
         {
             var expression = (QueryExpression)query;
             if (expression.EntityName == "role")
-                return new EntityCollection(HasRegistrarRole ? new List<Entity> { new Entity("role", Guid.NewGuid()) } : new List<Entity>());
+            {
+                var role = expression.Criteria.Conditions.Single(condition => condition.AttributeName == "name").Values[0] as string;
+                var authorized = role == "MTC Registrar" ? HasRegistrarRole : role == "MTC Processor" && HasProcessorRole;
+                return new EntityCollection(authorized ? new List<Entity> { new Entity("role", Guid.NewGuid()) } : new List<Entity>());
+            }
             var rows = Rows.Where(row => row.LogicalName == expression.EntityName).Where(row =>
                 expression.Criteria.Conditions.All(condition => Equals(
-                    row.Contains(condition.AttributeName) ? row[condition.AttributeName] : null, condition.Values[0]))).ToList();
+                    Normalize(row.Contains(condition.AttributeName) ? row[condition.AttributeName] : null), condition.Values[0])))
+                .Take(expression.TopCount ?? int.MaxValue).ToList();
             return new EntityCollection(rows);
         }
+        private static object Normalize(object value) =>
+            value is OptionSetValue option ? (object)option.Value : value is EntityReference reference ? reference.Id : value;
         public OrganizationResponse Execute(OrganizationRequest request)
         {
             if (request is RetrieveEntityKeyRequest)

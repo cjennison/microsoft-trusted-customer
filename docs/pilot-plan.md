@@ -1,6 +1,6 @@
 # Client pilot: known sender / not known
 
-**Status:** Visible-label/production approval remains gated. Version 0.9.0.0 has six Dataverse
+**Status:** Visible-label/production approval remains gated. Version 0.9.1.0 has six Dataverse
 tables, two disabled manual proof flows, a certificate-authenticated Graph
 connector, a running authorized development shadow worker, and a separate Off
 presentation worker. A synthetic external Inbox message
@@ -45,7 +45,7 @@ operating ownership, and explicit exclusions.
 
 | Decision | Required starting point |
 | --- | --- |
-| Visible sender status | Binary `Known sender` or `Not known` |
+| Visible sender status | Binary `✓ Known sender` (blue) or `Unknown sender` (gray); stored Not known policy remains unchanged |
 | Known rule | Active exact approved address/domain plus trusted receiving authentication |
 | New legitimate sender | Delivered and marked Not known; controlled onboarding path |
 | Consumer email provider | Exact approved address only; never provider-wide domain approval |
@@ -71,6 +71,10 @@ operating ownership, and explicit exclusions.
   authorized retained proof email: real connector category writes, successful
   native runs, server readback, and Outlook web Known then revoked Not known.
   Restore the original definition Off, labeling Disabled, and contact Revoked.
+- [x] Exercise the improved labels in the operator's Outlook web mailbox:
+  blue checkmark Known, then gray Unknown after revocation, on the same retained
+  email through the actual worker. Create colors through native category
+  settings without an additional application grant and remove legacy labels.
 - [ ] Confirm customer app-user entitlements, operational evidence retention,
   client coverage, rollback, and separate production/visible-label authorization.
 - [ ] Retrieve immutable message identity and trusted Microsoft receiving
@@ -108,6 +112,9 @@ Record expected and observed results in restricted pilot evidence.
 | Duplicate trigger | Same assessment row and one current MTC category |
 | Message move | Immutable identity remains stable or failure is reconciled |
 | Existing unrelated Outlook category | Preserved |
+| Legacy service category | Replaced with exactly one current label; unrelated categories preserved |
+| Checkmark and category color | Exact text plus configured blue/gray color visible in each supported client; no reliance on color alone |
+| Existing category with a current service name | Resolve ownership before activation; do not silently recolor or take over a user's category |
 | Registrar approves sender after delivery | Same retained message changes from Not known to Known without resend |
 | Registrar revokes or evidence expires | Existing eligible presentation reconciles back to Not known |
 | Category write/readback failure | Assessment records presentation failure; no success claim |
