@@ -32,9 +32,13 @@ presentation worker remains Off, with `mtc_LabelingMode` Disabled. A specificall
 authorized retained synthetic email was tested through current server-side
 planning, ETag PATCH, exact readback and actual Outlook web visibility: Not known
 to Known after fresh exact-address approval, then back to Not known after
-revocation, preserving unrelated categories. The worker itself has passed only
-a disabled-gate schedule run; tenant-wide label execution and production
-conversion remain separately gated. The environment remains a Sandbox. Portable
+revocation, preserving unrelated categories. The actual enabled Power Automate
+worker then passed a separately authorized one-message test through its
+certificate connector: Known, protected revocation, and Not known, with successful
+native runs, exact server readback, and both states visible in Outlook web.
+Its original definition was restored Off with labeling Disabled and the test
+contact Revoked. Tenant-wide label execution and production conversion remain
+separately gated. The environment remains a Sandbox. Portable
 managed/unmanaged artifacts export every flow Off with both modes Disabled.
 
 **Documented:** September 30, 2026. Development foundation added October 1,

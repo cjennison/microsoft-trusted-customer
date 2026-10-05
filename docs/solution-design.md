@@ -21,6 +21,9 @@ reassessment, and user-specific in-app alerts. Outlook presentation is a separat
 Off worker with an independent Disabled/Pilot/Production setting. An authorized
 single retained proof message passed Known and revocation-to-Not-known server
 planning, ETag writes, exact readback, and actual Outlook web visibility.
+The enabled Power Automate worker also passed the same transition on one
+explicitly scoped assessment using the real certificate connector, then was
+restored Off with labeling Disabled and the contact Revoked.
 Tenant-wide presentation execution and production activation remain unaccepted.
 See the [replication pattern](replication-pattern.md) for exact evidence.
 
@@ -125,7 +128,8 @@ This live MVP supports only the explicitly selected single-registrar model.
 Independent-review behavior remains an offline contract. The shadow processor
 uses immutable approval/revocation events and due expiry to rescan the approved
 retained-message window. Completed shadow reassessment does not establish
-completed Outlook presentation; the automatic category path remains unaccepted.
+completed Outlook presentation. The automatic category path passed a scoped
+one-message proof, not wider mailbox/client or production acceptance.
 Organization-wide Dataverse auditing remains a separately
 authorized configuration step; immutable cases are not a claim that it is enabled.
 

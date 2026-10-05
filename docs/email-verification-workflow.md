@@ -8,7 +8,10 @@ keys. An explicitly authorized development shadow pilot is running across
 enrolled user/shared mailboxes with a 30-day reassessment window and in-app
 operator alerts. The shadow worker contains no category-write action. A separate
 Off presentation worker requires independent authorization, and production
-labels are not activated. The retained-message proof also demonstrated that expiry removes
+labels are not activated. Its real enabled category path passed a separately
+authorized one-message automated Known/revocation/Not-known test in Outlook web;
+the original worker and independent gate were restored Off/Disabled afterward.
+The retained-message proof also demonstrated that expiry removes
 Known and restores Not known on the same message without deleting the records.
 
 ## The business administrator's workflow

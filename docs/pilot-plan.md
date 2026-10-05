@@ -67,7 +67,10 @@ operating ownership, and explicit exclusions.
 - [x] Exercise one separately authorized retained proof email through Known
   and revocation back to Not known, preserving unrelated categories, verifying
   server-side readback, and observing both states in Outlook web.
-- [ ] Accept the separate automated presentation worker's actual category path.
+- [x] Exercise the actual enabled presentation worker on one separately
+  authorized retained proof email: real connector category writes, successful
+  native runs, server readback, and Outlook web Known then revoked Not known.
+  Restore the original definition Off, labeling Disabled, and contact Revoked.
 - [ ] Confirm customer app-user entitlements, operational evidence retention,
   client coverage, rollback, and separate production/visible-label authorization.
 - [ ] Retrieve immutable message identity and trusted Microsoft receiving

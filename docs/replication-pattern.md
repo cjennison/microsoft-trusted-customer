@@ -30,6 +30,11 @@ Disabled. A specifically authorized retained synthetic message demonstrated
 Known and revocation back to Not known through current server planning,
 ETag writes, exact readback, and actual Outlook web presentation. Its sender
 approval was left Revoked and labeling was restored Disabled after the proof.
+The actual enabled Power Automate worker subsequently passed a separately
+authorized one-message Known/revocation/Not-known test through the real
+certificate connector. Both native runs succeeded and both categories were
+observed in Outlook web. The original worker definition was restored Off with
+labeling Disabled and the test contact Revoked.
 
 **Development proof:** the offline synthetic policy and negative scenario tests
 are supplemented by a saved manual solution flow. In an authorized customer
@@ -57,7 +62,8 @@ but made expired, and the same message/assessment returned to
 `MTC Proof - not known` with Known removed. This is still not a complete message path or
 cross-tenant deployment test: the trusted-header policy is bounded to supported
 Microsoft receiving evidence. Subsequent shadow automation and reconciliation
-are described above; the enabled presentation worker remains unaccepted.
+are described above; a scoped enabled presentation proof has since passed.
+Wider mailbox/client and production acceptance remain separate.
 
 The live new-designer attempt to compose the second request from the first
 action's response was discarded because the expression editor rejected even
@@ -646,8 +652,28 @@ The fourth flow is an independent presentation worker. It exports Off and checks
 current registry/authentication planning, exact owned-category replacement,
 ETag writes, and current-eligibility readback use the same processor identity.
 The single-message proof passed these server APIs plus app-only Graph transport
-and Outlook web observation. The automated worker itself has only passed a
-disabled-gate run; its enabled category path remains an acceptance gate.
+and Outlook web observation. The actual enabled worker subsequently passed the
+same Known/revocation/Not-known transition through the certificate connector.
+Both native Power Automate runs succeeded, server-side readback succeeded, and
+both states were visible in Outlook web.
+
+For this bounded acceptance, the real worker's assessment query was temporarily
+narrowed to exactly one authorized assessment while it was Off. Every transport,
+planning, write and readback action was retained; `body/categories` was exercised
+through the actual connector rather than replaced with a direct Graph write.
+The test renewed the owner-confirmed exact address for 24 hours, ran Known,
+revoked it through the protected API, and ran Not known on the same retained
+immutable email. No other message was eligible for the presentation query.
+After successful runs, labeling was Disabled first, the presentation worker was
+turned Off, and only then was its exact original definition restored.
+
+`Pilot` selects proof-category names; it is not a one-message or one-mailbox
+allowlist. Do not enable the unmodified worker under a narrower authorization
+than its pending-assessment query. Save the original definition and private
+scope/restoration evidence before a bounded test, confirm no active presentation
+run before restoring the broader query, and leave native protections and the
+separately authorized shadow pilot unchanged. This transport proof does not
+accept the wider negative/failure matrix, other Outlook clients, or production.
 
 A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;
