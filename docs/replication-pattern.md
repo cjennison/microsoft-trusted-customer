@@ -712,6 +712,34 @@ Off with labeling Disabled; the authorized all-mailbox shadow pilot remained
 healthy. Private scope, rendering and restoration evidence stays outside Git.
 Desktop/mobile/shared-mailbox color behavior and wider activation remain gated.
 
+For an explicitly authorized multi-mailbox setup, Exchange application RBAC
+supports `Application MailboxSettings.ReadWrite` with an exact mailbox resource
+scope. Prefer a temporary assignment covering only the approved current
+inventory, not an unscoped Entra application grant. The permission can modify
+other mailbox settings as well as category definitions, so keep the setup code
+restricted to the two exact service categories and remove the assignment/scope
+after setup, including after a failed attempt.
+
+Preview the scope against actual recipients and verify certificate/tenant/
+application identity. Read every category inventory before creating anything;
+stop on existing-name ownership ambiguity. Keep progress and created category
+IDs private so an interrupted attempt is inspected before retrying. Successful
+master-category setup does not authorize message labeling or production.
+
+`Test-ServicePrincipalAuthorization` bypasses the Exchange permission cache;
+InScope=True is control-plane evidence, not proof the category API works.
+Actual permission changes can take 30 minutes to two hours. Confirm real Graph
+category reads/writes/readbacks, remove only the recorded temporary role/scope,
+then verify real category reads are denied across the approved inventory.
+Removal readback alone is not effective-revocation evidence. Do not pause the
+working shadow pilot or add broad permissions merely to clear cached 403s.
+A bounded attached setup/cleanup job must remain supervised through cleanup;
+do not claim completion while it is waiting for propagation or denial.
+
+The initial MVP target is Outlook web. Other clients remain a separate future
+scope, while user/shared-mailbox web coverage remains required before wider
+activation.
+
 ### Presentation failure and recovery acceptance
 
 The real one-message worker also passed controlled failure injection without

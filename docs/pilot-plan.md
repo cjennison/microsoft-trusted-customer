@@ -24,6 +24,11 @@ consumer-domain, expired-evidence, and missing-evidence approvals were observed.
 
 Read the [solution design](solution-design.md) before implementation.
 
+The initial MVP client scope is now explicitly **Outlook web only**.
+Desktop, Mac, mobile and tablet clients are deferred rather than implicit
+go-live requirements for this initial scope. Shared-mailbox web/category
+coverage and the other operational/activation gates still apply.
+
 ## 1. Discovery
 
 - [ ] Confirm the customer sponsor, Microsoft administrator, business
