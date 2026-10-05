@@ -49,6 +49,13 @@ no mailbox-settings application permission was added. Other mailboxes/clients
 still need category setup and acceptance. The checkmark is our category text,
 not a Microsoft verification badge or a safe-email verdict.
 
+Scoped failure/recovery acceptance also passed through the real worker:
+an actual category delta with a stale `If-Match` returned HTTP 412 without
+changing the label; an incorrect expected readback failed explicitly; the
+operator saw an in-app alert; and a correct retry recovered successfully.
+The proof contact remains Revoked and the original worker remains Off/Disabled.
+These controlled tests do not establish outage, wider mailbox, or client coverage.
+
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026; disabled shadow
 runtime foundation and client-showable registrar app added October 4, 2026;

@@ -75,6 +75,10 @@ operating ownership, and explicit exclusions.
   blue checkmark Known, then gray Unknown after revocation, on the same retained
   email through the actual worker. Create colors through native category
   settings without an additional application grant and remove legacy labels.
+- [x] On that same scoped proof, reject a real category delta with stale
+  `If-Match` (HTTP 412), reject incorrect expected readback, persist failed
+  presentation, display an operator alert, and recover on a correct retry.
+  Confirm Unknown remains visible and restore the original worker Off/Disabled.
 - [ ] Confirm customer app-user entitlements, operational evidence retention,
   client coverage, rollback, and separate production/visible-label authorization.
 - [ ] Retrieve immutable message identity and trusted Microsoft receiving

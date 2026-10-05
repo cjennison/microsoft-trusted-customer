@@ -712,6 +712,40 @@ Off with labeling Disabled; the authorized all-mailbox shadow pilot remained
 healthy. Private scope, rendering and restoration evidence stays outside Git.
 Desktop/mobile/shared-mailbox color behavior and wider activation remain gated.
 
+### Presentation failure and recovery acceptance
+
+The real one-message worker also passed controlled failure injection without
+renewing its revoked contact or allowing Known presentation:
+
+- A changed category set with a stale `If-Match` returned HTTP 412/
+  `PreconditionFailed`. The write failed, dependent readback actions were skipped,
+  presentation was marked failed, and the existing Unknown label was unchanged.
+- An incorrect expected category set caused exact-readback verification to fail.
+  The correct no-op plan skipped PATCH; no Known label was written.
+- The operator's actual registry notification panel displayed the category
+  failure. A repeated failure in the same mailbox within the one-hour alert
+  window was deduplicated while the new failed assessment/run remained visible.
+- Removing the injected faults and rerunning the unchanged scoped worker
+  produced successful fresh planning/readback and successful presentation status.
+  No category write was needed because Unknown already matched the current rule.
+- The test restored labeling Disabled, stopped the worker, verified stop
+  completion, and restored its exact original definition. The contact stayed
+  Revoked, Unknown stayed visible, and the independent shadow pilot stayed healthy.
+
+Conditional-write acceptance must attempt a real, non-positive service-owned
+category delta. A stale-header PATCH with an unchanged category set was accepted
+as a no-op during the initial probe; that is not evidence of either successful
+stale-write rejection or an unsupported concurrency guard. Verify the actual
+connector response status, failed action, durable state, alert visibility and
+unchanged category, rather than treating an overall failed/succeeded run as enough.
+
+The readback test deliberately supplied a wrong expectation; it was not a real
+customer outage or spontaneous message race. Historical notifications are not
+automatically cleared by successful recovery: inspect the latest run and
+assessment before treating an old failure notification as current state. Retain
+fault variants and actual scope/run evidence privately, not in portable source.
+Broader outage, client, workload and production acceptance remain separate gates.
+
 A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;
 the reviewed flows therefore use the tenant-bound Dataverse connection reference
