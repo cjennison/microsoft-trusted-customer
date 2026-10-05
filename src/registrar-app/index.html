@@ -14,6 +14,11 @@
   </header>
   <p class="notice">Known sender means an independently verified business relationship, not a safe email. Native Microsoft email protections remain unchanged.</p>
   <div id="message" role="status" aria-live="polite">Loading your registry...</div>
+  <aside id="operator-alerts" class="notice" aria-labelledby="operator-alerts-heading" hidden>
+    <h2 id="operator-alerts-heading">Operator notifications</h2>
+    <p>Processing alerts remain visible here even after a mailbox recovers. These are service notices, not email-safety verdicts.</p>
+    <div id="operator-alert-list" aria-live="polite"></div>
+  </aside>
   <nav aria-label="Registry workspace">
     <button type="button" data-panel="senders" aria-current="page">Verified senders</button>
     <button type="button" data-panel="verify">Verify a sender</button>

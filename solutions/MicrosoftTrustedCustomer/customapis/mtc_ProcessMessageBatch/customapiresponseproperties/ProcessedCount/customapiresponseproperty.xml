@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="ProcessedCount">
+  <displayname default="ProcessedCount">
+    <label description="ProcessedCount" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_ProcessMessageBatch.ProcessedCount</name>
+  <type>7</type>
+</customapiresponseproperty>

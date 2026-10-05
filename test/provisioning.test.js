@@ -106,10 +106,10 @@ function fakeDataverse() {
   return state;
 }
 
-test('schema has six runtime record types and four safe configuration definitions', () => {
-  assert.equal(solutionVersion, '0.7.0.0');
+test('schema has six runtime record types and five safe configuration definitions', () => {
+  assert.equal(solutionVersion, '0.9.0.0');
   assert.equal(tables.length, 6);
-  assert.equal(environmentVariables.length, 4);
+  assert.equal(environmentVariables.length, 5);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_ProcessingMode').defaultvalue, 'Disabled');
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_PilotMailbox').defaultvalue, '');
   assert.ok(tables.every(item => item.OwnershipType === 'UserOwned' && item.IsAuditEnabled.Value));
@@ -126,7 +126,7 @@ test('review, processing, and enrollment choices default to non-active states', 
   for (const attribute of choices) {
     const initial = attribute.OptionSet.Options.find(option => option.Value === attribute.DefaultFormValue);
     assert.match(initial.Label.LocalizedLabels[0].Label,
-      /^(Pending|Incomplete|Not attempted|User|Paused|Not started)$/);
+      /^(Pending|Incomplete|Not attempted|User|Paused|Not started|Not known)$/);
   }
   assert.ok(relationships.every(item => item.CascadeConfiguration.Delete === 'Restrict'));
 });
@@ -212,7 +212,7 @@ test('bootstrap upgrades the reviewed 0.5 solution only after publishing the new
   const publishIndex = state.writes.findIndex(item => item.path === 'PublishXml');
   const upgradeIndex = state.writes.findIndex(item => item.path.startsWith('solutions('));
   assert.ok(publishIndex >= 0 && upgradeIndex > publishIndex);
-  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.7.0.0']);
+  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.9.0.0']);
 });
 
 test('0.6 migration adds only the new immutable verification event columns', async () => {
@@ -290,4 +290,68 @@ test('export rejects current values, wrong organizations, and ambiguous mode bef
     : state.fetch(url, options);
   await assert.rejects(exportSolution(target, true, { origin: target.environmentOrigin, fetch: fetcher }),
     /tenant-specific current values/);
+});
+
+test('explicit development migration preserves current settings without writing them', async () => {
+  const state = fakeDataverse();
+  await bootstrap(target, { origin: target.environmentOrigin, fetch: state.fetch });
+  state.setSolutionVersion('0.8.0.0');
+  state.writes.length = 0;
+  const fetcher = async (url, options) => url.includes('environmentvariablevalues?')
+    ? { ok: true, status: 200, json: async () => ({ value: [{ environmentvariablevalueid: 'synthetic' }] }) }
+    : state.fetch(url, options);
+  const context = { origin: target.environmentOrigin, fetch: fetcher };
+  for (const preserveOperationalSettings of [false, 'true']) {
+    await assert.rejects(bootstrap(target, { ...context, preserveOperationalSettings }), /Tenant-specific current values/);
+  }
+  const report = await bootstrap(target, { ...context, preserveOperationalSettings: true });
+  assert.equal(report.published, true);
+  assert.deepEqual(report.updated, ['solution 0.8.0.0 -> 0.9.0.0']);
+  assert.ok(!state.writes.some(write => write.path.startsWith('environmentvariablevalues')));
+  state.writes.length = 0;
+  await assert.rejects(bootstrap({ ...target, environmentType: 'Production' },
+    { ...context, preserveOperationalSettings: true }));
+  await assert.rejects(bootstrap(target,
+    { ...context, origin: 'https://other.crm.dynamics.com', preserveOperationalSettings: true }));
+  await assert.rejects(bootstrap({ ...target, organizationId: '55555555-5555-5555-5555-555555555555' },
+    { ...context, preserveOperationalSettings: true }), /no writes performed/);
+  assert.equal(state.writes.length, 0);
+});
+
+test('private review export requires literal consent and retains identity and export guards', async () => {
+  const state = fakeDataverse();
+  await bootstrap(target, { origin: target.environmentOrigin, fetch: state.fetch });
+  state.writes.length = 0;
+  const exports = [];
+  const fetcher = async (url, options) => {
+    if (url.includes('environmentvariablevalues?')) {
+      return { ok: true, status: 200, json: async () => ({ value: [{ environmentvariablevalueid: 'synthetic' }] }) };
+    }
+    if (url.endsWith('/ExportSolution')) {
+      exports.push(JSON.parse(options.body));
+      return { ok: true, status: 200, json: async () => ({ ExportSolutionFile: 'UEsDBA==' }) };
+    }
+    return state.fetch(url, options);
+  };
+  const context = { origin: target.environmentOrigin, fetch: fetcher };
+  for (const privateReviewOnly of [false, 'true']) {
+    await assert.rejects(exportSolution(target, true, { ...context, privateReviewOnly }), /tenant-specific current values/);
+  }
+  assert.equal(exports.length, 0);
+  for (const managed of [false, true]) {
+    await exportSolution(target, managed, { ...context, privateReviewOnly: true });
+    assert.equal(exports.at(-1).Managed, managed);
+    assert.ok(Object.entries(exports.at(-1)).filter(([key]) => key.startsWith('Export'))
+      .every(([, value]) => value === false));
+  }
+  const count = exports.length;
+  await assert.rejects(exportSolution({ ...target, environmentType: 'Production' }, true,
+    { ...context, privateReviewOnly: true }));
+  await assert.rejects(exportSolution(target, true,
+    { ...context, origin: 'https://other.crm.dynamics.com', privateReviewOnly: true }));
+  await assert.rejects(exportSolution({ ...target, organizationId: '55555555-5555-5555-5555-555555555555' },
+    true, { ...context, privateReviewOnly: true }), /organization/);
+  await assert.rejects(exportSolution(target, 'true', { ...context, privateReviewOnly: true }), /must be explicit/);
+  assert.equal(exports.length, count);
+  assert.equal(state.writes.length, 0);
 });

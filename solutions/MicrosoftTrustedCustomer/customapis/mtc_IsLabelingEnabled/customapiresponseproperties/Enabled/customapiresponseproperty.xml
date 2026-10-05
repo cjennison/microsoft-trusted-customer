@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Enabled">
+  <displayname default="Enabled">
+    <label description="Enabled" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_IsLabelingEnabled.Enabled</name>
+  <type>0</type>
+</customapiresponseproperty>

@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="KnownCandidateCount">
+  <displayname default="KnownCandidateCount">
+    <label description="KnownCandidateCount" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_ProcessMessageBatch.KnownCandidateCount</name>
+  <type>7</type>
+</customapiresponseproperty>

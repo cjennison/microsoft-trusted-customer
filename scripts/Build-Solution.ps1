@@ -47,7 +47,7 @@ foreach ($package in $paths) {
             $connectors[0].connectorid -ne '8da23315-b15c-46d9-9f6f-dc85080b0276') {
             throw 'The packaged custom Graph connector is missing or has the wrong identity.'
         }
-        foreach ($property in 'openapidefinition', 'connectionparameters', 'connectionparametersets', 'policytemplateinstances', 'iconblob') {
+        foreach ($property in 'openapidefinition', 'connectionparameters', 'connectionparametersets', 'policytemplateinstances', 'customcodeblobcontent', 'iconblob') {
             $entryPath = [string]$connectors[0].$property
             if (-not $entryPath.StartsWith('/Connector/') -or
                 -not $archive.GetEntry($entryPath.TrimStart('/'))) {
@@ -64,7 +64,10 @@ foreach ($package in $paths) {
         if (-not $archive.GetEntry($pluginFileName.TrimStart('/'))) {
             throw 'The packaged registrar assembly binary is missing.'
         }
-        foreach ($apiName in 'mtc_VerifySender', 'mtc_RevokeSender', 'mtc_SetMailboxEnrollment') {
+        foreach ($apiName in 'mtc_VerifySender', 'mtc_RevokeSender', 'mtc_SetMailboxEnrollment',
+            'mtc_SetMailboxFolderScope', 'mtc_BeginMailboxPoll', 'mtc_ProcessMessageBatch',
+            'mtc_CompleteMailboxPage', 'mtc_ReportMailboxFailure', 'mtc_GetMessageLabelPlan',
+            'mtc_IsLabelingEnabled', 'mtc_VerifyMessagePresentation', 'mtc_ReportPresentationFailure') {
             if (-not $archive.GetEntry("customapis/$apiName/customapi.xml")) {
                 throw "Packaged registrar API metadata is missing: $apiName"
             }

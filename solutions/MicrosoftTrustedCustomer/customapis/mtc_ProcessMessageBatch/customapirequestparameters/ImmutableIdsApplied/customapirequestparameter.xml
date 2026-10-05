@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="ImmutableIdsApplied">
+  <displayname default="ImmutableIdsApplied">
+    <label description="ImmutableIdsApplied" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_ProcessMessageBatch.ImmutableIdsApplied</name>
+  <type>0</type>
+</customapirequestparameter>

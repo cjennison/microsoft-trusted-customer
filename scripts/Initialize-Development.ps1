@@ -1,7 +1,8 @@
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
 param(
     [Parameter(Mandatory)]
-    [string] $ConfigurationFile
+    [string] $ConfigurationFile,
+    [switch] $PreserveOperationalSettings
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,5 +15,6 @@ if (-not $PSCmdlet.ShouldProcess($config.environmentOrigin, 'Create or verify th
 $source = Get-Content -LiteralPath (Join-Path $root 'src\provisioning\dataverse.js') -Raw
 $target = $config | Select-Object environmentOrigin, organizationId, environmentType, authorizationConfirmed |
     ConvertTo-Json -Compress
-$report = Invoke-MtcBrowserJob -Configuration $config -JavaScript "$source`nreturn MtcProvisioning.bootstrap($target);"
+$context = if ($PreserveOperationalSettings) { '{preserveOperationalSettings:true}' } else { '{}' }
+$report = Invoke-MtcBrowserJob -Configuration $config -JavaScript "$source`nreturn MtcProvisioning.bootstrap($target, $context);"
 $report | ConvertTo-Json -Depth 5

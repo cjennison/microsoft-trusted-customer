@@ -45,6 +45,7 @@ namespace Mtc.Registrar
                     throw new ArgumentException("Shared email providers cannot be approved as a domain. Verify the exact email address instead.");
                 return domain;
             }
+
             if (type != "contact")
                 throw new ArgumentException("Choose an exact email address or a business domain.");
             Text(value, "Email address", 320);
@@ -54,6 +55,8 @@ namespace Mtc.Registrar
                 throw new ArgumentException("Unsupported email address.");
             return parts[0] + "@" + Domain(parts[1]);
         }
+
+        public static bool IsConsumerDomain(string value) => ConsumerDomains.Contains(value);
 
         public static DateTime Expiry(DateTime expiry, DateTime now)
         {

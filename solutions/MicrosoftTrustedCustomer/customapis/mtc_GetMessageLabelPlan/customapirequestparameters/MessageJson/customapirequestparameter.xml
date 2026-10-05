@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="MessageJson">
+  <displayname default="MessageJson">
+    <label description="MessageJson" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_GetMessageLabelPlan.MessageJson</name>
+  <type>10</type>
+</customapirequestparameter>

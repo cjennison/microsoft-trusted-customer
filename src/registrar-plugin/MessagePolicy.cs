@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Mtc.Registrar
+{
+    public sealed class ReceivingHeader
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+    }
+
+    public sealed class MessageDecision
+    {
+        public bool Known { get; set; }
+        public bool AuthenticationAligned { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public static class MessagePolicy
+    {
+        public static MessageDecision Assess(string from, string sender, string[] replyTo,
+            ReceivingHeader[] headers, bool registryApproved)
+        {
+            var decision = new MessageDecision { Reason = "MTC_REGISTRY_NO_MATCH" };
+            string address;
+            try { address = VerificationPolicy.Target("contact", from); }
+            catch (ArgumentException) { decision.Reason = "MTC_INVALID_FROM"; return decision; }
+            var domain = address.Substring(address.LastIndexOf('@') + 1);
+            if (!string.IsNullOrEmpty(sender))
+            {
+                try
+                {
+                    if (!string.Equals(VerificationPolicy.Target("contact", sender), address, StringComparison.Ordinal))
+                    {
+                        decision.Reason = "MTC_CONFLICTING_SENDER";
+                        return decision;
+                    }
+                }
+                catch (ArgumentException) { decision.Reason = "MTC_INVALID_SENDER"; return decision; }
+            }
+            foreach (var reply in replyTo ?? Array.Empty<string>())
+            {
+                try
+                {
+                    if (!string.Equals(VerificationPolicy.Target("contact", reply), address, StringComparison.Ordinal))
+                    {
+                        decision.Reason = "MTC_UNSUPPORTED_REPLY_TO";
+                        return decision;
+                    }
+                }
+                catch (ArgumentException) { decision.Reason = "MTC_INVALID_REPLY_TO"; return decision; }
+            }
+            var all = headers ?? Array.Empty<ReceivingHeader>();
+            var authentication = Exact(all, "Authentication-Results");
+            var source = Exact(all, "X-MS-Exchange-Organization-AuthSource");
+            var direction = Exact(all, "X-MS-Exchange-Organization-MessageDirectionality");
+            if (authentication.Length != 1 || source.Length != 1 || direction.Length != 1)
+            {
+                decision.Reason = "MTC_RECEIVING_BOUNDARY_MISSING_OR_AMBIGUOUS";
+                return decision;
+            }
+            var sourceHost = (source[0].Value ?? "").Trim();
+            if (!Regex.IsMatch(sourceHost, @"^[a-z0-9.-]+\.(prod\.outlook\.com|outlook\.office365\.com)$", RegexOptions.IgnoreCase) ||
+                !string.Equals((direction[0].Value ?? "").Trim(), "Incoming", StringComparison.OrdinalIgnoreCase))
+            {
+                decision.Reason = "MTC_RECEIVING_BOUNDARY_UNSUPPORTED";
+                return decision;
+            }
+            var result = Regex.Replace(authentication[0].Value ?? "", @"\r?\n[ \t]+", " ").Trim();
+            if (!Regex.IsMatch(result, @"^mx\.microsoft\.com(?:[ \t]+1)?[ \t]*;", RegexOptions.IgnoreCase))
+            {
+                decision.Reason = "MTC_AUTH_SERVICE_UNSUPPORTED";
+                return decision;
+            }
+            result = Regex.Replace(result, @"\([^()]*\)", " ");
+            if (result.Contains("(") || result.Contains(")") ||
+                !SinglePass(result, "spf") || !SinglePass(result, "dmarc") ||
+                !SinglePass(result, "compauth"))
+            {
+                decision.Reason = "MTC_AUTHENTICATION_FAILED_OR_AMBIGUOUS";
+                return decision;
+            }
+            var dkim = Tokens(result, "dkim");
+            if (dkim.Length == 0 || dkim.Any(value => !string.Equals(value, "pass", StringComparison.OrdinalIgnoreCase)))
+            {
+                decision.Reason = "MTC_DKIM_FAILED_OR_UNSUPPORTED";
+                return decision;
+            }
+            var headerFrom = Tokens(result, "header.from");
+            if (headerFrom.Length != 1)
+            {
+                decision.Reason = "MTC_DMARC_ALIGNMENT_AMBIGUOUS";
+                return decision;
+            }
+            string authenticatedDomain;
+            try { authenticatedDomain = VerificationPolicy.Domain(headerFrom[0]); }
+            catch (ArgumentException) { decision.Reason = "MTC_INVALID_AUTHENTICATED_DOMAIN"; return decision; }
+            if (!string.Equals(domain, authenticatedDomain, StringComparison.Ordinal))
+            {
+                decision.Reason = "MTC_DMARC_FROM_MISALIGNED";
+                return decision;
+            }
+            decision.AuthenticationAligned = true;
+            decision.Known = registryApproved;
+            decision.Reason = registryApproved ? "MTC_ACTIVE_REGISTRY_AND_ALIGNED_RECEIVING_AUTH" : "MTC_REGISTRY_NO_MATCH";
+            return decision;
+        }
+
+        private static ReceivingHeader[] Exact(IEnumerable<ReceivingHeader> headers, string name)
+        {
+            return headers.Where(header => header != null &&
+                string.Equals(header.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+        }
+
+        private static string[] Tokens(string value, string name)
+        {
+            return Regex.Matches(value, @"(?:^|[;\s])" + Regex.Escape(name) + @"=([^\s;]+)",
+                RegexOptions.IgnoreCase).Cast<Match>().Select(match => match.Groups[1].Value).ToArray();
+        }
+
+        private static bool SinglePass(string result, string name)
+        {
+            var values = Tokens(result, name);
+            return values.Length == 1 && string.Equals(values[0], "pass", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}

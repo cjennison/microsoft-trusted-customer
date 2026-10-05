@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="NextPageUrl">
+  <displayname default="NextPageUrl">
+    <label description="NextPageUrl" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_CompleteMailboxPage.NextPageUrl</name>
+  <type>10</type>
+</customapirequestparameter>

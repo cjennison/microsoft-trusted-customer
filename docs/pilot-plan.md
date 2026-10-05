@@ -1,23 +1,24 @@
 # Client pilot: known sender / not known
 
-**Status:** Automatic-email pilot approval remains blocked. Version 0.7.0.0 has six Dataverse
+**Status:** Visible-label/production approval remains gated. Version 0.9.0.0 has six Dataverse
 tables, two disabled manual proof flows, a certificate-authenticated Graph
-connector, and one disabled scheduled shadow flow. A synthetic external Inbox message
+connector, a running authorized development shadow worker, and a separate Off
+presentation worker. A synthetic external Inbox message
 was shown in Outlook web as `MTC Proof - not known`; repeat processing reused the
 same assessment. After a 24-hour exact-address approval with a verified party,
 contact, evidence, reviewer binding, and verification case, the same message
 changed to `MTC Proof - known sender`; a repeat run reused the same row. No
-automatic processor or production label is active. An accelerated expiry test
+production label rollout is active. An accelerated expiry test
 then reused the same row, removed Known, and restored `MTC Proof - not known`
 in Outlook web without deleting the expired records. App-only Graph access also
 proved exact immutable selection, ETag category writes, preservation, readback,
 and idempotent assessments on both shared mailboxes; a temporarily excluded
 mailbox returned HTTP 403. After propagation, the permanent Exchange mailbox
 type scope returned HTTP 200 for all 12 current user/shared mailboxes. The
-scheduled flow has no enrolled mailbox records, performs no category writes,
-and has not completed live shadow acceptance. The Sender Registry app and
-server-side single-registrar controls are now published; existing authorized mailboxes
-are staged Paused. Synthetic UI Verify/Renew/Revoke, exact-domain API
+shadow worker has completed scans across all approved enrolled mailboxes and
+performs no category writes. The Sender Registry app and server-side
+single-registrar controls are published, with leased paging, bounded registry
+reassessment, deterministic ordinal message identities, and in-app failure alerts. Synthetic UI Verify/Renew/Revoke, exact-domain API
 verification/revocation, actual-caller stamping, and denied direct/unauthorized,
 consumer-domain, expired-evidence, and missing-evidence approvals were observed.
 
@@ -60,6 +61,15 @@ operating ownership, and explicit exclusions.
   expiry, revocation, actual-caller stamping, and immutable verification cases.
 - [x] Publish the guided registrar workspace and operator mailbox controls.
 - [x] Stage all existing user/shared mailbox records Paused without activation.
+- [x] With separate approval, run all approved mailboxes in metadata-only shadow
+  mode with complete paging, overlap checkpoints, current registry decisions,
+  30-day reassessment, and observable in-app failure delivery.
+- [x] Exercise one separately authorized retained proof email through Known
+  and revocation back to Not known, preserving unrelated categories, verifying
+  server-side readback, and observing both states in Outlook web.
+- [ ] Accept the separate automated presentation worker's actual category path.
+- [ ] Confirm customer app-user entitlements, operational evidence retention,
+  client coverage, rollback, and separate production/visible-label authorization.
 - [ ] Retrieve immutable message identity and trusted Microsoft receiving
   authentication without message bodies or attachments.
 - [ ] Match exact contact first, then explicitly approved business domain.

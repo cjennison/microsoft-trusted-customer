@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="LeaseId">
+  <displayname default="LeaseId">
+    <label description="LeaseId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_BeginMailboxPoll.LeaseId</name>
+  <type>12</type>
+</customapiresponseproperty>

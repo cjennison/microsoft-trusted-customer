@@ -1,0 +1,360 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26": {
+        "runtimeSource": "embedded",
+        "api": {
+          "name": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+          "logicalName": "mtc_mtc-20microsoft-20graph-20mail"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCGraphMail"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "mtc_MTCMicrosoftDataverse"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Minute",
+            "interval": 5
+          },
+          "type": "Recurrence",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_presentation_failure": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AnyPresentationFailed",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          }
+        },
+        "Check_explicit_label_authorization": {
+          "runAfter": {
+            "Initialize_presentation_failure": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "actionName": "mtc_IsLabelingEnabled"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "PerformUnboundAction",
+              "connectionName": "shared_commondataserviceforapps"
+            },
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 4,
+              "interval": "PT10S"
+            }
+          }
+        },
+        "Require_explicit_label_authorization": {
+          "actions": {
+            "List_pending_presentations": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "mtc_messageassessments",
+                  "$select": "mtc_messageassessmentid,mtc_mailboxreference,mtc_stablemessageid",
+                  "$filter": "@concat('mtc_processingstatus eq 100000001 and mtc_presentationstatus ne 100000001 and mtc_receivedon ge ', formatDateTime(addDays(utcNow(), -30), 'yyyy-MM-ddTHH:mm:ssZ'))",
+                  "$top": 500
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                },
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 4,
+                  "interval": "PT10S"
+                }
+              }
+            },
+            "For_each_pending_presentation": {
+              "foreach": "@body('List_pending_presentations')?['value']",
+              "actions": {
+                "Reconcile_one_message": {
+                  "actions": {
+                    "Get_current_immutable_metadata": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "mailbox": "@items('For_each_pending_presentation')?['mtc_mailboxreference']",
+                          "messageId": "@items('For_each_pending_presentation')?['mtc_stablemessageid']",
+                          "$select": "id,parentFolderId,receivedDateTime,categories,from,sender,replyTo,internetMessageHeaders",
+                          "Prefer": "IdType=\"ImmutableId\""
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+                          "operationId": "GetMessageMetadata",
+                          "connectionName": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26"
+                        },
+                        "retryPolicy": {
+                          "type": "exponential",
+                          "count": 4,
+                          "interval": "PT10S"
+                        }
+                      }
+                    },
+                    "Plan_current_registry_presentation": {
+                      "runAfter": {
+                        "Get_current_immutable_metadata": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "actionName": "mtc_GetMessageLabelPlan",
+                          "item/AssessmentId": "@items('For_each_pending_presentation')?['mtc_messageassessmentid']",
+                          "item/MessageJson": "@string(body('Get_current_immutable_metadata'))"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "PerformUnboundAction",
+                          "connectionName": "shared_commondataserviceforapps"
+                        },
+                        "retryPolicy": {
+                          "type": "exponential",
+                          "count": 4,
+                          "interval": "PT10S"
+                        }
+                      }
+                    },
+                    "Require_category_write": {
+                      "actions": {
+                        "Apply_owned_category_plan": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "mailbox": "@items('For_each_pending_presentation')?['mtc_mailboxreference']",
+                              "messageId": "@items('For_each_pending_presentation')?['mtc_stablemessageid']",
+                              "If-Match": "@body('Plan_current_registry_presentation')?['ETag']",
+                              "Prefer": "IdType=\"ImmutableId\"",
+                              "body/categories": "@json(body('Plan_current_registry_presentation')?['CategoriesJson'])"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+                              "operationId": "UpdateMessageCategories",
+                              "connectionName": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26"
+                            },
+                            "retryPolicy": {
+                              "type": "exponential",
+                              "count": 4,
+                              "interval": "PT10S"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Plan_current_registry_presentation": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "expression": {
+                        "equals": [
+                          "@body('Plan_current_registry_presentation')?['NeedsWrite']",
+                          true
+                        ]
+                      },
+                      "type": "If"
+                    },
+                    "Get_category_readback": {
+                      "runAfter": {
+                        "Require_category_write": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "mailbox": "@items('For_each_pending_presentation')?['mtc_mailboxreference']",
+                          "messageId": "@items('For_each_pending_presentation')?['mtc_stablemessageid']",
+                          "$select": "id,parentFolderId,receivedDateTime,categories,from,sender,replyTo,internetMessageHeaders",
+                          "Prefer": "IdType=\"ImmutableId\""
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26",
+                          "operationId": "GetMessageMetadata",
+                          "connectionName": "shared_mtc-20microsoft-20graph-20mail-5fad2197ce913463-bbf4bc2ad08b7a26"
+                        },
+                        "retryPolicy": {
+                          "type": "exponential",
+                          "count": 4,
+                          "interval": "PT10S"
+                        }
+                      }
+                    },
+                    "Verify_exact_category_readback": {
+                      "runAfter": {
+                        "Get_category_readback": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "actionName": "mtc_VerifyMessagePresentation",
+                          "item/AssessmentId": "@items('For_each_pending_presentation')?['mtc_messageassessmentid']",
+                          "item/MessageJson": "@string(body('Get_category_readback'))",
+                          "item/ExpectedCategoriesJson": "@body('Plan_current_registry_presentation')?['CategoriesJson']"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "PerformUnboundAction",
+                          "connectionName": "shared_commondataserviceforapps"
+                        },
+                        "retryPolicy": {
+                          "type": "exponential",
+                          "count": 4,
+                          "interval": "PT10S"
+                        }
+                      }
+                    }
+                  },
+                  "type": "Scope"
+                },
+                "Mark_presentation_failure": {
+                  "runAfter": {
+                    "Reconcile_one_message": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "AnyPresentationFailed",
+                    "value": true
+                  }
+                },
+                "Notify_presentation_failure": {
+                  "runAfter": {
+                    "Mark_presentation_failure": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "actionName": "mtc_ReportPresentationFailure",
+                      "item/AssessmentId": "@items('For_each_pending_presentation')?['mtc_messageassessmentid']",
+                      "item/Reason": "Outlook category write/readback failed. The assessment remains pending or failed; inspect the run before claiming that relabeling completed."
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "PerformUnboundAction",
+                      "connectionName": "shared_commondataserviceforapps"
+                    },
+                    "retryPolicy": {
+                      "type": "exponential",
+                      "count": 4,
+                      "interval": "PT10S"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "List_pending_presentations": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Check_explicit_label_authorization": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@body('Check_explicit_label_authorization')?['Enabled']",
+              true
+            ]
+          },
+          "type": "If"
+        },
+        "Require_successful_presentations": {
+          "actions": {
+            "Fail_notified_presentation_run": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "MTC_PRESENTATION_FAILED",
+                  "message": "One or more category reconciliations failed; in-app operator alerts were issued."
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Require_explicit_label_authorization": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@variables('AnyPresentationFailed')",
+              true
+            ]
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

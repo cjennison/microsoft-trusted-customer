@@ -17,6 +17,7 @@
     <RolePrivilege name="prvCreatemtc_BusinessParty" level="Global" />
     <RolePrivilege name="prvCreatemtc_VerificationCase" level="Global" />
     <RolePrivilege name="prvCreateSharePointData" level="Global" />
+    <RolePrivilege name="prvReadappnotification" level="Basic" />
     <RolePrivilege name="prvReadEnvironmentVariableDefinition" level="Global" />
     <RolePrivilege name="prvReadmtc_ApprovedContact" level="Global" />
     <RolePrivilege name="prvReadmtc_ApprovedDomain" level="Global" />

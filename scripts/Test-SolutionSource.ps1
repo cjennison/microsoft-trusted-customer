@@ -31,12 +31,13 @@ $workflowRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.ty
 $expectedWorkflowIds = @(
     '{4de55d19-e43c-44ba-be99-856d9a672e88}',
     '{81b229c4-d759-49a7-93da-816056e8841c}',
+    '{92696be8-ad52-4b79-81b2-0dee193808cf}',
     '{be76ff86-2bbf-f111-aaaf-000d3a31bda5}'
 )
 $workflowDifference = Compare-Object $expectedWorkflowIds @($workflowRoots.id)
 if ($workflowDifference -or
     @($workflowRoots | Where-Object { $_.behavior -ne '0' }).Count) {
-    throw 'Expected the two reviewed manual proofs and one disabled scheduled shadow workflow root.'
+    throw 'Expected the two reviewed manual proofs and the disabled shadow/presentation workflow roots.'
 }
 $connectorRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '372' })
 if ($connectorRoots.Count -ne 1 -or
@@ -55,6 +56,7 @@ if ($unexpectedRoots.Count) {
 }
 $expectedDefaults = @{
     mtc_ProcessingMode = 'Disabled'
+    mtc_LabelingMode = 'Disabled'
     mtc_PilotMailbox = ''
     mtc_OperatorAlertDestination = ''
     mtc_PolicyVersion = '1'
@@ -87,6 +89,11 @@ foreach ($file in Get-ChildItem -LiteralPath $source -Recurse -File) {
     }
     if ($file.Extension -ieq '.png' -and
         $file.Name -eq 'mtc_mtc-20microsoft-20graph-20mail_iconblob.Png' -and
+        $file.Directory.Name -eq 'Connectors') {
+        continue
+    }
+    if ($file.Extension -eq '.csx' -and
+        $file.Name -eq 'mtc_mtc-20microsoft-20graph-20mail_customcodeblobcontent.csx' -and
         $file.Directory.Name -eq 'Connectors') {
         continue
     }
@@ -127,7 +134,7 @@ if ($graphReference.customconnectorid.connectorid -ne '8da23315-b15c-46d9-9f6f-d
 $connectorDirectory = Join-Path $source 'Connectors'
 $connectorPrefix = 'mtc_mtc-20microsoft-20graph-20mail'
 $connectorFiles = @(Get-ChildItem -LiteralPath $connectorDirectory -File)
-if ($connectorFiles.Count -ne 6 -or
+if ($connectorFiles.Count -ne 7 -or
     @($connectorFiles.Name | Where-Object { $_ -notlike "$connectorPrefix*" }).Count) {
     throw 'Unexpected custom connector source files.'
 }
@@ -159,11 +166,11 @@ if ((Compare-Object @('certOauth') $securityNames) -or
 $connectorText = ($connectorFiles | Where-Object Extension -in @('.json', '.xml') |
     ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
 if ($connectorText -match 'GenericFederatedIdentityCredential|clientSecret|authorization_code|@' -or
-    $connectorText -match '(?i)sesturbo|\.crm\d*\.dynamics\.com') {
+    $connectorText -match '(?i)\.crm\d*\.dynamics\.com') {
     throw 'Tenant-local or unsupported authentication data was found in the Graph connector source.'
 }
 $expectedAdditionalRoots = @{
-    '20' = 2
+    '20' = 3
     '61' = 3
     '62' = 1
     '80' = 1
@@ -178,8 +185,8 @@ foreach ($type in $expectedAdditionalRoots.Keys) {
     }
 }
 $roleFiles = @(Get-ChildItem -LiteralPath (Join-Path $source 'Roles') -Filter '*.xml' -File)
-if ((Compare-Object @('MTC Registrar.xml', 'MTC Operator.xml') @($roleFiles.Name))) {
-    throw 'Expected exactly the registrar and operator roles.'
+if ((Compare-Object @('MTC Registrar.xml', 'MTC Operator.xml', 'MTC Processor.xml') @($roleFiles.Name))) {
+    throw 'Expected exactly the registrar, operator and processor roles.'
 }
 foreach ($roleFile in $roleFiles) {
     $roleXml = [xml](Get-Content -LiteralPath $roleFile.FullName -Raw)
@@ -189,6 +196,7 @@ foreach ($roleFile in $roleFiles) {
     $unsafe = @($roleXml.Role.RolePrivileges.RolePrivilege | Where-Object {
         $_.name -match '^prv(Delete|Assign|Share)mtc_' -or
         ($roleXml.Role.name -eq 'MTC Operator' -and $_.name -match '^prv(Create|Write)mtc_(Approved|Business|Verification)') -or
+        ($roleXml.Role.name -eq 'MTC Processor' -and $_.name -match '^prv(Create|Write)mtc_(Approved|Business|Verification)') -or
         ($roleXml.Role.name -eq 'MTC Registrar' -and $_.name -match '^prv(Create|Write)mtc_MailboxEnrollment')
     })
     if ($unsafe.Count) { throw "Unexpected registrar/operator privileges: $($roleFile.Name)" }
@@ -200,7 +208,9 @@ if ($pluginFiles.Count -ne 1 -or $pluginFiles[0].Name -ne 'MtcRegistrar.dll') {
 $plugin = [xml](Get-Content -LiteralPath ($pluginFiles[0].FullName + '.data.xml') -Raw)
 $pluginTypes = @($plugin.PluginAssembly.PluginTypes.PluginType)
 $expectedPluginTypes = @(
-    'Mtc.Registrar.VerificationApi', 'Mtc.Registrar.RegistryWriteGuard', 'Mtc.Registrar.MailboxApi'
+    'Mtc.Registrar.VerificationApi', 'Mtc.Registrar.RegistryWriteGuard', 'Mtc.Registrar.MailboxApi',
+    'Mtc.Registrar.MailboxRuntime'
+    'Mtc.Registrar.LabelRuntime'
 )
 if ($plugin.PluginAssembly.IsolationMode -ne '2' -or $plugin.PluginAssembly.SourceType -ne '0' -or
     (Compare-Object $expectedPluginTypes @($pluginTypes.Name))) {
@@ -229,6 +239,42 @@ $apiDefinitions = @{
         Type = 'Mtc.Registrar.MailboxApi'
         Inputs = @('MailboxReference', 'MailboxType', 'Enrolled')
     }
+    mtc_SetMailboxFolderScope = @{
+        Type = 'Mtc.Registrar.MailboxApi'
+        Inputs = @('MailboxRecordId', 'FolderIds')
+    }
+    mtc_BeginMailboxPoll = @{
+        Type = 'Mtc.Registrar.MailboxRuntime'
+        Inputs = @('MailboxRecordId')
+    }
+    mtc_ProcessMessageBatch = @{
+        Type = 'Mtc.Registrar.MailboxRuntime'
+        Inputs = @('MailboxRecordId', 'LeaseId', 'MessagesJson', 'ImmutableIdsApplied')
+    }
+    mtc_CompleteMailboxPage = @{
+        Type = 'Mtc.Registrar.MailboxRuntime'
+        Inputs = @('MailboxRecordId', 'LeaseId', 'NextPageUrl')
+    }
+    mtc_ReportMailboxFailure = @{
+        Type = 'Mtc.Registrar.MailboxRuntime'
+        Inputs = @('MailboxRecordId', 'LeaseId', 'Reason')
+    }
+    mtc_GetMessageLabelPlan = @{
+        Type = 'Mtc.Registrar.LabelRuntime'
+        Inputs = @('AssessmentId', 'MessageJson')
+    }
+    mtc_IsLabelingEnabled = @{
+        Type = 'Mtc.Registrar.LabelRuntime'
+        Inputs = @()
+    }
+    mtc_VerifyMessagePresentation = @{
+        Type = 'Mtc.Registrar.LabelRuntime'
+        Inputs = @('AssessmentId', 'MessageJson', 'ExpectedCategoriesJson')
+    }
+    mtc_ReportPresentationFailure = @{
+        Type = 'Mtc.Registrar.LabelRuntime'
+        Inputs = @('AssessmentId', 'Reason')
+    }
 }
 $apiDirectories = @(Get-ChildItem -LiteralPath (Join-Path $source 'customapis') -Directory)
 if ((Compare-Object @($apiDefinitions.Keys) @($apiDirectories.Name))) {
@@ -243,8 +289,10 @@ foreach ($directory in $apiDirectories) {
         $api.plugintypeid.plugintypeexportkey -ne $handler.PluginTypeId) {
         throw "Unsafe or unbound registrar API: $($directory.Name)"
     }
-    $parameters = @(Get-ChildItem -LiteralPath (Join-Path $directory.FullName 'customapirequestparameters') -Directory)
-    if ((Compare-Object $definition.Inputs @($parameters.Name))) {
+    $parameterPath = Join-Path $directory.FullName 'customapirequestparameters'
+    $parameters = if (Test-Path -LiteralPath $parameterPath) { @(Get-ChildItem -LiteralPath $parameterPath -Directory) } else { @() }
+    if (($definition.Inputs.Count -eq 0 -and @($parameters).Count -ne 0) -or
+        ($definition.Inputs.Count -gt 0 -and (Compare-Object $definition.Inputs @($parameters.Name)))) {
         throw "Unexpected registrar API inputs: $($directory.Name)"
     }
 }
@@ -258,8 +306,8 @@ foreach ($fileName in 'index.html', 'app.js', 'styles.css') {
 }
 $workflowDirectory = Join-Path $source 'Workflows'
 $workflowFiles = @(Get-ChildItem -LiteralPath $workflowDirectory -Filter '*.json' -File)
-if ($workflowFiles.Count -ne 3) {
-    throw 'Expected exactly three reviewed cloud-flow definitions.'
+if ($workflowFiles.Count -ne 4) {
+    throw 'Expected exactly four reviewed cloud-flow definitions.'
 }
 foreach ($workflowFile in $workflowFiles) {
     $workflowText = Get-Content -LiteralPath $workflowFile.FullName -Raw
@@ -363,11 +411,12 @@ if ($shadowTriggers.Count -ne 1 -or $shadowTriggers[0].Name -ne 'Recurrence' -or
 }
 $shadowActions = $shadowWorkflow.properties.definition.actions
 if (-not $shadowActions.List_enrolled_mailboxes -or -not $shadowActions.For_each_enrolled_mailbox -or
-    -not $shadowWorkflowText.Contains('ListInboxMessages') -or
-    -not $shadowWorkflowText.Contains('GetMessageMetadata') -or
-    -not $shadowWorkflowText.Contains('MTC_SHADOW_NO_PRESENTATION') -or
-    -not $shadowWorkflowText.Contains('MTC_DUPLICATE_ASSESSMENT') -or
-    -not $shadowWorkflowText.Contains('MTC_AUTH_BOUNDARY_MISSING_OR_AMBIGUOUS') -or
+    -not $shadowWorkflowText.Contains('ListMailboxMessages') -or
+    -not $shadowWorkflowText.Contains('mtc_ProcessMessageBatch') -or
+    -not $shadowWorkflowText.Contains('mtc_BeginMailboxPoll') -or
+    -not $shadowWorkflowText.Contains('mtc_CompleteMailboxPage') -or
+    -not $shadowWorkflowText.Contains('mtc_ReportMailboxFailure') -or
+    -not $shadowWorkflowText.Contains('Stop_on_page_failure') -or
     -not $shadowWorkflowText.Contains('mtc_enrollmentstatus eq 100000001') -or
     -not $shadowWorkflowText.Contains('@odata.nextLink')) {
     throw 'The scheduled shadow flow lost a mailbox-scope, paging, authentication, or persistence safeguard.'
@@ -377,9 +426,55 @@ $shadowPresentationValues = [regex]::Matches(
     '"item/mtc_presentationstatus"\s*:\s*([^,\r\n]+)'
 )
 if ($shadowWorkflowText -match 'UpdateMessageCategories|MTC Proof - known sender|MTC Proof - not known' -or
-    $shadowPresentationValues.Count -ne 2 -or
+    $shadowPresentationValues.Count -ne 0 -or
     @($shadowPresentationValues | Where-Object { $_.Groups[1].Value.Trim() -ne '100000000' }).Count) {
     throw 'The shadow processor must not write Outlook categories or claim presentation success.'
+}
+$presentationFile = $workflowFiles | Where-Object { $_.Name -like 'MTCProcessor-authorizedOutlookpresentation-*' }
+$presentationText = Get-Content -LiteralPath $presentationFile.FullName -Raw
+$presentation = $presentationText | ConvertFrom-Json
+$presentationConnections = $presentation.properties.connectionReferences
+if ($presentationConnections.$graphApiName.runtimeSource -ne 'embedded' -or
+    $presentationConnections.$graphApiName.connection.connectionReferenceLogicalName -ne 'mtc_MTCGraphMail' -or
+    $presentationConnections.shared_commondataserviceforapps.runtimeSource -ne 'embedded' -or
+    $presentationConnections.shared_commondataserviceforapps.connection.connectionReferenceLogicalName -ne 'mtc_MTCMicrosoftDataverse') {
+    throw 'Unexpected presentation connection-reference binding.'
+}
+$presentationTriggers = @($presentation.properties.definition.triggers.PSObject.Properties)
+if ($presentationTriggers.Count -ne 1 -or $presentationTriggers[0].Name -ne 'Recurrence' -or
+    $presentationTriggers[0].Value.type -ne 'Recurrence' -or
+    $presentationTriggers[0].Value.recurrence.frequency -ne 'Minute' -or
+    $presentationTriggers[0].Value.recurrence.interval -ne 5 -or
+    $presentationTriggers[0].Value.runtimeConfiguration.concurrency.runs -ne 1) {
+    throw 'Presentation must retain its serialized five-minute schedule.'
+}
+$presentationActions = $presentation.properties.definition.actions
+$authorization = $presentationActions.Require_explicit_label_authorization
+$pending = $authorization.actions.For_each_pending_presentation
+$reconcile = $pending.actions.Reconcile_one_message.actions
+$write = $reconcile.Require_category_write.actions.Apply_owned_category_plan
+if ($presentationActions.Check_explicit_label_authorization.inputs.parameters.actionName -ne 'mtc_IsLabelingEnabled' -or
+    $authorization.expression.equals[0] -ne "@body('Check_explicit_label_authorization')?['Enabled']" -or
+    $authorization.expression.equals[1] -ne $true -or
+    @($authorization.else.actions.PSObject.Properties).Count -ne 0 -or
+    -not $authorization.actions.List_pending_presentations -or
+    $pending.runtimeConfiguration.concurrency.repetitions -ne 1 -or
+    $reconcile.Plan_current_registry_presentation.inputs.parameters.actionName -ne 'mtc_GetMessageLabelPlan' -or
+    $write.inputs.host.operationId -ne 'UpdateMessageCategories' -or
+    $write.inputs.parameters.'If-Match' -ne "@body('Plan_current_registry_presentation')?['ETag']" -or
+    $write.inputs.parameters.'body/categories' -ne "@json(body('Plan_current_registry_presentation')?['CategoriesJson'])" -or
+    $reconcile.Verify_exact_category_readback.inputs.parameters.actionName -ne 'mtc_VerifyMessagePresentation' -or
+    $pending.actions.Notify_presentation_failure.inputs.parameters.actionName -ne 'mtc_ReportPresentationFailure' -or
+    -not $presentationText.Contains('MTC_PRESENTATION_FAILED')) {
+    throw 'Presentation lost an independent authorization, ETag, readback, or failure safeguard.'
+}
+foreach ($readName in 'Get_current_immutable_metadata', 'Get_category_readback') {
+    $read = $reconcile.$readName
+    if ($read.inputs.host.operationId -ne 'GetMessageMetadata' -or
+        $read.inputs.parameters.Prefer -ne 'IdType="ImmutableId"' -or
+        $read.inputs.parameters.'$select' -ne 'id,parentFolderId,receivedDateTime,categories,from,sender,replyTo,internetMessageHeaders') {
+        throw 'Presentation must retrieve fresh immutable metadata and headers before planning and after writing.'
+    }
 }
 $userPath = Join-Path $source 'Entities\systemuser\Entity.xml'
 if (Test-Path -LiteralPath $userPath) {

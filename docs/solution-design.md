@@ -1,21 +1,27 @@
 # Incoming email known-sender qualification
 
-**Status:** Version 0.7.0.0 development architecture with six Dataverse tables,
+**Status:** Version 0.9.0.0 development architecture with six Dataverse tables,
 two disabled manual synthetic proof flows, a portable certificate-authenticated
-Graph connector, and one disabled scheduled shadow flow. One delivered external message
+Graph connector, and separate shadow/presentation workers exported Off.
+One delivered external message
 changed from `MTC Proof - not known` to `MTC Proof - known sender` after an
 approved 24-hour exact-contact record was added. An accelerated expiry test
 then reconciled the same retained message back to Not known. An app-only
 Exchange-RBAC proof also categorized one immutable message in each shared
 mailbox, proved HTTP 403 for a temporarily excluded mailbox, and then validated
 HTTP 200 across all 12 current mailboxes under the permanent mailbox-type scope.
-The shadow processor has no enrolled mailboxes, performs no category writes,
-and has not completed live end-to-end shadow acceptance. Production activation
+The shadow processor performs no category writes. Production activation
 is not complete. The Sender Registry app, caller-stamped
 single-registrar APIs, protected registry writes, identity keys, and separate
 registrar/operator roles are now deployed and demonstrated with synthetic data.
-Existing authorized mailbox records are Paused; automatic email classification remains
-unaccepted and Off.
+The authorized development pilot now runs metadata-only shadow assessment across
+enrolled user/shared mailboxes with complete Graph pagination, leased overlap
+checkpoints, deterministic case-sensitive message identities, 30-day registry
+reassessment, and user-specific in-app alerts. Outlook presentation is a separate
+Off worker with an independent Disabled/Pilot/Production setting. An authorized
+single retained proof message passed Known and revocation-to-Not-known server
+planning, ETag writes, exact readback, and actual Outlook web visibility.
+Tenant-wide presentation execution and production activation remain unaccepted.
 See the [replication pattern](replication-pattern.md) for exact evidence.
 
 ## 1. Product purpose
@@ -90,7 +96,7 @@ category appears; this is not a pre-delivery gateway.
 
 ## 4. Dataverse records
 
-Version 0.7.0.0 contains six custom user-owned tables:
+Version 0.9.0.0 contains six custom user-owned tables:
 
 | Record | Purpose |
 | --- | --- |
@@ -116,9 +122,11 @@ verification cases retain the exact target, method, evidence reference, expiry,
 revocation reason, actual user, and server time.
 
 This live MVP supports only the explicitly selected single-registrar model.
-Independent-review behavior remains an offline contract. The processor still
-needs wiring to approval/revocation events before the app can report completed
-Outlook reassessment. Organization-wide Dataverse auditing remains a separately
+Independent-review behavior remains an offline contract. The shadow processor
+uses immutable approval/revocation events and due expiry to rescan the approved
+retained-message window. Completed shadow reassessment does not establish
+completed Outlook presentation; the automatic category path remains unaccepted.
+Organization-wide Dataverse auditing remains a separately
 authorized configuration step; immutable cases are not a claim that it is enabled.
 
 Required server-side verification behavior:
@@ -159,12 +167,15 @@ parser.
 
 ## 6. Outlook presentation
 
-The service owns exactly two categories:
+The service reconciles exactly four owned category names across two modes:
 
-- `MTC Proof - known sender`
-- `MTC Proof - not known`
+| Mode | Known | Not known |
+| --- | --- | --- |
+| Pilot | `MTC Proof - known sender` | `MTC Proof - not known` |
+| Production | `MTC - known sender` | `MTC - not known` |
 
-Production names can drop `Proof` only after acceptance and activation approval.
+Only one current category is applied to a message. Production mode requires
+separate acceptance and activation approval.
 Category reconciliation must:
 
 - Preserve every unrelated user category.
@@ -192,11 +203,14 @@ Failures must remain visible:
 - Connector or subscription outage -> reconciliation queue and service-health
   alert; never an optimistic default.
 
-The two manual proofs and scheduled shadow flow currently export Off. The shadow
-flow reads only explicitly enrolled rows and fails closed when Graph reports a
-next page, but no mailbox is enrolled and no live scheduled run is accepted.
-Generalized authentication parsing, paging, alert delivery, visible labels, and
-reconciliation remain production blockers.
+All four portable flows export Off. The development shadow worker is separately
+authorized and running: it persists every complete page and only advances the
+delivery checkpoint after the final page. A page failure stops the loop, retains
+the cursor, records failed health, and alerts the configured operator. Registry
+approval/revocation and due expiry trigger the bounded retained-message rescan.
+The label worker requires independent authorization and rechecks current
+registry/authentication eligibility before planning and after readback. Its
+tenant-wide category path has not been accepted or activated.
 
 ## 8. Access, privacy, and licensing
 

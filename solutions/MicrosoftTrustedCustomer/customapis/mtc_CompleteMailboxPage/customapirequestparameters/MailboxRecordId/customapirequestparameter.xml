@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="MailboxRecordId">
+  <displayname default="MailboxRecordId">
+    <label description="MailboxRecordId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_CompleteMailboxPage.MailboxRecordId</name>
+  <type>12</type>
+</customapirequestparameter>

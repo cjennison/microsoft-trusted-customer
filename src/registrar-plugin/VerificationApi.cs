@@ -35,11 +35,11 @@ namespace Mtc.Registrar
             }
         }
 
-        internal static void RequireRole(IOrganizationService service, Guid userId, string roleName)
+        internal static void RequireRole(IOrganizationService service, Guid userId, string roleName, bool interactive = true)
         {
             var user = service.Retrieve("systemuser", userId, new ColumnSet("isdisabled", "applicationid"));
             if (user.GetAttributeValue<bool>("isdisabled") ||
-                user.GetAttributeValue<Guid>("applicationid") != Guid.Empty)
+                (interactive && user.GetAttributeValue<Guid>("applicationid") != Guid.Empty))
                 throw new InvalidPluginExecutionException("An enabled interactive operator is required.");
             var roles = new QueryExpression("role") { ColumnSet = new ColumnSet("roleid"), TopCount = 1 };
             roles.Criteria.AddCondition("name", ConditionOperator.Equal, roleName);

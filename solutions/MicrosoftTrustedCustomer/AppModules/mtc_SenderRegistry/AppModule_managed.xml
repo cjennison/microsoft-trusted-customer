@@ -14,6 +14,7 @@
   </AppModuleComponents>
   <AppModuleRoleMaps>
     <Role id="{4328e682-46c0-f111-aaad-7ced8d6f24ce}" />
+    <Role id="{e5541d07-58c0-f111-aaaf-000d3a31bda5}" />
     <Role id="{1c28e682-46c0-f111-aaad-7ced8d6f24ce}" />
     <Role id="{627090ff-40a3-4053-8790-584edc5be201}" />
     <Role id="{119f245c-3cc8-4b62-b31c-d1a046ced15d}" />
@@ -25,6 +26,10 @@
     <Description description="Verify business sender addresses and domains, review coverage, and monitor service health." languagecode="1033" />
   </Descriptions>
   <appsettings>
+    <appsetting settingdefinitionid.uniquename="AllowNotificationsEarlyAccess">
+      <iscustomizable>1</iscustomizable>
+      <value>true</value>
+    </appsetting>
     <appsetting settingdefinitionid.uniquename="AppChannel">
       <iscustomizable>1</iscustomizable>
       <value>1</value>

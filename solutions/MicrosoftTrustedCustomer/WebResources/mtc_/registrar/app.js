@@ -201,9 +201,26 @@
       state.mode = mode;
       renderSenders();
       renderMailboxes();
+      await refreshAlerts();
       status(`Registry loaded. Configured processing mode: ${mode}.`);
     } finally {
       element('refresh').disabled = false;
+    }
+  }
+
+  async function refreshAlerts() {
+    const identity = await request('WhoAmI');
+    if (!/^[0-9a-f-]{36}$/i.test(identity.UserId)) throw new Error('Current operator identity is unavailable.');
+    const notices = await collection(
+      `appnotifications?$select=appnotificationid,title,body,createdon&$filter=_ownerid_value eq ${identity.UserId} and title eq 'Sender Registry processing needs attention'&$orderby=createdon desc&$top=10`
+    );
+    const panel = element('operator-alert-list');
+    panel.replaceChildren();
+    element('operator-alerts').hidden = notices.length === 0;
+    for (const notice of notices) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = `${dateText(notice.createdon)}: ${notice.body}`;
+      panel.append(paragraph);
     }
   }
 
@@ -292,4 +309,6 @@
   element('revoke-cancel').addEventListener('click', () => element('revoke-dialog').close());
   setExpiry();
   refresh().catch(error => status(`Could not load the registry: ${error.message}`, true));
+  setInterval(() => refreshAlerts().catch(error =>
+    status(`Could not refresh operator notifications: ${error.message}`, true)), 60000);
 })();

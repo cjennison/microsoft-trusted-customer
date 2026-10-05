@@ -1,12 +1,14 @@
 # Email verification workflow
 
 **Status:** Product requirements and implementation gates, recorded October 2,
-2026. Version 0.7.0.0 now includes a published Sender Registry app with guided
+2026. Version 0.9.0.0 now includes a published Sender Registry app with guided
 Verify/Renew/Revoke and operator mailbox enrollment, caller-stamped custom APIs,
 protected registry writes, immutable verification cases, and unique identity
-keys. Existing authorized mailbox records are Paused. The scheduled flow remains Off,
-has no enrolled mailboxes and no category-write action; accepted automatic
-processing and production labels are not implemented. The retained-message proof also demonstrated that expiry removes
+keys. An explicitly authorized development shadow pilot is running across
+enrolled user/shared mailboxes with a 30-day reassessment window and in-app
+operator alerts. The shadow worker contains no category-write action. A separate
+Off presentation worker requires independent authorization, and production
+labels are not activated. The retained-message proof also demonstrated that expiry removes
 Known and restores Not known on the same message without deleting the records.
 
 ## The business administrator's workflow

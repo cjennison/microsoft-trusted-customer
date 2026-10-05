@@ -60,7 +60,7 @@ test('registrar deployment fails explicitly on access denial rather than treatin
 
 test('managed or mismatched development schemas prevent every registrar deployment write', async () => {
   for (const solution of [
-    { solutionid: 'synthetic-solution', version: '0.7.0.0', ismanaged: true },
+    { solutionid: 'synthetic-solution', version: '0.9.0.0', ismanaged: true },
     { solutionid: 'synthetic-solution', version: '0.6.0.0', ismanaged: false }
   ]) {
     const requests = [];

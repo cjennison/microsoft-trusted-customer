@@ -1,0 +1,14 @@
+<environmentvariabledefinition schemaname="mtc_LabelingMode">
+  <defaultvalue>Disabled</defaultvalue>
+  <description default="Disabled, Pilot, or Production. Visible labels require separate explicit approval. Shadow processing alone never authorizes categories.">
+    <label description="Disabled, Pilot, or Production. Visible labels require separate explicit approval. Shadow processing alone never authorizes categories." languagecode="1033" />
+  </description>
+  <displayname default="MTC Outlook labeling mode">
+    <label description="MTC Outlook labeling mode" languagecode="1033" />
+  </displayname>
+  <introducedversion>0.8.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>

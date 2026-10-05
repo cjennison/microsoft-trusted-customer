@@ -78,10 +78,10 @@ present the development foundation as a functioning anti-phishing system.
 - Treat its completion report as schema provisioning only. On failure, inspect
   retained components and the browser job status before retrying. Never launch
   duplicate jobs or erase resources to hide a failed attempt.
-- Confirm six tables, relationships, four definitions, the custom Graph
-  connector/reference, and all three Off flows in the maker portal. For the
-  registrar MVP, also confirm the published Sender Registry app, three custom
-  APIs, registrar/operator roles, fourteen synchronous guards, and active
+- Confirm six tables, relationships, five definitions, the custom Graph
+  connector/reference and paging code, and all four Off artifact flows. For the
+  registrar/runtime MVP, also confirm the published Sender Registry app, twelve custom
+  APIs, registrar/operator/processor roles, fourteen synchronous guards, and active
   unique address/domain/mailbox keys.
   Keep processing disabled and leave current environment variable values out of
   the development solution that will be exported to public Git.
@@ -109,6 +109,19 @@ present the development foundation as a functioning anti-phishing system.
 - Stage existing mailboxes through the operator API or
   `scripts/Onboard-DevelopmentMailboxes.ps1`. New rows remain Paused. Adding
   enrollment records is not authorization to activate processing or labels.
+- Shadow and Outlook presentation are separate workers. `mtc_ProcessingMode`
+  authorizes only the shadow pipeline; `mtc_LabelingMode` defaults Disabled and
+  requires separate Pilot/Production approval. A successful shadow decision
+  cannot authorize category writes.
+- Preserve exact case-sensitive Graph IDs with deterministic assessment GUIDs.
+  Dataverse text equality is case-insensitive; filter any legacy lookup by
+  ordinal ID before cardinality checks. Stop an Until page loop on its first
+  failed page, retain the saved cursor, and deliver an operator-visible failure.
+- For a running authorized pilot, `-PrivateReview` exports may contain current
+  values only beneath Git-ignored `.local`. Review and omit those values and
+  normalize exported flow metadata Off before copying portable source. Default
+  public exports still reject current values; never clear live tenant settings
+  merely to make an export pass.
 - Spike trusted receiving-system authentication, exact identity matching,
   assessment persistence, binary category writes, shared mailboxes, and
   excluded-mailbox denial.

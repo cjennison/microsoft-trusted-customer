@@ -32,7 +32,7 @@
         method, credentials: 'same-origin', redirect: 'error',
         headers: {
           ...headers,
-          ...(['POST', 'PATCH'].includes(method) && path !== 'appmodules' ? {
+          ...(['POST', 'PATCH'].includes(method) && !['appmodules', 'appsettings'].includes(path) ? {
             Prefer: 'return=representation', 'MSCRM.SolutionUniqueName': solutionName
           } : {})
         },
@@ -109,6 +109,8 @@
     const verificationType = await pluginType('Mtc.Registrar.VerificationApi');
     const guardType = await pluginType('Mtc.Registrar.RegistryWriteGuard');
     const mailboxType = await pluginType('Mtc.Registrar.MailboxApi');
+    const runtimeType = await pluginType('Mtc.Registrar.MailboxRuntime');
+    const labelType = await pluginType('Mtc.Registrar.LabelRuntime');
     const apiDefinitions = [
       {
         name: 'mtc_VerifySender', display: 'Verify or renew a sender',
@@ -128,10 +130,62 @@
         pluginType: mailboxType,
         parameters: [['MailboxReference', 10], ['MailboxType', 10], ['Enrolled', 0]],
         results: [['RecordId', 12]]
+      },
+      {
+        name: 'mtc_SetMailboxFolderScope', display: 'Configure delivery folder exclusions',
+        pluginType: mailboxType,
+        parameters: [['MailboxRecordId', 12], ['FolderIds', 10]], results: []
+      },
+      {
+        name: 'mtc_BeginMailboxPoll', display: 'Lease an enrolled mailbox poll',
+        pluginType: runtimeType,
+        parameters: [['MailboxRecordId', 12]],
+        results: [['Enabled', 0], ['MailboxReference', 10], ['LeaseId', 12], ['ScanFrom', 1], ['ScanUntil', 1], ['NextPageUrl', 10]]
+      },
+      {
+        name: 'mtc_ProcessMessageBatch', display: 'Assess a metadata-only shadow batch',
+        pluginType: runtimeType,
+        parameters: [['MailboxRecordId', 12], ['LeaseId', 12], ['MessagesJson', 10], ['ImmutableIdsApplied', 0]],
+        results: [['ProcessedCount', 7], ['KnownCandidateCount', 7]]
+      },
+      {
+        name: 'mtc_CompleteMailboxPage', display: 'Persist a successful page checkpoint',
+        pluginType: runtimeType,
+        parameters: [['MailboxRecordId', 12], ['LeaseId', 12], ['NextPageUrl', 10]], results: []
+      },
+      {
+        name: 'mtc_ReportMailboxFailure', display: 'Record a failure and notify the operator',
+        pluginType: runtimeType,
+        parameters: [['MailboxRecordId', 12], ['LeaseId', 12], ['Reason', 10]], results: []
+      },
+      {
+        name: 'mtc_GetMessageLabelPlan', display: 'Plan an authorized Outlook category reconciliation',
+        pluginType: labelType,
+        parameters: [['AssessmentId', 12], ['MessageJson', 10]],
+        results: [['CategoriesJson', 10], ['ETag', 10], ['NeedsWrite', 0]]
+      },
+      {
+        name: 'mtc_IsLabelingEnabled', display: 'Check separately authorized visible-label mode',
+        pluginType: labelType, parameters: [], results: [['Enabled', 0]]
+      },
+      {
+        name: 'mtc_VerifyMessagePresentation', display: 'Verify exact Outlook category readback',
+        pluginType: labelType,
+        parameters: [['AssessmentId', 12], ['MessageJson', 10], ['ExpectedCategoriesJson', 10]],
+        results: []
+      },
+      {
+        name: 'mtc_ReportPresentationFailure', display: 'Record a category failure and notify the operator',
+        pluginType: labelType,
+        parameters: [['AssessmentId', 12], ['Reason', 10]], results: []
       }
     ];
     for (const definition of apiDefinitions) {
-      const description = definition.pluginType
+      const description = definition.pluginType === labelType
+        ? 'Requires MTC Processor membership and explicit visible-label authorization; current registry/authentication and exact category readback are enforced.'
+        : definition.pluginType === runtimeType
+        ? 'Requires MTC Processor membership; metadata-only shadow processing with mode, mailbox, lease and notification controls.'
+        : definition.pluginType
         ? 'Requires MTC Operator membership; changes mailbox enrollment without activating processing.'
         : 'Requires MTC Registrar membership; stamps the actual interactive caller. Single-registrar MVP.';
       let api = await find('customapis', `uniquename eq '${definition.name}'`, 'customapiid,uniquename,_plugintypeid_value');
@@ -252,6 +306,21 @@
     const validation = await request(`ValidateApp(AppModuleId=${app.appmoduleid})`);
     if (!validation.AppValidationResponse?.ValidationSuccess)
       throw new Error(`Sender Registry validation failed: ${JSON.stringify(validation.AppValidationResponse)}`);
+    const notificationSetting = await find('settingdefinitions',
+      "uniquename eq 'AllowNotificationsEarlyAccess'", 'settingdefinitionid');
+    if (!notificationSetting) throw new Error('The native in-app notification feature is unavailable.');
+    const notificationValue = await find('appsettings/Microsoft.Dynamics.CRM.RetrieveUnpublishedMultiple()',
+      `_parentappmoduleid_value eq ${app.appmoduleid} and _settingdefinitionid_value eq ${notificationSetting.settingdefinitionid}`,
+      'appsettingid,value');
+    if (!notificationValue) {
+      await request('appsettings', 'POST', {
+        value: 'true',
+        'parentappmoduleid@odata.bind': `/appmodules(${app.appmoduleid})`,
+        'settingdefinitionid@odata.bind': `/settingdefinitions(${notificationSetting.settingdefinitionid})`
+      });
+    } else if (notificationValue.value !== 'true') {
+      await request(`appsettings(${notificationValue.appsettingid})`, 'PATCH', { value: 'true' });
+    }
     await request('PublishXml', 'POST', {
       ParameterXml: `<importexportxml><webresources>${Object.values(resources).map(id => `<webresource>${id}</webresource>`).join('')}</webresources><sitemaps><sitemap>${sitemap.sitemapid}</sitemap></sitemaps><appmodules><appmodule>${app.appmoduleid}</appmodule></appmodules></importexportxml>`
     });
@@ -268,26 +337,35 @@
       'prvReadmtc_MessageAssessment', 'prvReadmtc_MailboxEnrollment',
       'prvReadEnvironmentVariableDefinition', 'prvAppendToUser',
       'prvCreatemtc_MailboxEnrollment', 'prvWritemtc_MailboxEnrollment',
-      'prvAppendmtc_MailboxEnrollment', 'prvAppendTomtc_MailboxEnrollment'
+      'prvAppendmtc_MailboxEnrollment', 'prvAppendTomtc_MailboxEnrollment',
+      'prvCreatemtc_MessageAssessment', 'prvWritemtc_MessageAssessment',
+      'prvAppendmtc_MessageAssessment', 'prvAppendTomtc_MessageAssessment',
+      'prvSendAppNotification', 'prvCreateappnotification', 'prvReadappnotification',
+      'prvWriteappnotification', 'prvAppendappnotification', 'prvAppendToappnotification'
     ];
     const privileges = await request(`privileges?$select=privilegeid,name&$filter=${encodeURIComponent(privilegeNames.map(name => `name eq '${name}'`).join(' or '))}`);
     if (privileges.value.length !== privilegeNames.length)
       throw new Error('One or more registrar privileges are unavailable; no access assignment performed.');
-    for (const name of ['MTC Registrar', 'MTC Operator']) {
+    for (const name of ['MTC Registrar', 'MTC Operator', 'MTC Processor']) {
       let role = await find('roles', `name eq '${name}' and _businessunitid_value eq ${businessUnit}`, 'roleid,name');
       if (!role) {
         role = await request('roles', 'POST', {
           name, 'businessunitid@odata.bind': `/businessunits(${businessUnit})`
         });
       }
-      const allowed = name === 'MTC Registrar'
-        ? privileges.value.filter(privilege => !privilege.name.endsWith('mtc_MailboxEnrollment') ||
-          privilege.name === 'prvReadmtc_MailboxEnrollment')
-        : privileges.value.filter(privilege => privilege.name.startsWith('prvRead') ||
-          privilege.name.endsWith('mtc_MailboxEnrollment'));
+      const allowed = privileges.value.filter(privilege => {
+        if (privilege.name.startsWith('prvRead')) return true;
+        if (name === 'MTC Registrar')
+          return registrarPrivileges.includes(privilege.name) || privilege.name === 'prvAppendToUser';
+        if (name === 'MTC Operator') return privilege.name.endsWith('mtc_MailboxEnrollment');
+        return privilege.name.endsWith('mtc_MailboxEnrollment') ||
+          privilege.name.endsWith('mtc_MessageAssessment') || privilege.name.toLowerCase().includes('appnotification');
+      });
       await request(`roles(${role.roleid})/Microsoft.Dynamics.CRM.ReplacePrivilegesRole`, 'POST', {
         Privileges: allowed.map(privilege => ({
-          PrivilegeId: privilege.privilegeid, Depth: 'Global', BusinessUnitId: businessUnit
+          PrivilegeId: privilege.privilegeid,
+          Depth: privilege.name.toLowerCase().includes('appnotification') && privilege.name !== 'prvSendAppNotification' ? 'Basic' : 'Global',
+          BusinessUnitId: businessUnit
         }))
       });
       await addComponent(role.roleid, 20);
@@ -305,7 +383,7 @@
         report.assignments.push(`Current authenticated operator: ${name}`);
       }
     }
-    report.components.push('MTC Registrar and MTC Operator roles');
+    report.components.push('MTC Registrar, MTC Operator and MTC Processor roles');
     await request(`solutions(${solutions.value[0].solutionid})`, 'PATCH', {
       description: 'Development Sender Registry app with caller-stamped single-registrar APIs, protected approval records, and paused mailbox onboarding. Automatic Outlook processing remains Off.'
     });

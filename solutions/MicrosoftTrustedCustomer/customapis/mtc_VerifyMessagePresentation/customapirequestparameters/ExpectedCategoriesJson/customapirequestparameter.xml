@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="ExpectedCategoriesJson">
+  <displayname default="ExpectedCategoriesJson">
+    <label description="ExpectedCategoriesJson" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_VerifyMessagePresentation.ExpectedCategoriesJson</name>
+  <type>10</type>
+</customapirequestparameter>

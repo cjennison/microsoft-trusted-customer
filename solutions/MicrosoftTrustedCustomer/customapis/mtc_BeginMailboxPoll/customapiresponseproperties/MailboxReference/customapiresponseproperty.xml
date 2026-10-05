@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="MailboxReference">
+  <displayname default="MailboxReference">
+    <label description="MailboxReference" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_BeginMailboxPoll.MailboxReference</name>
+  <type>10</type>
+</customapiresponseproperty>

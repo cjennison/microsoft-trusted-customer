@@ -1,0 +1,18 @@
+<customapi uniquename="mtc_SetMailboxFolderScope">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Requires MTC Operator membership; changes mailbox enrollment without activating processing.">
+    <label description="Requires MTC Operator membership; changes mailbox enrollment without activating processing." languagecode="1033" />
+  </description>
+  <displayname default="Configure delivery folder exclusions">
+    <label description="Configure delivery folder exclusions" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>mtc_SetMailboxFolderScope</name>
+  <plugintypeid>
+    <plugintypeexportkey>c8c89119-47c0-f111-aaad-7ced8d6f24ce</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

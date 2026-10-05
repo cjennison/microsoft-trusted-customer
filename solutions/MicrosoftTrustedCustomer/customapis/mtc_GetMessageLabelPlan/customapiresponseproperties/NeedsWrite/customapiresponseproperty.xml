@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="NeedsWrite">
+  <displayname default="NeedsWrite">
+    <label description="NeedsWrite" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_GetMessageLabelPlan.NeedsWrite</name>
+  <type>0</type>
+</customapiresponseproperty>

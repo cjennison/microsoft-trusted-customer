@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Role id="{e5541d07-58c0-f111-aaaf-000d3a31bda5}" name="MTC Processor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <IsCustomizable>1</IsCustomizable>
+  <IsAutoAssigned>0</IsAutoAssigned>
+  <RolePrivileges>
+    <RolePrivilege name="prvAppendappnotification" level="Basic" />
+    <RolePrivilege name="prvAppendmtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvAppendmtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvAppendToappnotification" level="Basic" />
+    <RolePrivilege name="prvAppendTomtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvAppendTomtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvCreateappnotification" level="Basic" />
+    <RolePrivilege name="prvCreatemtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvCreatemtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvCreateSharePointData" level="Global" />
+    <RolePrivilege name="prvReadappnotification" level="Basic" />
+    <RolePrivilege name="prvReadEnvironmentVariableDefinition" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedContact" level="Global" />
+    <RolePrivilege name="prvReadmtc_ApprovedDomain" level="Global" />
+    <RolePrivilege name="prvReadmtc_BusinessParty" level="Global" />
+    <RolePrivilege name="prvReadmtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvReadmtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvReadmtc_VerificationCase" level="Global" />
+    <RolePrivilege name="prvReadSharePointData" level="Global" />
+    <RolePrivilege name="prvReadSharePointDocument" level="Global" />
+    <RolePrivilege name="prvSendAppNotification" level="Global" />
+    <RolePrivilege name="prvWriteappnotification" level="Basic" />
+    <RolePrivilege name="prvWritemtc_MailboxEnrollment" level="Global" />
+    <RolePrivilege name="prvWritemtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvWriteSharePointData" level="Global" />
+  </RolePrivileges>
+</Role>

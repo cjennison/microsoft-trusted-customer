@@ -4,32 +4,43 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Client-showable registrar development MVP, version 0.7.0.0.
+**Status:** Client-showable development MVP, version 0.9.0.0.
 The published **Sender Registry** model-driven Power App now provides guided
 exact-address/business-domain verification, renewal, revocation, mailbox
-onboarding/pause/enrollment, and a basic service-health view. Three Dataverse
+onboarding/pause/enrollment, and a basic service-health view. Twelve Dataverse
 custom APIs enforce the explicitly selected single-registrar model and separate
 operator membership. Fourteen synchronous guards reject direct registry writes,
 deletion, and relationship changes; active unique keys prevent duplicate sender
 and mailbox identities. New verification events preserve the exact target,
 method, evidence reference, expiry, reason, actual caller, and server time.
-The authorized development target has staged its existing user/shared
-mailboxes in Paused state. Actual app Verify/Renew/Revoke operations and live
+The authorized development target has enrolled its approved user/shared
+mailboxes in metadata-only shadow mode. Actual app Verify/Renew/Revoke operations and live
 negative approval scenarios have been exercised with synthetic data; additional
 client users still need entitlement/access confirmation.
 
-Automatic Outlook tagging is **not operational**. All three flows remain Off,
-processing mode remains Disabled, and no mailbox is enrolled. The existing
-scheduled shadow definition still needs complete receiving-authentication
-validation, paging, checkpoint/retry handling, alerts, and retained-message
-reconciliation before acceptance or activation. Earlier manual evidence proves
-retained-message Not known/Known reassessment, expiry, shared-mailbox category
-writes, excluded-mailbox HTTP 403, and all-current-mailbox Graph access.
-The environment remains a Sandbox, not a production deployment.
+Automatic **shadow assessment is operational in the authorized development
+pilot**: the five-minute worker reads all delivery folders except explicit
+outbound/deleted exclusions, follows exact Graph pagination links with immutable
+IDs, uses leased overlap checkpoints, persists metadata-only decisions, handles
+approval/revocation/expiry reassessment within the approved 30-day window, and
+delivers user-specific in-app failure notifications. Case-distinct Graph IDs use
+deterministic binary/GUID identities rather than Dataverse's case-insensitive
+text matching. A failed page stops its loop without advancing the cursor.
+
+Automatic **visible Outlook tagging is not activated**. The separate
+presentation worker remains Off, with `mtc_LabelingMode` Disabled. A specifically
+authorized retained synthetic email was tested through current server-side
+planning, ETag PATCH, exact readback and actual Outlook web visibility: Not known
+to Known after fresh exact-address approval, then back to Not known after
+revocation, preserving unrelated categories. The worker itself has passed only
+a disabled-gate schedule run; tenant-wide label execution and production
+conversion remain separately gated. The environment remains a Sandbox. Portable
+managed/unmanaged artifacts export every flow Off with both modes Disabled.
 
 **Documented:** September 30, 2026. Development foundation added October 1,
 2026; manual message-runtime proof added October 3, 2026; disabled shadow
-runtime foundation and client-showable registrar app added October 4, 2026.
+runtime foundation and client-showable registrar app added October 4, 2026;
+operational shadow pilot and controlled visible proof added October 5, 2026.
 
 ## The opportunity
 
@@ -76,8 +87,10 @@ app and caller-stamped approval controls; `src\runtime\shadow-flow.js` defines
 the disabled scheduled shadow processor; `solutions\MicrosoftTrustedCustomer`
 contains the reviewed dual-format solution export. PowerShell scripts bootstrap/export through an
 isolated, human-authenticated `agent-browser`, and build managed/unmanaged
-packages using the repository-pinned Power Platform CLI. The scheduled flow is
-Off and has no enrolled mailboxes; it is not an operational classifier.
+packages using the repository-pinned Power Platform CLI. All portable flows
+are Off and contain no mailbox enrollments or tenant current settings. The
+authorized development shadow pilot is operational; importing the portable
+release alone does not activate processing or authorize visible labels.
 
 Use the same managed release across customers with private per-tenant settings,
 not client-specific code branches. Bicep is reserved for Azure resources if a

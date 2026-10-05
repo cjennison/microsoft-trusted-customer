@@ -14,11 +14,28 @@ namespace Mtc.Registrar
             var trace = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
             try
             {
-                if (context.MessageName != "mtc_SetMailboxEnrollment" || context.UserId != context.InitiatingUserId)
+                if ((context.MessageName != "mtc_SetMailboxEnrollment" && context.MessageName != "mtc_SetMailboxFolderScope") ||
+                    context.UserId != context.InitiatingUserId)
                     throw new InvalidPluginExecutionException("Mailbox enrollment must execute as the actual authorized operator.");
                 VerificationApi.RequireRole(factory.CreateOrganizationService(null), context.InitiatingUserId, "MTC Operator");
                 var service = factory.CreateOrganizationService(context.UserId);
                 VerificationApi.RequireIdentityKey(service, "mtc_mailboxenrollment", "mtc_mailboxidentity");
+                if (context.MessageName == "mtc_SetMailboxFolderScope")
+                {
+                    if (!(context.InputParameters["MailboxRecordId"] is Guid) ||
+                        (Guid)context.InputParameters["MailboxRecordId"] == Guid.Empty)
+                        throw new ArgumentException("A mailbox enrollment record is required.");
+                    var folders = VerificationPolicy.Text(context.InputParameters["FolderIds"] as string, "Folder exclusions", 4000);
+                    var ids = folders.Split('\n');
+                    if (ids.Length != 4 || ids.Any(id => string.IsNullOrWhiteSpace(id) || id != id.Trim()) ||
+                        ids.Distinct(StringComparer.Ordinal).Count() != 4)
+                        throw new ArgumentException("Exactly four distinct outbound/deleted folder identifiers are required.");
+                    service.Update(new Entity("mtc_mailboxenrollment", (Guid)context.InputParameters["MailboxRecordId"])
+                    {
+                        ["mtc_excludedfolderids"] = folders
+                    });
+                    return;
+                }
                 var address = VerificationPolicy.Target("contact", context.InputParameters["MailboxReference"] as string);
                 var type = context.InputParameters["MailboxType"] as string;
                 if (type != "User" && type != "Shared")
@@ -36,7 +53,7 @@ namespace Mtc.Registrar
                 var existing = matches.SingleOrDefault();
                 var mailbox = new Entity("mtc_mailboxenrollment", existing?.Id ?? Guid.NewGuid())
                 {
-                    ["mtc_name"] = address,
+                    ["mtc_name"] = address.Length > 200 ? address.Substring(0, 200) : address,
                     ["mtc_mailboxreference"] = address,
                     ["mtc_mailboxtype"] = new OptionSetValue(type == "User" ? 100000000 : 100000001),
                     ["mtc_enrollmentstatus"] = new OptionSetValue(enrolled ? 100000001 : 100000000)

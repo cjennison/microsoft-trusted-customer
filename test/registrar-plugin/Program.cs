@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Proxies;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -35,6 +39,8 @@ internal static class Program
             PolicyTests();
             ApiTests();
             GuardTests();
+            PagingTests();
+            MessagePolicyChecks.Run(Check);
             Console.WriteLine("Registrar plugin: " + passed + " checks passed.");
             return 0;
         }
@@ -185,6 +191,51 @@ internal static class Program
         };
         new RegistryWriteGuard().Execute(provider);
         Check(true, "Unrelated role associations must remain unaffected.");
+    }
+
+    private static void PagingTests()
+    {
+        var initial = "https://graph.microsoft.com/v1.0/users/operator%40customer.example/messages?$select=id,internetMessageHeaders";
+        var context = new PagingContext(new HttpRequestMessage(HttpMethod.Get, initial));
+        context.Request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "SYNTHETIC");
+        var script = new Script { Context = context };
+        script.ExecuteAsync().GetAwaiter().GetResult();
+        Check(context.Sent == 1 && context.Request.Headers.GetValues("Prefer").Single() == "IdType=\"ImmutableId\"",
+            "Paging must enforce immutable IDs.");
+        Check(context.Request.Headers.Authorization.Parameter == "SYNTHETIC", "Paging must preserve platform authentication.");
+        var page = initial + "&$skip=50";
+        context.Request.Headers.Add("x-mtc-page-url", page);
+        script.ExecuteAsync().GetAwaiter().GetResult();
+        Check(context.Request.RequestUri.OriginalString == page && !context.Request.Headers.Contains("x-mtc-page-url"),
+            "Paging must preserve the exact Graph URL and remove its internal header.");
+        foreach (var invalid in new[]
+        {
+            "https://attacker.example/v1.0/users/operator%40customer.example/messages?$select=id,internetMessageHeaders",
+            "http://graph.microsoft.com/v1.0/users/operator%40customer.example/messages?$select=id,internetMessageHeaders",
+            "https://graph.microsoft.com/v1.0/users/other%40customer.example/messages?$select=id,internetMessageHeaders",
+            "https://graph.microsoft.com/v1.0/users/operator%40customer.example/messages?$select=id,body,internetMessageHeaders",
+            "https://graph.microsoft.com/v1.0/users/operator%40customer.example/messages?$select=id,internetMessageHeaders&$expand=attachments",
+            "https://graph.microsoft.com/v1.0/users/operator%40customer.example/mailFolders/inbox?$select=id,internetMessageHeaders"
+        })
+        {
+            var bad = new PagingContext(new HttpRequestMessage(HttpMethod.Get, initial));
+            bad.Request.Headers.Add("x-mtc-page-url", invalid);
+            Reject(() => new Script { Context = bad }.ExecuteAsync().GetAwaiter().GetResult(), "");
+            Check(bad.Sent == 0, "Invalid paging must fail before any authenticated request.");
+        }
+    }
+
+    private sealed class PagingContext : IScriptContext
+    {
+        public string OperationId => "ListMailboxMessages";
+        public HttpRequestMessage Request { get; }
+        public int Sent;
+        public PagingContext(HttpRequestMessage request) { Request = request; }
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Sent++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
     }
 
     private sealed class ContextProxy : RealProxy

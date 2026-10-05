@@ -6,8 +6,14 @@
   <IntroducedVersion>0.6.0.0</IntroducedVersion>
   <FileName>/PluginAssemblies/MtcRegistrar-C83CC572-45C0-F111-AAAD-7CED8D6F24CE/MtcRegistrar.dll</FileName>
   <PluginTypes>
+    <PluginType AssemblyQualifiedName="Mtc.Registrar.LabelRuntime, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="f8160f67-a1c0-f111-aaaf-000d3a31bda5" Name="Mtc.Registrar.LabelRuntime">
+      <FriendlyName>Mtc.Registrar.LabelRuntime</FriendlyName>
+    </PluginType>
     <PluginType AssemblyQualifiedName="Mtc.Registrar.MailboxApi, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="c8c89119-47c0-f111-aaad-7ced8d6f24ce" Name="Mtc.Registrar.MailboxApi">
       <FriendlyName>Mtc.Registrar.MailboxApi</FriendlyName>
+    </PluginType>
+    <PluginType AssemblyQualifiedName="Mtc.Registrar.MailboxRuntime, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="57f3d3bc-57c0-f111-aaaf-000d3a31bda5" Name="Mtc.Registrar.MailboxRuntime">
+      <FriendlyName>Mtc.Registrar.MailboxRuntime</FriendlyName>
     </PluginType>
     <PluginType AssemblyQualifiedName="Mtc.Registrar.RegistryWriteGuard, Mtc.Registrar, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dee353041c94235a" PluginTypeId="cf3cc572-45c0-f111-aaad-7ced8d6f24ce" Name="Mtc.Registrar.RegistryWriteGuard">
       <FriendlyName>Mtc.Registrar.RegistryWriteGuard</FriendlyName>

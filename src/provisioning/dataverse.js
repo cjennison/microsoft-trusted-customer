@@ -2,11 +2,21 @@
 
 (function (root) {
   const solutionName = 'MicrosoftTrustedCustomer';
-  const solutionVersion = '0.7.0.0';
-  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0']);
+  const solutionVersion = '0.9.0.0';
+  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0', '0.7.0.0', '0.8.0.0']);
   const verificationCaseUpgradeColumns = new Set([
     'mtc_TargetType', 'mtc_TargetValue', 'mtc_VerificationMethod', 'mtc_Reason', 'mtc_ExpiresOn'
   ]);
+  const runtimeUpgradeColumns = {
+    mtc_MessageAssessment: new Set([
+      'mtc_SenderAddress', 'mtc_SenderDomain', 'mtc_Decision', 'mtc_EligibilityExpiresOn',
+      'mtc_RegistryCheckedOn'
+    ]),
+    mtc_MailboxEnrollment: new Set([
+      'mtc_NextPageUrl', 'mtc_ScanFrom', 'mtc_ScanUntil', 'mtc_LeaseId', 'mtc_LeaseExpiresOn',
+      'mtc_RegistryCheckedOn', 'mtc_ReassessmentDueOn', 'mtc_LastAlertOn', 'mtc_ExcludedFolderIds'
+    ])
+  };
   const prefix = 'mtc';
   const label = text => ({ LocalizedLabels: [{ Label: text, LanguageCode: 1033 }] });
   const required = value => ({ Value: value });
@@ -112,6 +122,11 @@
         choice('RiskState', 'Risk state', ['Incomplete', 'Review required', 'No signal in completed checks']),
         choice('ProcessingStatus', 'Processing status', ['Pending', 'Completed', 'Failed']),
         choice('PresentationStatus', 'Presentation status', ['Not attempted', 'Applied', 'Failed']),
+        text('SenderAddress', 'Sender address', 320),
+        text('SenderDomain', 'Sender domain', 253),
+        choice('Decision', 'Sender decision', ['Not known', 'Known sender']),
+        date('EligibilityExpiresOn', 'Known eligibility expiry'),
+        date('RegistryCheckedOn', 'Registry checked on'),
         text('ReasonCodes', 'Deterministic reason codes', 4000)]),
     table('MailboxEnrollment', 'Mailbox enrollment', 'Mailbox enrollments',
       'Tenant-local mailbox polling enrollment and health. New records remain paused until explicitly enrolled.',
@@ -121,6 +136,15 @@
         text('Checkpoint', 'Polling checkpoint', 4000),
         date('LastAttemptOn', 'Last poll attempt'),
         date('LastSuccessfulPollOn', 'Last successful poll'),
+        text('NextPageUrl', 'Unfinished Graph page', 4000),
+        date('ScanFrom', 'Current scan start'),
+        date('ScanUntil', 'Current scan cutoff'),
+        text('LeaseId', 'Active poll lease', 36),
+        date('LeaseExpiresOn', 'Poll lease expiry'),
+        date('RegistryCheckedOn', 'Completed registry scan cutoff'),
+        date('ReassessmentDueOn', 'Next verification expiry'),
+        date('LastAlertOn', 'Last operator alert'),
+        text('ExcludedFolderIds', 'Excluded mailbox folders', 4000),
         choice('HealthState', 'Health state', ['Not started', 'Healthy', 'Degraded', 'Failed']),
         text('LastError', 'Last operator-visible error', 4000)])
   ];
@@ -159,6 +183,11 @@
     {
       schemaname: 'mtc_ProcessingMode', displayname: 'MTC processing mode',
       description: 'Disabled, Shadow, or Label. Keep Disabled until explicit acceptance and activation approval.',
+      defaultvalue: 'Disabled', type: 100000000
+    },
+    {
+      schemaname: 'mtc_LabelingMode', displayname: 'MTC Outlook labeling mode',
+      description: 'Disabled, Pilot, or Production. Visible labels require separate explicit approval. Shadow processing alone never authorizes categories.',
       defaultvalue: 'Disabled', type: 100000000
     },
     {
@@ -299,9 +328,11 @@
         await request('EntityDefinitions', 'POST', definition, true);
         existing = await request(path);
       }
-      if (!created && upgradeSolution && definition.SchemaName === 'mtc_VerificationCase') {
+      const upgradeColumns = definition.SchemaName === 'mtc_VerificationCase'
+        ? verificationCaseUpgradeColumns : runtimeUpgradeColumns[definition.SchemaName];
+      if (!created && upgradeSolution && upgradeColumns) {
         for (const attribute of definition.Attributes) {
-          if (verificationCaseUpgradeColumns.has(attribute.SchemaName) &&
+          if (upgradeColumns.has(attribute.SchemaName) &&
               !existing.Attributes.some(item => item.SchemaName === attribute.SchemaName)) {
             await request(`${basePath}/Attributes`, 'POST', attribute, true);
             report.updated.push(`${definition.SchemaName}.${attribute.SchemaName}`);
@@ -359,7 +390,7 @@
         SolutionUniqueName: solutionName, AddRequiredComponents: false
       });
       const currentValues = await request(`environmentvariablevalues?$select=environmentvariablevalueid&$filter=_environmentvariabledefinitionid_value eq ${existing.environmentvariabledefinitionid}`);
-      if (currentValues.value.length) {
+      if (currentValues.value.length && context.preserveOperationalSettings !== true) {
         throw new Error(`Tenant-specific current values exist for ${definition.schemaname}; do not export this development solution to public source control.`);
       }
     }
@@ -401,7 +432,8 @@
       const matches = await request(`environmentvariabledefinitions?$select=environmentvariabledefinitionid&$filter=schemaname eq '${definition.schemaname}'`);
       if (matches.value.length !== 1) throw new Error(`Missing or ambiguous export configuration: ${definition.schemaname}`);
       const values = await request(`environmentvariablevalues?$select=environmentvariablevalueid&$filter=_environmentvariabledefinitionid_value eq ${matches.value[0].environmentvariabledefinitionid}`);
-      if (values.value.length) throw new Error(`Remove tenant-specific current values from the export solution: ${definition.schemaname}`);
+      if (values.value.length && context.privateReviewOnly !== true)
+        throw new Error(`Remove tenant-specific current values from the export solution: ${definition.schemaname}`);
     }
     const result = await request('ExportSolution', 'POST', {
       SolutionName: solutionName, Managed: managed,

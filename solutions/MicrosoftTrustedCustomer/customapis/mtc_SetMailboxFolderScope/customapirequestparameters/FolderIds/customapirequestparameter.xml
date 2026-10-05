@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="FolderIds">
+  <displayname default="FolderIds">
+    <label description="FolderIds" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_SetMailboxFolderScope.FolderIds</name>
+  <type>10</type>
+</customapirequestparameter>

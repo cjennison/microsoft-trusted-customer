@@ -1,8 +1,8 @@
 # Reusable deployment pattern
 
-**Implemented registrar development MVP:** version 0.7.0.0 contains the six-table
-foundation, two disabled manual synthetic message-runtime flows, one disabled
-five-minute shadow flow, portable Outlook/Dataverse/custom Graph connection
+**Implemented development MVP:** version 0.9.0.0 contains the six-table
+foundation, two disabled manual synthetic message-runtime flows, a five-minute
+shadow worker, a separately authorized Outlook presentation worker, portable Outlook/Dataverse/custom Graph connection
 references, and the custom Graph connector. The connector source permits only
 tenant-supplied client-certificate authentication. The repository contains the
 deterministic schema/bootstrap and shadow-flow definitions, reviewed
@@ -10,20 +10,26 @@ managed/unmanaged solution source, export/build scripts, tests, CI,
 configuration examples, and an agent skill.
 
 The solution now also includes the published **Sender Registry** model-driven
-app, three caller-stamped custom APIs, the signed registrar plug-in assembly,
+app, twelve caller-context custom APIs, the signed registrar plug-in assembly,
 fourteen synchronous registry write/relationship guards, unique address/domain/
 mailbox keys, and separate `MTC Registrar`/`MTC Operator` roles. Guided synthetic
 Verify/Renew/Revoke operations were exercised in the actual app. Live exact-domain
 verification/revocation, immutable event data, actual-caller stamping, and
 negative approval scenarios also passed. Existing authorized user/shared mailbox
-records are staged Paused; none is enrolled.
+records have completed an explicitly authorized metadata-only shadow pilot.
+The worker follows exact Graph pagination links through a metadata/mailbox/origin
+guard, leases each scan, uses captured cutoffs with overlap, and reacts to registry
+changes and due expiry within an approved 30-day window. In-app operator alerts
+were delivered and are visible in the actual registry app.
 
-**Not implemented:** live independent-review mode, accepted operational mailbox classifier,
-automatic labels, complete paging/reconciliation, alert delivery, monitoring,
-or production deployment. The scheduled flow is Off, has no enrolled mailbox
-records, and has not run end to end. No live email is being automatically
-qualified by this release; the visible category remains bounded manual proof
-evidence.
+**Not activated/accepted:** live independent-review mode, tenant-wide automated
+Outlook category execution, customer-client coverage and final operational
+handover, or production deployment. The shadow worker is running in the approved
+development pilot; the separate presentation worker is Off and labeling mode is
+Disabled. A specifically authorized retained synthetic message demonstrated
+Known and revocation back to Not known through current server planning,
+ETag writes, exact readback, and actual Outlook web presentation. Its sender
+approval was left Revoked and labeling was restored Disabled after the proof.
 
 **Development proof:** the offline synthetic policy and negative scenario tests
 are supplemented by a saved manual solution flow. In an authorized customer
@@ -49,9 +55,9 @@ reviewer binding, and verification case. The same retained message changed to
 followed by an accelerated expiry test: the party/contact records were retained
 but made expired, and the same message/assessment returned to
 `MTC Proof - not known` with Known removed. This is still not a complete message path or
-cross-tenant deployment test: the current trusted-header match is bounded to the
-observed Microsoft header shape, and automatic triggering and reconciliation
-remain unproven.
+cross-tenant deployment test: the trusted-header policy is bounded to supported
+Microsoft receiving evidence. Subsequent shadow automation and reconciliation
+are described above; the enabled presentation worker remains unaccepted.
 
 The live new-designer attempt to compose the second request from the first
 action's response was discarded because the expression editor rejected even
@@ -69,13 +75,13 @@ plan enrollment.
 **Subsequent customer development setup:** appropriate paid maker/flow-owner
 rights were purchased and assigned after exact-order approval, a restricted
 Sandbox with Dataverse was created, and the reviewed unmanaged foundation was
-imported into the separately authorized commercial-cloud target. The five
-custom tables and four definitions were inspected; processing remains Disabled
-and mailbox/alert settings remain empty. The target now also contains two disabled manual synthetic proof flows, one disabled scheduled
-shadow flow, the paused-by-default mailbox enrollment table, and tenant-bound
-connections.
-This verifies development behavior, not the managed product, live
-classification, or production readiness. Tenant identities, assignments,
+imported into the separately authorized commercial-cloud target. At that
+foundation stage, five custom tables and four definitions were inspected,
+processing was Disabled, and mailbox/alert settings were empty. Later releases
+added paused-by-default enrollment, registrar controls, and the authorized
+shadow pilot described above.
+This verifies development behavior, not a second-tenant managed deployment or
+production readiness. Tenant identities, assignments,
 hashes, assessment data, and observations are retained privately.
 
 ## The repeatable sequence
@@ -110,7 +116,7 @@ They can be used for another customer without re-designing the product.
 | Layer | Portable artifact | Tenant-local work |
 | --- | --- | --- |
 | Registry | Dataverse table/column/relationship metadata in the solution | Independently verified business records, access teams, evidence and retention |
-| Apps/automation | Sender Registry app, protected custom APIs, signed plug-in, registrar/operator roles, two disabled manual proofs, one disabled shadow flow, custom Graph connector/reference and variable definitions | Certificate connection, licensed app users, role assignments, operational owner, mailbox enrollments, alert destination |
+| Apps/automation | Sender Registry app, protected custom APIs, signed plug-in, registrar/operator/processor roles, two disabled manual proofs, disabled-by-default shadow and presentation workers, Graph connector/code and variable definitions | Certificate connection, licensed app users, role assignments, operational owner, mailbox enrollments, alert recipient and separate labeling approval |
 | Deployment | The same reviewed managed ZIP and version | Verified target, private PAC deployment settings and approval evidence |
 | Microsoft security | A reviewed baseline/configuration procedure | Recipient entitlement, policy precedence, mailbox topology, authorized policy changes |
 | Optional Azure | Bicep only if an Azure worker is justified | Subscription/region, scoped identities, monitoring, cost approval |
@@ -298,7 +304,8 @@ Partial components are retained, not silently erased.
 ### Foundation schema
 
 The solution contains BusinessParty, ApprovedDomain, ApprovedContact,
-VerificationCase, and MessageAssessment, with parent/contact/reviewer lookups.
+VerificationCase, MessageAssessment, and MailboxEnrollment, with
+parent/contact/reviewer lookups.
 All custom tables are user-owned.
 Deleting referenced parties/reviewers is restricted; relationships do not
 cascade deletions or sharing.
@@ -315,15 +322,16 @@ No end-user roles are granted by bootstrap.
 | Definition | Portable default |
 | --- | --- |
 | `mtc_ProcessingMode` | `Disabled` |
+| `mtc_LabelingMode` | `Disabled` |
 | `mtc_PilotMailbox` | Empty |
 | `mtc_OperatorAlertDestination` | Empty |
 | `mtc_PolicyVersion` | `1` |
 
-There is no operational or automatically triggered processor to enable yet; the
-manual synthetic proof does not read these values. These definitions are the
-future configuration contract, not proof of a functioning runtime or a
-sufficient kill switch by themselves. Keep current values out of this publicly
-exported development solution.
+The shadow runtime reads processing mode, policy version, and alert destination;
+enrollment rows define its authorized mailbox scope. The presentation runtime
+uses the independent labeling gate. The earlier manual synthetic proofs do not
+read these settings and must remain Off. Definitions alone do not activate the
+service. Keep current values out of publicly exported solution source.
 
 ## Export and build
 
@@ -374,6 +382,45 @@ rejects duplicate/conflicting records rather than implicitly pausing an active
 mailbox or changing its type. It does not create Microsoft 365 users, grant mail
 permissions, or turn processing on.
 
+### Authorized shadow runtime
+
+The paged transport adds `ListMailboxMessages` and the reviewed
+`src\runtime\graph-paging.cs` connector script. It accepts only the exact Graph
+HTTPS origin, the same mailbox message collection, and approved metadata fields;
+it forwards the server's exact next link and enforces immutable IDs. Validate
+the script locally, update/publish it through the supported connector editor if
+compute provisioning rejects the Web API attempt, and prove a real next-page
+read with the target certificate connection.
+
+```powershell
+.\scripts\Initialize-Development.ps1 `
+  -ConfigurationFile .\.local\development.local.json -PreserveOperationalSettings
+.\scripts\Build-RegistrarPlugin.ps1
+.\scripts\Deploy-Registrar.ps1 `
+  -ConfigurationFile .\.local\development.local.json `
+  -VerificationAuthorityMode single-registrar
+.\scripts\Deploy-MailboxRuntime.ps1 `
+  -ConfigurationFile .\.local\development.local.json
+```
+
+`-PreserveOperationalSettings` is an explicit development migration option. It
+preserves existing tenant current values, rather than resetting a running pilot,
+and does not relax target identity, development-type, or export/source guards.
+Normal bootstrap/export still rejects current-value-bearing public source.
+
+Only after shadow scope/window/alert approval, use the private authorized
+certificate mailbox inventory with `Configure-ShadowPilot.ps1 -EnableShadow`.
+It resolves native outbound/deleted folder IDs, enrolls only the approved rows,
+and binds in-app alerts to the current operator. It does not authorize visible
+labels. The separately deployed presentation worker remains Off until its actual
+enabled path and customer-client scenarios pass and separate approval is recorded.
+
+For an active development pilot, use `Export-DevelopmentSolution.ps1
+-PrivateReview` only under ignored `.local`. These archives may contain actual
+current settings and On-state metadata. Omit current values/auth bindings and
+normalize portable flow metadata Off before copying reviewed source. Do not
+clear live tenant settings or pause another process merely to satisfy an export.
+
 ### Portable solution artifacts
 
 The pinned CLI is in `.config/dotnet-tools.json`. Both exports are required;
@@ -394,7 +441,7 @@ dotnet tool run pac solution unpack `
 ```
 
 Review the private unpacked source before updating `solutions\MicrosoftTrustedCustomer`.
-The export guard rejects current values for the four known definitions; it is
+The export guard rejects current values for the five known definitions; it is
 not a general secret scanner. Review every new component, connection ID,
 environment constant, user/team assignment, and dependency. Solution metadata
 IDs and reference-only built-in User metadata are portable, not customer records.
@@ -410,20 +457,27 @@ the old build did not verify the custom connector was embedded in
 `customizations.xml`. The build now checks its actual customization metadata and
 all referenced connector payloads, not just the presence of loose ZIP files.
 
-Reviewed 0.7.0.0 registrar development build (not production acceptance):
+Reviewed 0.9.0.0 development build (not production acceptance):
 
 - Unmanaged SHA-256:
-  `3FBB9DE9F4A9EBA891BDC37172368D7FF8BD8E37AFE4145B738204E4E466C54B`
+  `53A00B0F84E7E44394F746C4D35EB0717521471DAE16A2A33118CAF53358BF5B`
 - Managed SHA-256:
-  `D51F2EAB5F89971DB7606EBCE1E182B7CF055DD81A3FED08DDC7BE34102E7F70`
+  `05FE77677248791EB228D4A7A9F00C4108E0A41CFB28F8AFF4915D3024AB479C`
+
+These identify the retained reviewed archives, not every rebuild. ZIP container
+bytes and hashes can differ between builds; choose one reviewed artifact and
+reuse its exact bytes across deployments rather than treating the version as a
+hash guarantee.
 
 The build validates solution identity, six table roots, both manual proofs, the
-disabled scheduled shadow flow, the app, registrar assembly/APIs/roles/guards,
+disabled scheduled shadow and presentation flows, the app, registrar assembly/APIs/roles/guards,
 the certificate-only custom connector, three
 portable connection references, reference-only User dependency, safe defaults,
 absence of current values/tenant bindings, and JSON/XML parsing. It also
 requires that the shadow flow has no category-write operation and only records
-presentation as Not attempted. It packs managed and unmanaged ZIPs and verifies
+presentation as Not attempted, and that presentation retains its independent
+authorization, fresh immutable reads, ETag writes, exact readback, and failure
+notification path. It packs managed and unmanaged ZIPs and verifies
 their actual manifest managed flags, version, and actual embedded connector. Outputs/hashes are generated
 under ignored `artifacts`. Choose a fresh output directory for each repeat
 build.
@@ -440,8 +494,8 @@ and gate evidence. Default all gates to unknown/not started. For a product
 deployment, create test/pilot resources with authorization, then import the same
 managed release instead of rerunning the development bootstrap on production.
 
-The development proof can be imported into an approved test environment, but
-doing so does not deploy the unimplemented application/processor or prove
+The development release can be imported into an approved test environment, but
+doing so does not bind tenant-local connections, authorize automation, or prove
 cross-tenant operation.
 The separately authorized customer-development import used the unmanaged
 foundation for shared-source feature development. No second-tenant managed
@@ -458,13 +512,13 @@ dotnet tool run pac auth create --name CUSTOMER_TEST `
   --tenant VERIFIED_TENANT_GUID --environment https://example.crm.dynamics.com --deviceCode
 
 dotnet tool run pac solution create-settings `
-  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.7.0.0_managed.zip `
+  --solution-zip .\artifacts\build\MicrosoftTrustedCustomer_0.9.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 
 # Populate target-local settings and independently confirm target/scope first.
 dotnet tool run pac solution import `
   --environment https://example.crm.dynamics.com `
-  --path .\artifacts\build\MicrosoftTrustedCustomer_0.7.0.0_managed.zip `
+  --path .\artifacts\build\MicrosoftTrustedCustomer_0.9.0.0_managed.zip `
   --settings-file .\.local\deployment.local.json
 ```
 
@@ -473,7 +527,7 @@ skips, or blanket workflow activation. Schema import does not create OAuth
 connections, license users, configure Microsoft security, transfer Dataverse
 business records, or enforce independent approval.
 
-Production is blocked until the missing product components and every agreed
+Production is blocked until automatic presentation and every agreed
 gate in the [pilot plan](pilot-plan.md) are implemented and evidenced. First
 validate the trusted authentication/header/category path; do not replace it
 with an optimistic demo that mislabels messages.
@@ -524,7 +578,7 @@ live acceptance or production gates.
 
 ## Manual and shadow runtime proof
 
-The version 0.7.0.0 solution includes two Off, manual-only flows for synthetic
+The version 0.9.0.0 solution includes two Off, manual-only flows for synthetic
 development evidence. The immutable category/persistence flow:
 
 - Finds the exact `MTC-Proof` folder and requires exactly one proof message with
@@ -563,32 +617,50 @@ The third flow is a five-minute recurrence that also exports Off. It:
 
 - Selects only active `MailboxEnrollment` rows explicitly set to Enrolled; new
   rows default to Paused and Not started.
-- Uses the app-only custom Graph connection to list Inbox messages with a
-  ten-minute initial overlap and immutable IDs, then fetches message metadata
-  and internet headers without bodies or attachments.
+- Uses the app-only custom Graph connection to list metadata and headers across
+  delivery folders, excluding Sent Items, Drafts, Outbox and Deleted Items, with
+  a captured upper cutoff and ten-minute overlap. First scans and registry
+  reassessment use the approved 30-day window.
 - Evaluates the bounded trusted Microsoft authentication shape, active exact
   contact first and exact domain second, plus the matched party evidence and
   expiry.
 - Creates or updates one metadata-only assessment per mailbox and immutable
   message ID with presentation status Not attempted.
 - Contains no category update operation or Known/Not known Outlook label text.
-- Does not advance the checkpoint when Graph returns `@odata.nextLink`, when
-  duplicate assessments exist, or when processing fails; mailbox health retains
-  an operator-visible failure and run history remains required.
+- Persists each complete page and follows the exact next link under an origin,
+  mailbox and metadata-only guard. The final page advances the delivery cutoff.
+  Failure stops the Until loop, preserves the unfinished cursor, and notifies
+  the configured operator without an optimistic completion claim.
+- Uses deterministic GUID keys for case-sensitive Graph IDs. Dataverse text
+  equality is case-insensitive, so legacy lookup candidates are narrowed by
+  ordinal message-ID matching before any cardinality decision.
 
-No mailbox is enrolled and no scheduled run has been accepted. Paging,
-throttling/retry policy, alert delivery, generalized authentication parsing,
-and reconciliation still gate activation.
+The development shadow pilot completed all approved mailboxes and subsequent
+scheduled runs. A real text-collation conflict and a non-terminating failed-page
+loop were observed, fixed, regression-tested, and resumed from the retained
+cursor. Live ownership renewal caused retained messages to become Known
+candidates; revocation queued reassessment without resend.
+
+The fourth flow is an independent presentation worker. It exports Off and checks
+`mtc_LabelingMode` before enumerating pending assessments. Current message reads,
+current registry/authentication planning, exact owned-category replacement,
+ETag writes, and current-eligibility readback use the same processor identity.
+The single-message proof passed these server APIs plus app-only Graph transport
+and Outlook web observation. The automated worker itself has only passed a
+disabled-gate run; its enabled category path remains an acceptance gate.
 
 A Dataverse connection
 attempt in run-only invoker context failed Unauthorized before record creation;
 the reviewed flows therefore use the tenant-bound Dataverse connection reference
 in embedded owner context while retaining the Outlook run-only connection for
 manual proof execution. This does not establish the future operational ownership
-model. The current header match and 100-row contact listing are bounded proof
-logic, not the final parser/query design. Automatic triggering, shared mailboxes,
-excluded-mailbox denial, failure reconciliation, and expiry/revocation-triggered
-reassessment remain blocked.
+model. The old manual proof header match and 100-row contact listing remain
+bounded proof logic. The new runtime uses exact per-identity registry queries,
+counts all receiving Authentication-Results headers, validates the exact
+Microsoft marker/version and receiving-source/direction boundary, requires exact
+DMARC From alignment and supported sender/Reply-To identity, and fails closed on
+missing, duplicate, failed or unsupported evidence. Broader forwarding/internal
+message support is not implicitly accepted by the MVP.
 
 ## Official platform references
 

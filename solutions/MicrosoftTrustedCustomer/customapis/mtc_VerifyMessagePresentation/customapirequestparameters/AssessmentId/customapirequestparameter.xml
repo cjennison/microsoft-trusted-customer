@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="AssessmentId">
+  <displayname default="AssessmentId">
+    <label description="AssessmentId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_VerifyMessagePresentation.AssessmentId</name>
+  <type>12</type>
+</customapirequestparameter>

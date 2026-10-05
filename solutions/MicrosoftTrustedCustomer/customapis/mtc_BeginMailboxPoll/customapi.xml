@@ -1,0 +1,18 @@
+<customapi uniquename="mtc_BeginMailboxPoll">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Requires MTC Processor membership; metadata-only shadow processing with mode, mailbox, lease and notification controls.">
+    <label description="Requires MTC Processor membership; metadata-only shadow processing with mode, mailbox, lease and notification controls." languagecode="1033" />
+  </description>
+  <displayname default="Lease an enrolled mailbox poll">
+    <label description="Lease an enrolled mailbox poll" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>mtc_BeginMailboxPoll</name>
+  <plugintypeid>
+    <plugintypeexportkey>57f3d3bc-57c0-f111-aaaf-000d3a31bda5</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

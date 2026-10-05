@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="LeaseId">
+  <displayname default="LeaseId">
+    <label description="LeaseId" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>mtc_ReportMailboxFailure.LeaseId</name>
+  <type>12</type>
+</customapirequestparameter>

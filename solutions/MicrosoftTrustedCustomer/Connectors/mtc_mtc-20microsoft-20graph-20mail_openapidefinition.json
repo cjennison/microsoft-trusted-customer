@@ -3,7 +3,7 @@
   "info": {
     "title": "MTC Microsoft Graph Mail",
     "description": "Scoped Microsoft Graph mail metadata and category operations for Microsoft Trusted Customer.",
-    "version": "1.0"
+    "version": "1.1"
   },
   "host": "graph.microsoft.com",
   "basePath": "/v1.0",
@@ -164,6 +164,62 @@
         "responses": {
           "200": {
             "description": "Updated message"
+          }
+        }
+      }
+    },
+    "/users/{mailbox}/messages": {
+      "get": {
+        "operationId": "ListMailboxMessages",
+        "summary": "List all-folder delivered message metadata with scoped pagination",
+        "parameters": [
+          {
+            "name": "mailbox",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "id,parentFolderId,receivedDateTime,from,sender,replyTo,categories,internetMessageHeaders"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 50
+          },
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "default": "IdType=\"ImmutableId\""
+          },
+          {
+            "name": "x-mtc-page-url",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Exact next-page URL returned by Graph"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped metadata page"
           }
         }
       }

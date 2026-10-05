@@ -1,0 +1,18 @@
+<customapi uniquename="mtc_ReportPresentationFailure">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Requires MTC Processor membership and explicit visible-label authorization; current registry/authentication and exact category readback are enforced.">
+    <label description="Requires MTC Processor membership and explicit visible-label authorization; current registry/authentication and exact category readback are enforced." languagecode="1033" />
+  </description>
+  <displayname default="Record a category failure and notify the operator">
+    <label description="Record a category failure and notify the operator" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>mtc_ReportPresentationFailure</name>
+  <plugintypeid>
+    <plugintypeexportkey>f8160f67-a1c0-f111-aaaf-000d3a31bda5</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

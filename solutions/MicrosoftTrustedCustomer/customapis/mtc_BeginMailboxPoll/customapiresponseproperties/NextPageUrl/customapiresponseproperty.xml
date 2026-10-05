@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="NextPageUrl">
+  <displayname default="NextPageUrl">
+    <label description="NextPageUrl" languagecode="1033" />
+  </displayname>
+  <iscustomizable>0</iscustomizable>
+  <name>mtc_BeginMailboxPoll.NextPageUrl</name>
+  <type>10</type>
+</customapiresponseproperty>
