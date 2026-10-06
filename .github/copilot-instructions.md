@@ -2,6 +2,10 @@
 
 - Read the implementation status in README.md and docs/replication-pattern.md.
   Schema provisioning is not a working email classifier or production approval.
+- For MVP operationalization, read GitHub issue #1 and its latest progress comment.
+  Update its checklist only after observed completion; record sanitized
+  Completed/Blocked/Next progress when a gate changes. The issue is not activation
+  authorization.
 - For customer onboarding, follow .github/skills/deploy-email-qualification/SKILL.md.
 - Use Vercel agent-browser with an isolated session and pinned tab. Never attach
   to a shared CDP browser or export authentication state.

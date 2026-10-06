@@ -86,6 +86,9 @@ can be compromised, and a genuine email can contain a malicious link.
 
 ## Documentation
 
+- [MVP operationalization tracker #1](https://github.com/cjennison/microsoft-trusted-customer/issues/1):
+  remaining Outlook web acceptance, business-administrator access, operational
+  handover, and separately approved activation gates; update across sessions.
 - [Solution design](docs/solution-design.md): trust model, architecture,
   data model, qualification rules, limitations, and Microsoft sources.
 - [Client pilot plan](docs/pilot-plan.md): first-day checklist, decisions,
