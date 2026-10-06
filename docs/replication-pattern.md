@@ -15,7 +15,12 @@ fourteen synchronous registry write/relationship guards, unique address/domain/
 mailbox keys, and separate `MTC Registrar`/`MTC Operator` roles. Guided synthetic
 Verify/Renew/Revoke operations were exercised in the actual app. Live exact-domain
 verification/revocation, immutable event data, actual-caller stamping, and
-negative approval scenarios also passed. Existing authorized user/shared mailbox
+negative approval scenarios also passed. The mailbox-health view decodes the
+published Dataverse choice values (100000000 through 100000003) into Not started,
+Healthy, Degraded, and Failed. Missing or unsupported values remain Unknown,
+never an inferred healthy status. The corrected published app was observed
+showing the actual healthy backend state.
+Existing authorized user/shared mailbox
 records have completed an explicitly authorized metadata-only shadow pilot.
 The worker follows exact Graph pagination links through a metadata/mailbox/origin
 guard, leases each scan, uses captured cutoffs with overlap, and reacts to registry
@@ -736,9 +741,21 @@ working shadow pilot or add broad permissions merely to clear cached 403s.
 A bounded attached setup/cleanup job must remain supervised through cleanup;
 do not claim completion while it is waiting for propagation or denial.
 
+The approved current inventory's setup has since completed with exact category
+and color readbacks. The temporary assignment/scope was removed, and fresh
+certificate category reads denied access across that inventory. This accepts
+permission cleanup and master-category setup, not wider visible presentation.
+
 The initial MVP target is Outlook web. Other clients remain a separate future
 scope, while user/shared-mailbox web coverage remains required before wider
 activation.
+
+Shared-mailbox Outlook web acceptance also requires an explicitly authorized
+human delegate. App-only processing access does not confer human Full Access.
+Keep delegation restricted to the agreed shared mailboxes, preserve existing
+delegates, and do not add Send As or Send on Behalf just to view the proof.
+Record whether the approved human access is temporary or permanent; test
+cleanup must not remove explicitly approved permanent delegation.
 
 ### Presentation failure and recovery acceptance
 

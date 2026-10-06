@@ -44,10 +44,14 @@ managed/unmanaged artifacts export every flow Off with both modes Disabled.
 The current Outlook labels are **✓ Known sender** (blue) and **Unknown sender**
 (gray). The real worker displayed both on one authorized retained proof email
 in the operator's Outlook web mailbox, including revocation and legacy-label
-replacement. Colors were configured in that mailbox's native category list;
-no mailbox-settings application permission was added. Other mailboxes/clients
-still need category setup and acceptance. The checkmark is our category text,
-not a Microsoft verification badge or a safe-email verdict.
+replacement. That proof configured colors through native category settings
+without a mailbox-settings application grant. Category definitions/colors have
+since been readback-verified across the approved current inventory using a
+separately authorized temporary Exchange grant. Its exact role/scope was removed,
+and fresh category reads verified effective revocation. Shared-mailbox Outlook
+web acceptance remains outstanding; category setup is not label activation.
+The checkmark is our category text, not a Microsoft verification badge or a
+safe-email verdict.
 
 Scoped failure/recovery acceptance also passed through the real worker:
 an actual category delta with a stale `If-Match` returned HTTP 412 without
@@ -60,6 +64,8 @@ These controlled tests do not establish outage, wider mailbox, or client coverag
 2026; manual message-runtime proof added October 3, 2026; disabled shadow
 runtime foundation and client-showable registrar app added October 4, 2026;
 operational shadow pilot and controlled visible proof added October 5, 2026.
+Effective category-permission cleanup and the corrected, visibly verified
+mailbox-health display were added October 6, 2026.
 
 ## The opportunity
 

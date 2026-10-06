@@ -136,7 +136,7 @@
       cell(row, mailbox.mtc_mailboxtype === 100000001 ? 'Shared' : 'User');
       cell(row, mailbox.mtc_enrollmentstatus === 100000001 ? 'Enrolled' : 'Paused');
       cell(row, dateText(mailbox.mtc_lastsuccessfulpollon));
-      const health = ['Not started', 'Healthy', 'Degraded', 'Failed'][mailbox.mtc_healthstate] ?? 'Unknown';
+      const health = ['Not started', 'Healthy', 'Degraded', 'Failed'][mailbox.mtc_healthstate - 100000000] ?? 'Unknown';
       badge(cell(row, ''), health, health === 'Failed' ? 'failed' : '');
       const action = cell(row, '');
       const toggle = document.createElement('button');
