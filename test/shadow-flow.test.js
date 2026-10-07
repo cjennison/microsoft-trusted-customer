@@ -29,7 +29,7 @@ test('shadow flow is scheduled, connection-reference based, and category-write f
   const text = JSON.stringify(flow);
   const definition = flow.properties.definition;
   assert.match(workflowId, /^[0-9a-f-]{36}$/);
-  assert.equal(definition.triggers.Recurrence.recurrence.interval, 5);
+  assert.equal(definition.triggers.Recurrence.recurrence.interval, 3);
   assert.equal(definition.triggers.Recurrence.recurrence.frequency, 'Minute');
   assert.equal(flow.properties.connectionReferences[graphApiName].runtimeSource, 'embedded');
   assert.equal(

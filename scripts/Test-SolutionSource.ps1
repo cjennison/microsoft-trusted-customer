@@ -406,8 +406,8 @@ $shadowTriggers = @($shadowWorkflow.properties.definition.triggers.PSObject.Prop
 if ($shadowTriggers.Count -ne 1 -or $shadowTriggers[0].Name -ne 'Recurrence' -or
     $shadowTriggers[0].Value.type -ne 'Recurrence' -or
     $shadowTriggers[0].Value.recurrence.frequency -ne 'Minute' -or
-    $shadowTriggers[0].Value.recurrence.interval -ne 5) {
-    throw 'The shadow processor must use only the reviewed five-minute schedule.'
+    $shadowTriggers[0].Value.recurrence.interval -ne 3) {
+    throw 'The shadow processor must use only the reviewed three-minute schedule.'
 }
 $shadowActions = $shadowWorkflow.properties.definition.actions
 if (-not $shadowActions.List_enrolled_mailboxes -or -not $shadowActions.For_each_enrolled_mailbox -or
@@ -444,9 +444,9 @@ $presentationTriggers = @($presentation.properties.definition.triggers.PSObject.
 if ($presentationTriggers.Count -ne 1 -or $presentationTriggers[0].Name -ne 'Recurrence' -or
     $presentationTriggers[0].Value.type -ne 'Recurrence' -or
     $presentationTriggers[0].Value.recurrence.frequency -ne 'Minute' -or
-    $presentationTriggers[0].Value.recurrence.interval -ne 5 -or
+    $presentationTriggers[0].Value.recurrence.interval -ne 1 -or
     $presentationTriggers[0].Value.runtimeConfiguration.concurrency.runs -ne 1) {
-    throw 'Presentation must retain its serialized five-minute schedule.'
+    throw 'Presentation must retain its serialized one-minute schedule.'
 }
 $presentationActions = $presentation.properties.definition.actions
 $authorization = $presentationActions.Require_explicit_label_authorization
@@ -458,7 +458,7 @@ if ($presentationActions.Check_explicit_label_authorization.inputs.parameters.ac
     $authorization.expression.equals[1] -ne $true -or
     @($authorization.else.actions.PSObject.Properties).Count -ne 0 -or
     -not $authorization.actions.List_pending_presentations -or
-    $pending.runtimeConfiguration.concurrency.repetitions -ne 1 -or
+    $pending.runtimeConfiguration.concurrency.repetitions -ne 20 -or
     $reconcile.Plan_current_registry_presentation.inputs.parameters.actionName -ne 'mtc_GetMessageLabelPlan' -or
     $write.inputs.host.operationId -ne 'UpdateMessageCategories' -or
     $write.inputs.parameters.'If-Match' -ne "@body('Plan_current_registry_presentation')?['ETag']" -or

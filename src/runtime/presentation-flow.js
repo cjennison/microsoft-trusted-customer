@@ -50,7 +50,7 @@
           },
           triggers: {
             Recurrence: {
-              type: 'Recurrence', recurrence: { frequency: 'Minute', interval: 5 },
+              type: 'Recurrence', recurrence: { frequency: 'Minute', interval: 1 },
               runtimeConfiguration: { concurrency: { runs: 1 } }
             }
           },
@@ -67,13 +67,14 @@
                 List_pending_presentations: api(dataverse, 'ListRecords', {
                   entityName: 'mtc_messageassessments',
                   '$select': 'mtc_messageassessmentid,mtc_mailboxreference,mtc_stablemessageid',
-                  '$filter': "@concat('mtc_processingstatus eq 100000001 and mtc_presentationstatus ne 100000001 and mtc_receivedon ge ', formatDateTime(addDays(utcNow(), -30), 'yyyy-MM-ddTHH:mm:ssZ'))",
+                  '$filter': "@concat('mtc_processingstatus eq 100000001 and mtc_receivedon ge ', formatDateTime(addDays(utcNow(), -30), 'yyyy-MM-ddTHH:mm:ssZ'), ' and (mtc_presentationstatus eq 100000000 or mtc_presentationstatus eq null or (mtc_presentationstatus eq 100000002 and mtc_receivedon ge ', formatDateTime(addDays(utcNow(), -2), 'yyyy-MM-ddTHH:mm:ssZ'), '))')",
+                  '$orderby': 'mtc_receivedon desc',
                   '$top': 500
                 }),
                 For_each_pending_presentation: {
                   runAfter: after('List_pending_presentations'), type: 'Foreach',
                   foreach: "@body('List_pending_presentations')?['value']",
-                  runtimeConfiguration: { concurrency: { repetitions: 1 } },
+                  runtimeConfiguration: { concurrency: { repetitions: 20 } },
                   actions: {
                     Reconcile_one_message: {
                       type: 'Scope', actions: {

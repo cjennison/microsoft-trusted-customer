@@ -108,7 +108,7 @@
           },
           triggers: {
             Recurrence: {
-              type: 'Recurrence', recurrence: { frequency: 'Minute', interval: 5 },
+              type: 'Recurrence', recurrence: { frequency: 'Minute', interval: 3 },
               runtimeConfiguration: { concurrency: { runs: 1 } }
             }
           },
