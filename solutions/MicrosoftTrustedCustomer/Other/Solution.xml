@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <ImportExportXml version="9.2.26085.172" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26085.172" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26085.00172">
   <SolutionManifest>
     <UniqueName>MicrosoftTrustedCustomer</UniqueName>
@@ -8,7 +8,7 @@
     <Descriptions>
       <Description description="Development Sender Registry app with caller-stamped single-registrar APIs, protected approval records, and paused mailbox onboarding. Automatic Outlook processing remains Off." languagecode="1033" />
     </Descriptions>
-    <Version>0.9.2.0</Version>
+    <Version>0.9.3.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>

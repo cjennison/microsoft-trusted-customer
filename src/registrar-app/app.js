@@ -307,8 +307,30 @@
     }
   });
   element('revoke-cancel').addEventListener('click', () => element('revoke-dialog').close());
+
+  // Outlook add-in deep links only prefill the form; a registrar must still verify and submit.
+  function applyPrefill() {
+    const query = new URLSearchParams(location.search ?? '');
+    const target = (query.get('target') ?? '').trim();
+    if (!target) return;
+    const type = query.get('type');
+    if (!['contact', 'domain'].includes(type) || target.length > 320 || /\s/.test(target) ||
+        (type === 'contact') !== target.includes('@')) {
+      status('The Outlook prefill was ignored because it was not one exact address or domain.', true);
+      return;
+    }
+    element('target-type').value = type;
+    updateScope();
+    element('target-value').value = target;
+    element('verification-method').value = '';
+    element('evidence-reference').value = '';
+    element('ownership-confirmed').checked = false;
+    showPanel('verify');
+    status('Prefilled from Outlook. Nothing is approved yet: independently confirm ownership, then select Verify.');
+  }
+
   setExpiry();
-  refresh().catch(error => status(`Could not load the registry: ${error.message}`, true));
+  refresh().then(applyPrefill, error => status(`Could not load the registry: ${error.message}`, true));
   setInterval(() => refreshAlerts().catch(error =>
     status(`Could not refresh operator notifications: ${error.message}`, true)), 60000);
 })();

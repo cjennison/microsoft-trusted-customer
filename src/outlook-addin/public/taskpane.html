@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Verify sender</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="taskpane.js" defer></script>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 16px; color: #242424; }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    .notice { background: #f3f2f1; border-left: 4px solid #0078d4; padding: 8px 10px; font-size: 13px; }
+    .sender { margin: 12px 0; word-break: break-all; }
+    .sender strong { display: block; }
+    a.button { display: block; margin: 10px 0; padding: 10px 12px; border-radius: 4px; text-align: center;
+      background: #0078d4; color: #fff; text-decoration: none; font-weight: 600; }
+    a.button.secondary { background: #fff; color: #0078d4; border: 1px solid #0078d4; }
+    #message { color: #a4262c; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Verify this sender</h1>
+  <p class="notice">Opens Sender Registry with the sender filled in. Nothing is approved until you
+    independently confirm ownership (for example, by calling a number you already have on file) and select Verify.
+    The display name below is not proof of identity.</p>
+  <p id="message" role="status"></p>
+  <div id="actions" hidden>
+    <div class="sender"><span id="sender-name"></span><strong id="sender-address"></strong></div>
+    <a id="verify-address" class="button" target="_blank" rel="noopener noreferrer">Verify this exact address</a>
+    <a id="verify-domain" class="button secondary" target="_blank" rel="noopener noreferrer">Verify the whole business domain (<span id="domain-label"></span>)</a>
+    <p class="notice">Use the domain option only for a company domain. Shared providers such as Gmail or Outlook.com are rejected.</p>
+  </div>
+</body>
+</html>

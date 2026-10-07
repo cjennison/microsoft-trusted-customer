@@ -43,7 +43,7 @@ test('mailbox badges render actual Dataverse health choices and retain unknown s
   const context = {
     document,
     location: { origin: 'https://synthetic.crm.dynamics.com' },
-    URL,
+    URL, URLSearchParams,
     setInterval() {},
     fetch: async (url, options) => {
       requests.push(options.method);
