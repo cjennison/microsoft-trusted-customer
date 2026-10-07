@@ -44,6 +44,8 @@ internal static class Program
             GuardTests();
             LabelTests();
             WildcardTests();
+            LabelLogTests();
+            BeginPollTests();
             PagingTests();
             MessagePolicyChecks.Run(Check);
             Console.WriteLine("Registrar plugin: " + passed + " checks passed.");
@@ -92,6 +94,116 @@ internal static class Program
             },
             ["OutputParameters"] = new ParameterCollection(), ["SharedVariables"] = new ParameterCollection()
         });
+    }
+
+    private static void LabelLogTests()
+    {
+        var service = new FakeService { HasRegistrarRole = true, HasProcessorRole = true };
+        new VerificationApi().Execute(new Provider(Verification(service).Value, service));
+        service.Create(new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_LabelingMode", ["defaultvalue"] = "Production"
+        });
+        service.Create(new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_OperatorAlertDestination", ["defaultvalue"] = "user:" + service.UserId
+        });
+        service.Create(new Entity("mtc_mailboxenrollment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_enrollmentstatus"] = new OptionSetValue(100000001),
+            ["mtc_excludedfolderids"] = "sent\ndrafts\noutbox\ndeleted\npurges"
+        });
+        var assessment = new Entity("mtc_messageassessment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_stablemessageid"] = "LogID", ["mtc_receivedon"] = DateTime.UtcNow.AddHours(-1)
+        };
+        service.Create(assessment);
+        var row = service.Rows.Single(item => item.Id == assessment.Id);
+        Func<string, ContextProxy> context = name => new ContextProxy(new Dictionary<string, object>
+        {
+            ["MessageName"] = name, ["UserId"] = service.UserId, ["InitiatingUserId"] = service.UserId,
+            ["InputParameters"] = new ParameterCollection { ["AssessmentId"] = assessment.Id },
+            ["OutputParameters"] = new ParameterCollection()
+        });
+        var message = new GraphMessage
+        {
+            Id = "LogID", ETag = "etag", ParentFolderId = "inbox", Categories = new[] { "Personal" },
+            From = new GraphParty { EmailAddress = new GraphAddress { Address = "proof@business.example" } },
+            ReplyTo = Array.Empty<GraphParty>(),
+            Headers = new[] {
+                new GraphHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; spf=pass; dkim=pass; dmarc=pass header.from=business.example; compauth=pass" },
+                new GraphHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "receiver.prod.outlook.com" },
+                new GraphHeader { Name = "X-MS-Exchange-Organization-MessageDirectionality", Value = "Incoming" }
+            }
+        };
+        Func<string, ParameterCollection> run = name =>
+        {
+            var proxy = context(name);
+            var input = (ParameterCollection)proxy.Values["InputParameters"];
+            input["MessageJson"] = Json(message);
+            if (name == "mtc_VerifyMessagePresentation") input["ExpectedCategoriesJson"] = Json(message.Categories);
+            if (name == "mtc_ReportPresentationFailure") input["Reason"] = "Synthetic connector error: PreconditionFailed";
+            new LabelRuntime().Execute(new Provider(proxy.Value, service));
+            return (ParameterCollection)proxy.Values["OutputParameters"];
+        };
+        var plan = run("mtc_GetMessageLabelPlan");
+        message.Categories = new[] { "Personal", "\u2713 Known sender" };
+        run("mtc_VerifyMessagePresentation");
+        var first = row.GetAttributeValue<DateTime?>("mtc_firstpresentedon");
+        Check(first != null && row.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000001,
+            "A verified readback records when the message was first labeled.");
+        run("mtc_VerifyMessagePresentation");
+        Check(row.GetAttributeValue<DateTime?>("mtc_firstpresentedon") == first, "Re-verification keeps the original first-labeled time.");
+        run("mtc_ReportPresentationFailure");
+        Check(row.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000002 &&
+            row.GetAttributeValue<string>("mtc_lastpresentationerror").Contains("PreconditionFailed"),
+            "A labeling failure records its actual error on the message.");
+        foreach (var folder in new[] { "deleted", "purges" })
+        {
+            message.ParentFolderId = folder;
+            plan = run("mtc_GetMessageLabelPlan");
+            Check(!(bool)plan["NeedsWrite"] && row.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000003,
+                "Deleted or purged mail is settled as not applicable without a category write.");
+            run("mtc_VerifyMessagePresentation");
+            run("mtc_ReportPresentationFailure");
+            Check(row.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000003,
+                "Not-applicable messages never become failures or alerts.");
+        }
+        Check(service.Notifications == 1, "Only the genuine labeling failure alerted the operator.");
+    }
+
+    private static void BeginPollTests()
+    {
+        var service = new FakeService { HasProcessorRole = true };
+        service.Create(new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_ProcessingMode", ["defaultvalue"] = "Shadow"
+        });
+        Func<string, Guid> mailbox = folders => service.Create(new Entity("mtc_mailboxenrollment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "mailbox@customer.example",
+            ["mtc_enrollmentstatus"] = new OptionSetValue(100000001),
+            ["mtc_excludedfolderids"] = folders, ["versionnumber"] = 1L
+        });
+        Func<Guid, ParameterCollection> begin = id =>
+        {
+            var proxy = new ContextProxy(new Dictionary<string, object>
+            {
+                ["MessageName"] = "mtc_BeginMailboxPoll", ["UserId"] = service.UserId, ["InitiatingUserId"] = service.UserId,
+                ["InputParameters"] = new ParameterCollection { ["MailboxRecordId"] = id },
+                ["OutputParameters"] = new ParameterCollection()
+            });
+            new MailboxRuntime().Execute(new Provider(proxy.Value, service));
+            return (ParameterCollection)proxy.Values["OutputParameters"];
+        };
+        var nine = string.Join("\n", Enumerable.Range(1, 9).Select(index => "folder" + index));
+        Check((bool)begin(mailbox(nine))["Enabled"],
+            "Recoverable Items folders added to the exclusions must not block mailbox polling.");
+        Check((bool)begin(mailbox("sent\ndrafts\noutbox\ndeleted"))["Enabled"], "The original four exclusions still poll.");
+        Reject(() => begin(mailbox("sent\ndrafts\noutbox")), "exclusions");
+        Reject(() => begin(mailbox(string.Join("\n", Enumerable.Range(1, 17).Select(index => "folder" + index)))), "exclusions");
     }
 
     private static void WildcardTests()
@@ -474,6 +586,7 @@ internal static class Program
         public bool HasRegistrarRole, HasProcessorRole, Disabled;
         public Guid ApplicationId;
         public bool KeyActive = true;
+        public int Notifications;
         public Guid Create(Entity entity)
         {
             if (entity.Id == Guid.Empty) entity.Id = Guid.NewGuid();
@@ -504,8 +617,9 @@ internal static class Program
                 return new EntityCollection(authorized ? new List<Entity> { new Entity("role", Guid.NewGuid()) } : new List<Entity>());
             }
             var rows = Rows.Where(row => row.LogicalName == expression.EntityName).Where(row =>
-                expression.Criteria.Conditions.All(condition => Equals(
-                    Normalize(row.Contains(condition.AttributeName) ? row[condition.AttributeName] : null), condition.Values[0])))
+                expression.Criteria.Conditions.All(condition => condition.Operator == ConditionOperator.NotNull
+                    ? row.Contains(condition.AttributeName) && row[condition.AttributeName] != null
+                    : Equals(Normalize(row.Contains(condition.AttributeName) ? row[condition.AttributeName] : null), condition.Values[0])))
                 .Take(expression.TopCount ?? int.MaxValue).ToList();
             return new EntityCollection(rows);
         }
@@ -513,6 +627,16 @@ internal static class Program
             value is OptionSetValue option ? (object)option.Value : value is EntityReference reference ? reference.Id : value;
         public OrganizationResponse Execute(OrganizationRequest request)
         {
+            if (request.RequestName == "SendAppNotification")
+            {
+                Notifications++;
+                return new OrganizationResponse();
+            }
+            if (request is UpdateRequest update)
+            {
+                Update(update.Target);
+                return new UpdateResponse();
+            }
             if (request is RetrieveEntityKeyRequest)
             {
                 var metadata = new EntityKeyMetadata();

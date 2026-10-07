@@ -29,6 +29,17 @@
     return { ...(runAfter ? { runAfter } : {}), type: 'SetVariable', inputs: { name, value } };
   }
 
+  function increment(name, value, runAfter) {
+    return { ...(runAfter ? { runAfter } : {}), type: 'IncrementVariable', inputs: { name, value } };
+  }
+
+  function append(name, value, runAfter) {
+    return { ...(runAfter ? { runAfter } : {}), type: 'AppendToStringVariable', inputs: { name, value } };
+  }
+
+  const anyOutcome = name => ({ [name]: ['Succeeded', 'Failed', 'TimedOut', 'Skipped'] });
+  const failedMailbox = "@{items('For_each_enrolled_mailbox')?['mtc_mailboxreference']} ";
+
   function buildClientData() {
     const scan = {
       Reset_poll_lease: variable('PollLease', '00000000-0000-0000-0000-000000000000'),
@@ -61,7 +72,8 @@
                 MessagesJson: "@string(body('List_metadata_page')?['value'])",
                 ImmutableIdsApplied: "@contains(toLower(replace(coalesce(outputs('List_metadata_page')?['headers']?['preference-applied'], outputs('List_metadata_page')?['headers']?['Preference-Applied'], ''), '\"', '')), 'idtype=immutableid')"
               }, after('List_metadata_page')),
-              Set_next_graph_page: variable('NextPageUrl', "@coalesce(body('List_metadata_page')?['@odata.nextLink'], '')", after('Assess_shadow_batch')),
+              Count_assessed_messages: increment('MessagesAssessed', "@coalesce(body('Assess_shadow_batch')?['ProcessedCount'], 0)", after('Assess_shadow_batch')),
+              Set_next_graph_page: variable('NextPageUrl', "@coalesce(body('List_metadata_page')?['@odata.nextLink'], '')", after('Count_assessed_messages')),
               Complete_successful_page: action('mtc_CompleteMailboxPage', {
                 MailboxRecordId: mailboxId,
                 LeaseId: "@variables('PollLease')",
@@ -76,10 +88,11 @@
             expression: { equals: ["@variables('PageFailed')", true] },
             actions: {
               Mark_page_failure: variable('AnyMailboxFailed', true),
+              Record_failed_page_mailbox: append('FailedMailboxes', failedMailbox, after('Mark_page_failure')),
               Notify_page_failure: action('mtc_ReportMailboxFailure', {
                 MailboxRecordId: mailboxId, LeaseId: "@variables('PollLease')",
                 Reason: 'A Graph page or metadata assessment failed. The unfinished cursor was preserved; inspect the run before retrying.'
-              }, after('Mark_page_failure'))
+              }, after('Record_failed_page_mailbox'))
             },
             else: { actions: {} }
           }
@@ -119,11 +132,13 @@
                 { name: 'NextPageUrl', type: 'string', value: '' },
                 { name: 'PageFailed', type: 'boolean', value: false },
                 { name: 'PollLease', type: 'string', value: '00000000-0000-0000-0000-000000000000' },
-                { name: 'AnyMailboxFailed', type: 'boolean', value: false }
+                { name: 'AnyMailboxFailed', type: 'boolean', value: false },
+                { name: 'MessagesAssessed', type: 'integer', value: 0 },
+                { name: 'FailedMailboxes', type: 'string', value: '' }
               ] }
             },
             List_enrolled_mailboxes: api(dataverseApiName, 'ListRecords', {
-              entityName: 'mtc_mailboxenrollments', '$select': 'mtc_mailboxenrollmentid',
+              entityName: 'mtc_mailboxenrollments', '$select': 'mtc_mailboxenrollmentid,mtc_mailboxreference',
               '$filter': 'mtc_enrollmentstatus eq 100000001 and statecode eq 0', '$top': 500
             }, after('Initialize_runtime_variables')),
             For_each_enrolled_mailbox: {
@@ -133,14 +148,27 @@
               actions: {
                 Process_mailbox: { type: 'Scope', actions: scan },
                 Mark_any_mailbox_failed: variable('AnyMailboxFailed', true, { Process_mailbox: ['Failed', 'TimedOut'] }),
+                Record_failed_mailbox: append('FailedMailboxes', failedMailbox, after('Mark_any_mailbox_failed')),
                 Notify_mailbox_failure: action('mtc_ReportMailboxFailure', {
                   MailboxRecordId: mailboxId, LeaseId: "@variables('PollLease')",
                   Reason: 'Shadow processing failed. Inspect the Power Automate run; the delivery checkpoint was not advanced.'
-                }, after('Mark_any_mailbox_failed'))
+                }, after('Record_failed_mailbox'))
               }
             },
+            Record_run_log: api(dataverseApiName, 'CreateRecord', {
+              entityName: 'mtc_runlogs',
+              'item/mtc_name': "@concat('Shadow check ', utcNow())",
+              'item/mtc_worker': 'Shadow check',
+              'item/mtc_runid': "@workflow()?['run']?['name']",
+              'item/mtc_startedon': "@trigger()?['startTime']",
+              'item/mtc_endedon': '@utcNow()',
+              'item/mtc_outcome': "@if(variables('AnyMailboxFailed'), 100000002, 100000001)",
+              'item/mtc_itemsprocessed': "@variables('MessagesAssessed')",
+              'item/mtc_failures': "@if(variables('AnyMailboxFailed'), max(1, length(split(trim(variables('FailedMailboxes')), ' '))), 0)",
+              'item/mtc_details': "@concat('Enrolled mailboxes: ', length(coalesce(body('List_enrolled_mailboxes')?['value'], json('[]'))), '. Messages assessed: ', variables('MessagesAssessed'), '. Failed mailboxes: ', if(empty(trim(variables('FailedMailboxes'))), 'none', trim(variables('FailedMailboxes'))), '.')"
+            }, anyOutcome('For_each_enrolled_mailbox')),
             Require_all_mailboxes_succeeded: {
-              runAfter: after('For_each_enrolled_mailbox'), type: 'If',
+              runAfter: { Record_run_log: ['Succeeded', 'Failed', 'TimedOut'] }, type: 'If',
               expression: { equals: ["@variables('AnyMailboxFailed')", true] },
               actions: {
                 Fail_run_with_operator_notifications: {

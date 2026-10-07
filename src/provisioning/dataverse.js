@@ -2,15 +2,15 @@
 
 (function (root) {
   const solutionName = 'MicrosoftTrustedCustomer';
-  const solutionVersion = '0.9.6.0';
-  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0', '0.7.0.0', '0.8.0.0', '0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0']);
+  const solutionVersion = '0.9.7.0';
+  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0', '0.7.0.0', '0.8.0.0', '0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0', '0.9.6.0']);
   const verificationCaseUpgradeColumns = new Set([
     'mtc_TargetType', 'mtc_TargetValue', 'mtc_VerificationMethod', 'mtc_Reason', 'mtc_ExpiresOn'
   ]);
   const runtimeUpgradeColumns = {
     mtc_MessageAssessment: new Set([
       'mtc_SenderAddress', 'mtc_SenderDomain', 'mtc_Decision', 'mtc_EligibilityExpiresOn',
-      'mtc_RegistryCheckedOn'
+      'mtc_RegistryCheckedOn', 'mtc_FirstPresentedOn', 'mtc_LastPresentationError'
     ]),
     mtc_MailboxEnrollment: new Set([
       'mtc_NextPageUrl', 'mtc_ScanFrom', 'mtc_ScanUntil', 'mtc_LeaseId', 'mtc_LeaseExpiresOn',
@@ -63,6 +63,16 @@
     };
   }
 
+  function whole(name, displayName) {
+    return {
+      '@odata.type': 'Microsoft.Dynamics.CRM.IntegerAttributeMetadata',
+      SchemaName: `${prefix}_${name}`,
+      DisplayName: label(displayName),
+      RequiredLevel: required('None'),
+      Format: 'None', MinValue: 0, MaxValue: 2147483647
+    };
+  }
+
   function verification() {
     return [
       choice('VerificationStatus', 'Verification status', ['Pending', 'Approved', 'Rejected', 'Revoked']),
@@ -73,7 +83,7 @@
     ];
   }
 
-  function table(name, displayName, collectionName, description, attributes) {
+  function table(name, displayName, collectionName, description, attributes, audited = true) {
     return {
       '@odata.type': 'Microsoft.Dynamics.CRM.EntityMetadata',
       SchemaName: `${prefix}_${name}`,
@@ -84,7 +94,7 @@
       IsActivity: false,
       HasActivities: false,
       HasNotes: false,
-      IsAuditEnabled: { Value: true },
+      IsAuditEnabled: { Value: audited },
       Attributes: [text('Name', 'Name', 200, true), ...attributes]
     };
   }
@@ -121,13 +131,15 @@
         choice('AuthenticationState', 'Authentication state', ['Incomplete', 'Aligned pass', 'Review required']),
         choice('RiskState', 'Risk state', ['Incomplete', 'Review required', 'No signal in completed checks']),
         choice('ProcessingStatus', 'Processing status', ['Pending', 'Completed', 'Failed']),
-        choice('PresentationStatus', 'Presentation status', ['Not attempted', 'Applied', 'Failed']),
+        choice('PresentationStatus', 'Presentation status', ['Not attempted', 'Applied', 'Failed', 'Not applicable']),
         text('SenderAddress', 'Sender address', 320),
         text('SenderDomain', 'Sender domain', 253),
         choice('Decision', 'Sender decision', ['Not known', 'Known sender']),
         date('EligibilityExpiresOn', 'Known eligibility expiry'),
         date('RegistryCheckedOn', 'Registry checked on'),
-        text('ReasonCodes', 'Deterministic reason codes', 4000)]),
+        text('ReasonCodes', 'Deterministic reason codes', 4000),
+        date('FirstPresentedOn', 'First labeled on'),
+        text('LastPresentationError', 'Last labeling error', 2000)], false),
     table('MailboxEnrollment', 'Mailbox enrollment', 'Mailbox enrollments',
       'Tenant-local mailbox polling enrollment and health. New records remain paused until explicitly enrolled.',
       [text('MailboxReference', 'Mailbox reference', 320),
@@ -146,7 +158,14 @@
         date('LastAlertOn', 'Last operator alert'),
         text('ExcludedFolderIds', 'Excluded mailbox folders', 4000),
         choice('HealthState', 'Health state', ['Not started', 'Healthy', 'Degraded', 'Failed']),
-        text('LastError', 'Last operator-visible error', 4000)])
+        text('LastError', 'Last operator-visible error', 4000)]),
+    table('RunLog', 'Run log', 'Run logs',
+      'One row per processor run for troubleshooting. Metadata only; retained 90 days.',
+      [text('Worker', 'Worker', 100), text('RunId', 'Flow run ID', 200),
+        date('StartedOn', 'Started on'), date('EndedOn', 'Ended on'),
+        choice('Outcome', 'Outcome', ['Pending', 'Succeeded', 'Failed']),
+        whole('ItemsProcessed', 'Items processed'), whole('Failures', 'Failures'),
+        text('Details', 'Details', 4000)], false)
   ];
 
   function relationship(parent, child, column, displayName) {
@@ -207,7 +226,7 @@
     }
   ];
 
-  function validateTarget(target, currentOrigin) {
+  function validateTarget(target, currentOrigin, options = {}) {
     if (!target || !/^https:\/\/[a-z0-9-]+\.crm\d*\.dynamics\.com$/.test(target.environmentOrigin)) {
       throw new Error('An explicit commercial-cloud Dataverse HTTPS origin is required.');
     }
@@ -218,14 +237,16 @@
         target.organizationId === '00000000-0000-0000-0000-000000000000') {
       throw new Error('A verified, non-placeholder organization ID is required.');
     }
-    if (!['Sandbox', 'Developer'].includes(target.environmentType) || target.authorizationConfirmed !== true) {
+    // Production accepts only an explicitly approved versioned migration of an existing solution.
+    const production = target.environmentType === 'Production' && options.productionMigration === true;
+    if ((!['Sandbox', 'Developer'].includes(target.environmentType) && !production) || target.authorizationConfirmed !== true) {
       throw new Error('Bootstrap is limited to an explicitly authorized Sandbox or Developer environment.');
     }
   }
 
   function validateTable(actual, expected) {
     if (actual.SchemaName !== expected.SchemaName || actual.OwnershipType !== expected.OwnershipType ||
-        actual.IsAuditEnabled?.Value !== true || actual.IsManaged) {
+        actual.IsAuditEnabled?.Value !== expected.IsAuditEnabled.Value || actual.IsManaged) {
       throw new Error(`Existing table conflicts with the development schema: ${expected.SchemaName}`);
     }
     for (const attribute of expected.Attributes) {
@@ -251,7 +272,8 @@
 
   async function bootstrap(target, context = {}) {
     const currentOrigin = context.origin ?? root.location?.origin;
-    validateTarget(target, currentOrigin);
+    validateTarget(target, currentOrigin, { productionMigration: context.productionMigration === true });
+    const productionMigration = target.environmentType === 'Production';
     const fetcher = context.fetch ?? root.fetch.bind(root);
     const report = { solution: solutionName, version: solutionVersion, created: [], existing: [], updated: [], published: false };
     const headers = {
@@ -265,7 +287,8 @@
         headers: {
           ...headers,
           ...(inSolution ? { 'MSCRM.SolutionUniqueName': solutionName } : {}),
-          ...(method === 'POST' ? { Prefer: 'return=representation' } : {})
+          ...(method === 'POST' ? { Prefer: 'return=representation' } : {}),
+          ...(method === 'PUT' ? { 'MSCRM.MergeLabels': 'true' } : {})
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) })
       });
@@ -286,6 +309,8 @@
     const publishers = await request(`publishers?$select=publisherid,customizationprefix&$filter=uniquename eq '${solutionName}'`);
     if (publishers.value.length > 1) throw new Error('Ambiguous solution publisher.');
     let publisher = publishers.value[0];
+    if (productionMigration && !publisher)
+      throw new Error('Production accepts only a migration of the existing solution; no writes performed.');
     if (publisher && publisher.customizationprefix !== prefix) throw new Error('Existing publisher prefix conflicts.');
     if (!publisher) {
       publisher = await request('publishers', 'POST', {
@@ -307,6 +332,8 @@
       throw new Error('Existing solution conflicts; use a versioned migration rather than bootstrap.');
     }
     const upgradeSolution = existingSolution && existingSolution.version !== solutionVersion;
+    if (productionMigration && !upgradeSolution)
+      throw new Error('Production accepts only a versioned upgrade of the existing solution; no writes performed.');
     if (!existingSolution) {
       await request('solutions', 'POST', {
         uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
@@ -340,11 +367,38 @@
         }
         existing = await request(path);
       }
-      if (definition.Attributes.some(attribute => attribute.OptionSet)) {
+      if (!created && upgradeSolution && existing.IsAuditEnabled?.Value !== definition.IsAuditEnabled.Value) {
+        const full = await request(basePath);
+        delete full['@odata.context'];
+        full.IsAuditEnabled = { ...full.IsAuditEnabled, Value: definition.IsAuditEnabled.Value };
+        await request(`EntityDefinitions(${full.MetadataId})`, 'PUT', full, true);
+        report.updated.push(`${definition.SchemaName}.IsAuditEnabled`);
+        existing = await request(path);
+      }
+      const loadChoices = async () => {
         const choices = await request(`${basePath}/Attributes/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$expand=OptionSet`);
         existing.Attributes = existing.Attributes.map(attribute => ({
           ...attribute, ...choices.value.find(item => item.SchemaName === attribute.SchemaName)
         }));
+      };
+      if (definition.Attributes.some(attribute => attribute.OptionSet)) {
+        await loadChoices();
+        let inserted = false;
+        for (const attribute of definition.Attributes.filter(item => item.OptionSet && !created && upgradeSolution)) {
+          const actual = existing.Attributes.find(item => item.SchemaName === attribute.SchemaName);
+          for (const option of attribute.OptionSet.Options) {
+            if (actual && !actual.OptionSet?.Options?.some(item => item.Value === option.Value)) {
+              await request('InsertOptionValue', 'POST', {
+                EntityLogicalName: definition.SchemaName.toLowerCase(),
+                AttributeLogicalName: attribute.SchemaName.toLowerCase(),
+                Value: option.Value, Label: option.Label, SolutionUniqueName: solutionName
+              });
+              report.updated.push(`${definition.SchemaName}.${attribute.SchemaName}=${option.Value}`);
+              inserted = true;
+            }
+          }
+        }
+        if (inserted) await loadChoices();
       }
       validateTable(existing, definition);
       report[created ? 'created' : 'existing'].push(definition.SchemaName);
@@ -400,7 +454,9 @@
     if (upgradeSolution) {
       await request(`solutions(${existingSolution.solutionid})`, 'PATCH', {
         version: solutionVersion,
-        description: 'Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation.'
+        ...(productionMigration ? {} : {
+          description: 'Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation.'
+        })
       });
       report.updated.push(`solution ${existingSolution.version} -> ${solutionVersion}`);
     }

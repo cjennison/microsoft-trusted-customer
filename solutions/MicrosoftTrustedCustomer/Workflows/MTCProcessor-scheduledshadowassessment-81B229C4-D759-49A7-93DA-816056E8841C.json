@@ -36,11 +36,11 @@
       },
       "triggers": {
         "Recurrence": {
+          "type": "Recurrence",
           "recurrence": {
             "frequency": "Minute",
             "interval": 3
           },
-          "type": "Recurrence",
           "runtimeConfiguration": {
             "concurrency": {
               "runs": 1
@@ -72,6 +72,16 @@
                 "name": "AnyMailboxFailed",
                 "type": "boolean",
                 "value": false
+              },
+              {
+                "name": "MessagesAssessed",
+                "type": "integer",
+                "value": 0
+              },
+              {
+                "name": "FailedMailboxes",
+                "type": "string",
+                "value": ""
               }
             ]
           }
@@ -86,7 +96,7 @@
           "inputs": {
             "parameters": {
               "entityName": "mtc_mailboxenrollments",
-              "$select": "mtc_mailboxenrollmentid",
+              "$select": "mtc_mailboxenrollmentid,mtc_mailboxreference",
               "$filter": "mtc_enrollmentstatus eq 100000001 and statecode eq 0",
               "$top": 500
             },
@@ -105,9 +115,21 @@
           }
         },
         "For_each_enrolled_mailbox": {
+          "runAfter": {
+            "List_enrolled_mailboxes": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach",
           "foreach": "@body('List_enrolled_mailboxes')?['value']",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
           "actions": {
             "Process_mailbox": {
+              "type": "Scope",
               "actions": {
                 "Reset_poll_lease": {
                   "type": "SetVariable",
@@ -155,6 +177,18 @@
                   }
                 },
                 "Require_enabled_shadow_mailbox": {
+                  "runAfter": {
+                    "Begin_mailbox_poll": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@body('Begin_mailbox_poll')?['Enabled']",
+                      true
+                    ]
+                  },
                   "actions": {
                     "Set_poll_lease": {
                       "type": "SetVariable",
@@ -176,8 +210,20 @@
                       }
                     },
                     "Process_all_message_pages": {
+                      "runAfter": {
+                        "Set_initial_page_url": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Until",
+                      "expression": "@or(equals(variables('NextPageUrl'), ''), equals(variables('PageFailed'), true))",
+                      "limit": {
+                        "count": 1000,
+                        "timeout": "PT6H"
+                      },
                       "actions": {
                         "Process_one_page": {
+                          "type": "Scope",
                           "actions": {
                             "List_metadata_page": {
                               "type": "OpenApiConnection",
@@ -233,9 +279,21 @@
                                 }
                               }
                             },
-                            "Set_next_graph_page": {
+                            "Count_assessed_messages": {
                               "runAfter": {
                                 "Assess_shadow_batch": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "type": "IncrementVariable",
+                              "inputs": {
+                                "name": "MessagesAssessed",
+                                "value": "@coalesce(body('Assess_shadow_batch')?['ProcessedCount'], 0)"
+                              }
+                            },
+                            "Set_next_graph_page": {
+                              "runAfter": {
+                                "Count_assessed_messages": [
                                   "Succeeded"
                                 ]
                               },
@@ -273,8 +331,7 @@
                                 }
                               }
                             }
-                          },
-                          "type": "Scope"
+                          }
                         },
                         "Stop_on_page_failure": {
                           "runAfter": {
@@ -289,20 +346,21 @@
                             "value": true
                           }
                         }
-                      },
+                      }
+                    },
+                    "Require_successful_page_loop": {
                       "runAfter": {
-                        "Set_initial_page_url": [
+                        "Process_all_message_pages": [
                           "Succeeded"
                         ]
                       },
-                      "expression": "@or(equals(variables('NextPageUrl'), ''), equals(variables('PageFailed'), true))",
-                      "limit": {
-                        "count": 1000,
-                        "timeout": "PT6H"
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@variables('PageFailed')",
+                          true
+                        ]
                       },
-                      "type": "Until"
-                    },
-                    "Require_successful_page_loop": {
                       "actions": {
                         "Mark_page_failure": {
                           "type": "SetVariable",
@@ -311,9 +369,21 @@
                             "value": true
                           }
                         },
-                        "Notify_page_failure": {
+                        "Record_failed_page_mailbox": {
                           "runAfter": {
                             "Mark_page_failure": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "AppendToStringVariable",
+                          "inputs": {
+                            "name": "FailedMailboxes",
+                            "value": "@{items('For_each_enrolled_mailbox')?['mtc_mailboxreference']} "
+                          }
+                        },
+                        "Notify_page_failure": {
+                          "runAfter": {
+                            "Record_failed_page_mailbox": [
                               "Succeeded"
                             ]
                           },
@@ -340,41 +410,16 @@
                           }
                         }
                       },
-                      "runAfter": {
-                        "Process_all_message_pages": [
-                          "Succeeded"
-                        ]
-                      },
                       "else": {
                         "actions": {}
-                      },
-                      "expression": {
-                        "equals": [
-                          "@variables('PageFailed')",
-                          true
-                        ]
-                      },
-                      "type": "If"
+                      }
                     }
-                  },
-                  "runAfter": {
-                    "Begin_mailbox_poll": [
-                      "Succeeded"
-                    ]
                   },
                   "else": {
                     "actions": {}
-                  },
-                  "expression": {
-                    "equals": [
-                      "@body('Begin_mailbox_poll')?['Enabled']",
-                      true
-                    ]
-                  },
-                  "type": "If"
+                  }
                 }
-              },
-              "type": "Scope"
+              }
             },
             "Mark_any_mailbox_failed": {
               "runAfter": {
@@ -389,9 +434,21 @@
                 "value": true
               }
             },
-            "Notify_mailbox_failure": {
+            "Record_failed_mailbox": {
               "runAfter": {
                 "Mark_any_mailbox_failed": [
+                  "Succeeded"
+                ]
+              },
+              "type": "AppendToStringVariable",
+              "inputs": {
+                "name": "FailedMailboxes",
+                "value": "@{items('For_each_enrolled_mailbox')?['mtc_mailboxreference']} "
+              }
+            },
+            "Notify_mailbox_failure": {
+              "runAfter": {
+                "Record_failed_mailbox": [
                   "Succeeded"
                 ]
               },
@@ -417,20 +474,60 @@
                 }
               }
             }
-          },
+          }
+        },
+        "Record_run_log": {
           "runAfter": {
-            "List_enrolled_mailboxes": [
-              "Succeeded"
+            "For_each_enrolled_mailbox": [
+              "Succeeded",
+              "Failed",
+              "TimedOut",
+              "Skipped"
             ]
           },
-          "type": "Foreach",
-          "runtimeConfiguration": {
-            "concurrency": {
-              "repetitions": 1
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "mtc_runlogs",
+              "item/mtc_name": "@concat('Shadow check ', utcNow())",
+              "item/mtc_worker": "Shadow check",
+              "item/mtc_runid": "@workflow()?['run']?['name']",
+              "item/mtc_startedon": "@trigger()?['startTime']",
+              "item/mtc_endedon": "@utcNow()",
+              "item/mtc_outcome": "@if(variables('AnyMailboxFailed'), 100000002, 100000001)",
+              "item/mtc_itemsprocessed": "@variables('MessagesAssessed')",
+              "item/mtc_failures": "@if(variables('AnyMailboxFailed'), max(1, length(split(trim(variables('FailedMailboxes')), ' '))), 0)",
+              "item/mtc_details": "@concat('Enrolled mailboxes: ', length(coalesce(body('List_enrolled_mailboxes')?['value'], json('[]'))), '. Messages assessed: ', variables('MessagesAssessed'), '. Failed mailboxes: ', if(empty(trim(variables('FailedMailboxes'))), 'none', trim(variables('FailedMailboxes'))), '.')"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "CreateRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            },
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 4,
+              "interval": "PT10S",
+              "minimumInterval": "PT5S",
+              "maximumInterval": "PT2M"
             }
           }
         },
         "Require_all_mailboxes_succeeded": {
+          "runAfter": {
+            "Record_run_log": [
+              "Succeeded",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@variables('AnyMailboxFailed')",
+              true
+            ]
+          },
           "actions": {
             "Fail_run_with_operator_notifications": {
               "type": "Terminate",
@@ -443,21 +540,9 @@
               }
             }
           },
-          "runAfter": {
-            "For_each_enrolled_mailbox": [
-              "Succeeded"
-            ]
-          },
           "else": {
             "actions": {}
-          },
-          "expression": {
-            "equals": [
-              "@variables('AnyMailboxFailed')",
-              true
-            ]
-          },
-          "type": "If"
+          }
         }
       },
       "outputs": {}

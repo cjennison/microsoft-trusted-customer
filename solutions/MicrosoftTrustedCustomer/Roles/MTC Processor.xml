@@ -12,6 +12,7 @@
     <RolePrivilege name="prvCreateappnotification" level="Basic" />
     <RolePrivilege name="prvCreatemtc_MailboxEnrollment" level="Global" />
     <RolePrivilege name="prvCreatemtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvCreatemtc_RunLog" level="Global" />
     <RolePrivilege name="prvCreateSharePointData" level="Global" />
     <RolePrivilege name="prvReadappnotification" level="Basic" />
     <RolePrivilege name="prvReadEnvironmentVariableDefinition" level="Global" />
@@ -20,6 +21,7 @@
     <RolePrivilege name="prvReadmtc_BusinessParty" level="Global" />
     <RolePrivilege name="prvReadmtc_MailboxEnrollment" level="Global" />
     <RolePrivilege name="prvReadmtc_MessageAssessment" level="Global" />
+    <RolePrivilege name="prvReadmtc_RunLog" level="Global" />
     <RolePrivilege name="prvReadmtc_VerificationCase" level="Global" />
     <RolePrivilege name="prvReadSharePointData" level="Global" />
     <RolePrivilege name="prvReadSharePointDocument" level="Global" />

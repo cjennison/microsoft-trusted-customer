@@ -340,6 +340,7 @@
       'prvAppendmtc_MailboxEnrollment', 'prvAppendTomtc_MailboxEnrollment',
       'prvCreatemtc_MessageAssessment', 'prvWritemtc_MessageAssessment',
       'prvAppendmtc_MessageAssessment', 'prvAppendTomtc_MessageAssessment',
+      'prvReadmtc_RunLog', 'prvCreatemtc_RunLog',
       'prvSendAppNotification', 'prvCreateappnotification', 'prvReadappnotification',
       'prvWriteappnotification', 'prvAppendappnotification', 'prvAppendToappnotification'
     ];
@@ -358,7 +359,7 @@
         if (name === 'MTC Registrar')
           return registrarPrivileges.includes(privilege.name) || privilege.name === 'prvAppendToUser';
         if (name === 'MTC Operator') return privilege.name.endsWith('mtc_MailboxEnrollment');
-        return privilege.name.endsWith('mtc_MailboxEnrollment') ||
+        return privilege.name.endsWith('mtc_MailboxEnrollment') || privilege.name.endsWith('mtc_RunLog') ||
           privilege.name.endsWith('mtc_MessageAssessment') || privilege.name.toLowerCase().includes('appnotification');
       });
       await request(`roles(${role.roleid})/Microsoft.Dynamics.CRM.ReplacePrivilegesRole`, 'POST', {

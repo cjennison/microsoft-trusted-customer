@@ -13,6 +13,7 @@ namespace Mtc.Registrar
     {
         private const string KnownCategory = "\u2713 Known sender";
         private const string UnknownCategory = "Unknown sender";
+        private const int NotApplicable = 100000003;
         private static readonly string[] OwnedCategories = {
             "MTC Proof - known sender", "MTC Proof - not known",
             "MTC - known sender", "MTC - not known",
@@ -39,7 +40,7 @@ namespace Mtc.Registrar
                 (Guid)context.InputParameters["AssessmentId"] == Guid.Empty)
                 throw new InvalidPluginExecutionException("An exact assessment record is required.");
             var assessment = service.Retrieve("mtc_messageassessment", (Guid)context.InputParameters["AssessmentId"],
-                new ColumnSet("mtc_mailboxreference", "mtc_stablemessageid", "mtc_receivedon"));
+                new ColumnSet("mtc_mailboxreference", "mtc_stablemessageid", "mtc_receivedon", "mtc_presentationstatus", "mtc_firstpresentedon"));
             if (assessment.GetAttributeValue<DateTime>("mtc_receivedon") < DateTime.UtcNow.AddDays(-30))
                 throw new InvalidPluginExecutionException("The assessment is outside the approved retained-message presentation window.");
             var enrollment = new QueryExpression("mtc_mailboxenrollment")
@@ -51,10 +52,13 @@ namespace Mtc.Registrar
             var mailboxes = service.RetrieveMultiple(enrollment).Entities;
             if (context.MessageName == "mtc_ReportPresentationFailure")
             {
+                // Messages already settled as not applicable (deleted, sent, recoverable items) are not failures.
+                if (assessment.GetAttributeValue<OptionSetValue>("mtc_presentationstatus")?.Value == NotApplicable) return;
                 var reason = VerificationPolicy.Text(context.InputParameters["Reason"] as string, "Presentation failure reason", 1500);
                 service.Update(new Entity("mtc_messageassessment", assessment.Id)
                 {
-                    ["mtc_presentationstatus"] = new OptionSetValue(100000002)
+                    ["mtc_presentationstatus"] = new OptionSetValue(100000002),
+                    ["mtc_lastpresentationerror"] = reason
                 });
                 if (mailboxes.Count != 1) throw new InvalidPluginExecutionException("Presentation failure mailbox is ambiguous.");
                 var mailbox = service.Retrieve("mtc_mailboxenrollment", mailboxes[0].Id, new ColumnSet("mtc_lastalerton"));
@@ -70,7 +74,8 @@ namespace Mtc.Registrar
                         ["Title"] = "Sender Registry processing needs attention",
                         ["Recipient"] = new EntityReference("systemuser", recipient),
                         ["Body"] = "Outlook category reconciliation failed for " +
-                            assessment.GetAttributeValue<string>("mtc_mailboxreference") + ". " + reason,
+                            assessment.GetAttributeValue<string>("mtc_mailboxreference") +
+                            ". Details are on the message assessment (Last labeling error) and in the MTC run log.",
                         ["IconType"] = new OptionSetValue(100000003),
                         ["ToastType"] = new OptionSetValue(200000000)
                     });
@@ -97,7 +102,20 @@ namespace Mtc.Registrar
                 throw new InvalidPluginExecutionException("Exact immutable identity, current ETag, and category metadata are required.");
             if ((mailboxes[0].GetAttributeValue<string>("mtc_excludedfolderids") ?? "").Split('\n')
                 .Contains(message.ParentFolderId, StringComparer.Ordinal))
-                throw new InvalidPluginExecutionException("The retained message moved outside the approved delivered-mail folder scope.");
+            {
+                service.Update(new Entity("mtc_messageassessment", assessment.Id)
+                {
+                    ["mtc_presentationstatus"] = new OptionSetValue(NotApplicable),
+                    ["mtc_lastpresentationerror"] = "Not labeled: the message is in a deleted, sent, draft, outbox, or recoverable-items folder."
+                });
+                if (context.MessageName == "mtc_GetMessageLabelPlan")
+                {
+                    context.OutputParameters["CategoriesJson"] = Serialize(message.Categories);
+                    context.OutputParameters["ETag"] = message.ETag;
+                    context.OutputParameters["NeedsWrite"] = false;
+                }
+                return;
+            }
             if (context.MessageName == "mtc_VerifyMessagePresentation")
             {
                 var expected = context.InputParameters["ExpectedCategoriesJson"] as string;
@@ -120,10 +138,14 @@ namespace Mtc.Registrar
                 if (!message.Categories.Contains(currentLabel, StringComparer.Ordinal) ||
                     message.Categories.Any(category => OwnedCategories.Contains(category, StringComparer.Ordinal) && category != currentLabel))
                     throw new InvalidPluginExecutionException("Registry/authentication eligibility changed before readback. Presentation requires reassessment.");
-                service.Update(new Entity("mtc_messageassessment", assessment.Id)
+                var applied = new Entity("mtc_messageassessment", assessment.Id)
                 {
-                    ["mtc_presentationstatus"] = new OptionSetValue(100000001)
-                });
+                    ["mtc_presentationstatus"] = new OptionSetValue(100000001),
+                    ["mtc_lastpresentationerror"] = null
+                };
+                if (assessment.GetAttributeValue<DateTime?>("mtc_firstpresentedon") == null)
+                    applied["mtc_firstpresentedon"] = DateTime.UtcNow;
+                service.Update(applied);
                 return;
             }
             if (context.MessageName != "mtc_GetMessageLabelPlan")
@@ -158,6 +180,15 @@ namespace Mtc.Registrar
             context.OutputParameters["ETag"] = message.ETag;
             context.OutputParameters["NeedsWrite"] = !message.Categories.OrderBy(value => value, StringComparer.Ordinal)
                 .SequenceEqual(categoriesToApply.OrderBy(value => value, StringComparer.Ordinal), StringComparer.Ordinal);
+        }
+
+        private static string Serialize(string[] categories)
+        {
+            using (var stream = new MemoryStream())
+            {
+                new DataContractJsonSerializer(typeof(string[])).WriteObject(stream, categories);
+                return Encoding.UTF8.GetString(stream.ToArray());
+            }
         }
     }
 }

@@ -104,21 +104,57 @@
                         }, after('Get_category_readback'))
                       }
                     },
+                    Collect_failed_steps: {
+                      runAfter: { Reconcile_one_message: ['Failed', 'TimedOut'] }, type: 'Query',
+                      inputs: {
+                        from: "@result('Reconcile_one_message')",
+                        where: "@or(equals(item()?['status'], 'Failed'), equals(item()?['status'], 'TimedOut'))"
+                      }
+                    },
+                    Summarize_failed_steps: {
+                      runAfter: after('Collect_failed_steps'), type: 'Select',
+                      inputs: {
+                        from: "@body('Collect_failed_steps')",
+                        select: {
+                          step: "@item()?['name']", status: "@item()?['status']",
+                          code: "@item()?['error']?['code']", http: "@item()?['outputs']?['statusCode']",
+                          message: "@coalesce(item()?['outputs']?['body']?['error']?['message'], item()?['error']?['message'])"
+                        }
+                      }
+                    },
                     Mark_presentation_failure: {
-                      runAfter: { Reconcile_one_message: ['Failed', 'TimedOut'] },
+                      runAfter: after('Summarize_failed_steps'),
                       type: 'SetVariable', inputs: { name: 'AnyPresentationFailed', value: true }
                     },
                     Notify_presentation_failure: action('mtc_ReportPresentationFailure', {
                       AssessmentId: assessment,
-                      Reason: 'Outlook category write/readback failed. The assessment remains pending or failed; inspect the run before claiming that relabeling completed.'
+                      Reason: "@trim(take(concat('Labeling failed: ', string(body('Summarize_failed_steps'))), 1400))"
                     }, after('Mark_presentation_failure'))
                   }
                 }
               },
               else: { actions: {} }
             },
+            List_failures_this_run: api(dataverse, 'ListRecords', {
+              entityName: 'mtc_messageassessments',
+              '$select': 'mtc_messageassessmentid',
+              '$filter': "@concat('mtc_presentationstatus eq 100000002 and modifiedon ge ', trigger()?['startTime'])",
+              '$top': 500
+            }, { Require_explicit_label_authorization: ['Succeeded', 'Failed', 'TimedOut', 'Skipped'] }),
+            Record_run_log: api(dataverse, 'CreateRecord', {
+              entityName: 'mtc_runlogs',
+              'item/mtc_name': "@concat('Outlook labeling ', utcNow())",
+              'item/mtc_worker': 'Outlook labeling',
+              'item/mtc_runid': "@workflow()?['run']?['name']",
+              'item/mtc_startedon': "@trigger()?['startTime']",
+              'item/mtc_endedon': '@utcNow()',
+              'item/mtc_outcome': "@if(variables('AnyPresentationFailed'), 100000002, 100000001)",
+              'item/mtc_itemsprocessed': "@length(coalesce(body('List_pending_presentations')?['value'], json('[]')))",
+              'item/mtc_failures': "@length(coalesce(body('List_failures_this_run')?['value'], json('[]')))",
+              'item/mtc_details': "@if(equals(body('Check_explicit_label_authorization')?['Enabled'], true), 'Labeling enabled. Failure details are on each message assessment (Last labeling error).', 'Labeling disabled; no messages processed.')"
+            }, { List_failures_this_run: ['Succeeded', 'Failed', 'TimedOut'] }),
             Require_successful_presentations: {
-              runAfter: after('Require_explicit_label_authorization'), type: 'If',
+              runAfter: { Record_run_log: ['Succeeded', 'Failed', 'TimedOut'] }, type: 'If',
               expression: { equals: ["@variables('AnyPresentationFailed')", true] },
               actions: {
                 Fail_notified_presentation_run: {

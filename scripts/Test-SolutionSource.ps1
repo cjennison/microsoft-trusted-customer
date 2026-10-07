@@ -19,13 +19,13 @@ if ($solution.Version -notmatch '^\d+\.\d+\.\d+\.\d+$' -or $solution.Managed -ne
 }
 $expectedTables = @(
     'mtc_approvedcontact', 'mtc_approveddomain', 'mtc_businessparty',
-    'mtc_mailboxenrollment', 'mtc_messageassessment', 'mtc_verificationcase'
+    'mtc_mailboxenrollment', 'mtc_messageassessment', 'mtc_runlog', 'mtc_verificationcase'
 )
 $actualTables = @($solution.RootComponents.RootComponent |
     Where-Object { $_.type -eq '1' -and $_.schemaName -ne 'systemuser' } |
     ForEach-Object { $_.schemaName })
 if (Compare-Object $expectedTables $actualTables) {
-    throw 'The solution must contain exactly the six reviewed known-sender runtime table roots.'
+    throw 'The solution must contain exactly the seven reviewed known-sender runtime table roots.'
 }
 $workflowRoots = @($solution.RootComponents.RootComponent | Where-Object { $_.type -eq '29' })
 $expectedWorkflowIds = @(

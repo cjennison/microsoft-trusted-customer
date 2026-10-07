@@ -145,8 +145,9 @@ namespace Mtc.Registrar
             if (mailbox.GetAttributeValue<DateTime>("mtc_leaseexpireson") > now)
                 throw new InvalidPluginExecutionException("A mailbox poll is already leased by another run.");
             var excluded = mailbox.GetAttributeValue<string>("mtc_excludedfolderids");
-            if (string.IsNullOrEmpty(excluded) || excluded.Split('\n').Length != 4)
-                throw new InvalidPluginExecutionException("The four outbound/deleted folder exclusions must be configured before processing.");
+            var excludedCount = string.IsNullOrEmpty(excluded) ? 0 : excluded.Split('\n').Length;
+            if (excludedCount < 4 || excludedCount > 16)
+                throw new InvalidPluginExecutionException("The outbound/deleted folder exclusions (four required, plus optional Recoverable Items folders) must be configured before processing.");
             var nextPage = mailbox.GetAttributeValue<string>("mtc_nextpageurl");
             var scanUntil = mailbox.GetAttributeValue<DateTime>("mtc_scanuntil");
             var scanFrom = mailbox.GetAttributeValue<DateTime>("mtc_scanfrom");
@@ -300,7 +301,7 @@ namespace Mtc.Registrar
                 var id = AssessmentIdentity.ForMessage(context.OrganizationId, mailboxRef, message.Id);
                 var existing = new QueryExpression("mtc_messageassessment")
                 {
-                    ColumnSet = new ColumnSet("mtc_stablemessageid", "mtc_mailboxreference"), TopCount = 2
+                    ColumnSet = new ColumnSet("mtc_stablemessageid", "mtc_mailboxreference", "mtc_decision", "mtc_presentationstatus"), TopCount = 2
                 };
                 existing.Criteria.AddCondition("mtc_messageassessmentid", ConditionOperator.Equal, id);
                 var assessments = service.RetrieveMultiple(existing).Entities;
@@ -312,7 +313,7 @@ namespace Mtc.Registrar
                 {
                     var legacy = new QueryExpression("mtc_messageassessment")
                     {
-                        ColumnSet = new ColumnSet("mtc_stablemessageid", "mtc_mailboxreference"), TopCount = 100
+                        ColumnSet = new ColumnSet("mtc_stablemessageid", "mtc_mailboxreference", "mtc_decision", "mtc_presentationstatus"), TopCount = 100
                     };
                     legacy.Criteria.AddCondition("mtc_mailboxreference", ConditionOperator.Equal, mailboxRef);
                     legacy.Criteria.AddCondition("mtc_stablemessageid", ConditionOperator.Equal, message.Id);
@@ -348,7 +349,14 @@ namespace Mtc.Registrar
                     ["mtc_eligibilityexpireson"] = registry.ExpiresOn,
                     ["mtc_reasoncodes"] = decision.Reason + ";" + registry.Reason + ";MTC_SHADOW_NO_PRESENTATION"
                 };
-                if (assessments.Count == 1) service.Update(row);
+                if (assessments.Count == 1) {
+                    // Overlap rescans and unchanged reassessments keep an already-applied label instead of relabeling.
+                    var prior = assessments[0];
+                    if (prior.GetAttributeValue<OptionSetValue>("mtc_presentationstatus")?.Value == 100000001 &&
+                        prior.GetAttributeValue<OptionSetValue>("mtc_decision")?.Value == (decision.Known ? 100000001 : 100000000))
+                        row.Attributes.Remove("mtc_presentationstatus");
+                    service.Update(row);
+                }
                 else service.Execute(new UpsertRequest { Target = row });
                 processed++;
                 if (decision.Known) known++;

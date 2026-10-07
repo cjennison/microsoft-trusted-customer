@@ -1,6 +1,6 @@
 {
   "name": "microsoft-trusted-customer",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "private": true,
   "description": "Repeatable Microsoft email qualification development pattern",
   "scripts": {

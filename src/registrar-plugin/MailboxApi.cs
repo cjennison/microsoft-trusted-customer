@@ -27,9 +27,10 @@ namespace Mtc.Registrar
                         throw new ArgumentException("A mailbox enrollment record is required.");
                     var folders = VerificationPolicy.Text(context.InputParameters["FolderIds"] as string, "Folder exclusions", 4000);
                     var ids = folders.Split('\n');
-                    if (ids.Length != 4 || ids.Any(id => string.IsNullOrWhiteSpace(id) || id != id.Trim()) ||
-                        ids.Distinct(StringComparer.Ordinal).Count() != 4)
-                        throw new ArgumentException("Exactly four distinct outbound/deleted folder identifiers are required.");
+                    // The four outbound/deleted folders plus any Recoverable Items folders (Deletions, Purges, Versions...).
+                    if (ids.Length < 4 || ids.Length > 16 || ids.Any(id => string.IsNullOrWhiteSpace(id) || id != id.Trim()) ||
+                        ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
+                        throw new ArgumentException("Between four and sixteen distinct excluded folder identifiers are required.");
                     service.Update(new Entity("mtc_mailboxenrollment", (Guid)context.InputParameters["MailboxRecordId"])
                     {
                         ["mtc_excludedfolderids"] = folders
