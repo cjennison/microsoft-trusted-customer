@@ -4,7 +4,7 @@ Hi everyone,
 
 Starting today, incoming email in Outlook shows one of two labels:
 
-- ✓ Known sender (blue): a sender we have personally verified.
+- ✓ (blue checkmark): a Known sender we have personally verified.
 - Unknown sender (gray): not verified yet. Normal for new contacts; it does not mean the email is bad.
 
 Three things to remember:

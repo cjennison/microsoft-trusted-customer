@@ -78,7 +78,7 @@ documentation. Actual addresses, domain approvals, and evidence stay private.
 ## Outlook presentation and delivery
 
 Use explicit text categories, not color alone. The product has exactly two
-user-facing states: **✓ Known sender** (blue) and **Unknown sender** (gray).
+user-facing states: **✓** (blue, Known sender) and **Unknown sender** (gray).
 The stored non-positive decision remains Not known. The checkmark is category
 text, not Microsoft's verified-sender badge.
 

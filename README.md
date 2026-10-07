@@ -54,7 +54,7 @@ contact Revoked. Tenant-wide label execution and production conversion remain
 separately gated. The environment remains a Sandbox. Portable
 managed/unmanaged artifacts export every flow Off with both modes Disabled.
 
-The current Outlook labels are **✓ Known sender** (blue) and **Unknown sender**
+The current Outlook labels are **✓** (blue, Known sender) and **Unknown sender**
 (gray). The real worker displayed both on one authorized retained proof email
 in the operator's Outlook web mailbox, including revocation and legacy-label
 replacement. That proof configured colors through native category settings

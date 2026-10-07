@@ -716,7 +716,12 @@ accept the wider negative/failure matrix, other Outlook clients, or production.
 ### Clear labels and mailbox-local colors
 
 Version 0.9.1.0 uses `✓ Known sender` and `Unknown sender` in both authorized
-modes. The internal Not known decision and receiving-authentication/approval
+modes; version 0.9.12.0 shortens the Known label to a blue `✓` and keeps
+`✓ Known sender` as an owned alias that reconciliation removes. Renaming a label
+needs a new mailbox master category (Graph cannot rename one), so it repeats the
+temporary scoped `MailboxSettings.ReadWrite` setup below: create the new blue
+category, relabel, delete only the recorded old category, then remove and
+verify revocation of the permission. The internal Not known decision and receiving-authentication/approval
 policy are unchanged. Four legacy MTC category names are removed only during
 exact service-owned reconciliation; unrelated categories are preserved.
 

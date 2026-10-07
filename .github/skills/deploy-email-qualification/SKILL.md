@@ -118,7 +118,7 @@ present the development foundation as a functioning anti-phishing system.
   authorizes only the shadow pipeline; `mtc_LabelingMode` defaults Disabled and
   requires separate Pilot/Production approval. A successful shadow decision
   cannot authorize category writes.
-- Both authorized modes use `✓ Known sender` and `Unknown sender`; Pilot is
+- Both authorized modes use `✓` (Known) and `Unknown sender`; Pilot is
   not a mailbox/message allowlist. Before visible activation, inspect exact
   category-name ownership and configure mailbox-local blue/gray master
   categories. Prefer native Outlook setup for a scoped MVP rather than adding

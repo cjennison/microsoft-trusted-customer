@@ -38,7 +38,7 @@ The visible answer is binary:
 
 | Presentation | Meaning |
 | --- | --- |
-| `✓ Known sender` | Active exact contact or approved business-domain match, plus trusted receiving authentication aligned to the visible From domain |
+| `✓` | Active exact contact or approved business-domain match, plus trusted receiving authentication aligned to the visible From domain |
 | `Unknown sender` | No active match, missing/failed/ambiguous authentication, expired/revoked evidence, conflicting sender identity, unsupported evidence, or processing failure |
 
 The stored non-positive Dataverse decision remains `Not known`; `Unknown sender`
@@ -204,11 +204,12 @@ Both authorized presentation modes use the same current names:
 
 | Category | Recommended color |
 | --- | --- |
-| `✓ Known sender` | Blue (Outlook web: Sky blue) |
+| `✓` | Blue (Outlook web: Sky blue) |
 | `Unknown sender` | Gray (Outlook web: Silver) |
 
-The four legacy `MTC Proof - known sender`, `MTC Proof - not known`,
-`MTC - known sender`, and `MTC - not known` names remain exact owned migration
+The five legacy `MTC Proof - known sender`, `MTC Proof - not known`,
+`MTC - known sender`, `MTC - not known`, and `✓ Known sender` (used until
+0.9.12.0) names remain exact owned migration
 aliases. Reconciliation removes these and any prior current service label before
 applying one current category. Neither Pilot nor Production is a mailbox
 allowlist; production still requires separate acceptance and activation approval.

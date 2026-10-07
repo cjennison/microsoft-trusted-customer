@@ -11,12 +11,12 @@ namespace Mtc.Registrar
 {
     public sealed class LabelRuntime : IPlugin
     {
-        private const string KnownCategory = "\u2713 Known sender";
+        private const string KnownCategory = "\u2713";
         private const string UnknownCategory = "Unknown sender";
         private const int NotApplicable = 100000003;
         private static readonly string[] OwnedCategories = {
             "MTC Proof - known sender", "MTC Proof - not known",
-            "MTC - known sender", "MTC - not known",
+            "MTC - known sender", "MTC - not known", "\u2713 Known sender",
             KnownCategory, UnknownCategory
         };
 

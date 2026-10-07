@@ -9,7 +9,7 @@ what you will see and what to do. It takes about five minutes to read.
 Incoming emails get one of two labels near the top of the message (and in the
 message list):
 
-- **✓ Known sender** (blue): the email came from an exact email address or business domain that one of our registrars has independently verified, and Microsoft's mail system confirmed it was not forged.
+- **✓** (blue checkmark, "Known sender"): the email came from an exact email address or business domain that one of our registrars has independently verified, and Microsoft's mail system confirmed it was not forged.
 - **Unknown sender** (gray): we have not verified this sender. This is normal for new customers, suppliers and anyone else we have not checked yet. It does not mean the email is bad.
 
 Labels usually appear within about 15 minutes of an email arriving. If an email
@@ -92,7 +92,7 @@ The button only fills in the form. Nothing is approved until you complete it.
 - Tick the confirmation box and select **Verify sender**.
 
 Within about 15 minutes, that sender's emails from the last 30 days change to
-**✓ Known sender**, and new emails arrive labelled Known.
+the blue **✓** (Known sender), and new emails arrive with it.
 
 ## Renewing and revoking
 

@@ -150,7 +150,7 @@ internal static class Program
             return (ParameterCollection)proxy.Values["OutputParameters"];
         };
         var plan = run("mtc_GetMessageLabelPlan");
-        message.Categories = new[] { "Personal", "\u2713 Known sender" };
+        message.Categories = new[] { "Personal", "\u2713" };
         run("mtc_VerifyMessagePresentation");
         var first = row.GetAttributeValue<DateTime?>("mtc_firstpresentedon");
         Check(first != null && row.GetAttributeValue<OptionSetValue>("mtc_presentationstatus").Value == 100000001,
@@ -260,7 +260,7 @@ internal static class Program
                 }
             });
             new LabelRuntime().Execute(new Provider(context.Value, service));
-            return ((string)output["CategoriesJson"]).Contains("Known sender");
+            return Categories((string)output["CategoriesJson"]).Contains("\u2713");
         };
         Check(known("a@business.example"), "A wildcard approval covers its base domain.");
         Check(known("a@mail.business.example") && known("a@deep.mail.business.example"), "A wildcard approval covers every subdomain.");
@@ -361,7 +361,7 @@ internal static class Program
         Func<bool> known = () =>
         {
             new LabelRuntime().Execute(new Provider(plan.Value, service));
-            return ((string)((ParameterCollection)plan.Values["OutputParameters"])["CategoriesJson"]).Contains("Known sender");
+            return Categories((string)((ParameterCollection)plan.Values["OutputParameters"])["CategoriesJson"]).Contains("\u2713");
         };
         Check(known(), "A sender approved without optional details must be Known when this client does not require them.");
 
@@ -525,6 +525,12 @@ internal static class Program
         }
     }
 
+    private static string[] Categories(string json)
+    {
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+            return (string[])new DataContractJsonSerializer(typeof(string[])).ReadObject(stream);
+    }
+
     private static string Json<T>(T value)
     {
         using (var stream = new MemoryStream())
@@ -580,13 +586,13 @@ internal static class Program
         var provider = new Provider(context.Value, service);
         var runtime = new LabelRuntime();
         Action plan = () => { input["MessageJson"] = Json(message); runtime.Execute(provider); };
-        var known = new[] { "Personal", "\u2713 Known sender" };
+        var known = new[] { "Personal", "\u2713" };
         var unknown = new[] { "Personal", "Unknown sender" };
         foreach (var mode in new[] { "Pilot", "Production" })
         {
             definition["defaultvalue"] = mode;
             message.Categories = new[] { "Personal", "MTC Proof - known sender", "MTC Proof - not known",
-                "MTC - known sender", "MTC - not known", "Unknown sender" };
+                "MTC - known sender", "MTC - not known", "\u2713 Known sender", "Unknown sender" };
             plan();
             Check((string)output["CategoriesJson"] == Json(known),
                 "Both modes must use one checkmark label, remove legacy-owned labels, and preserve Personal.");

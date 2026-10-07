@@ -50,7 +50,7 @@ operating ownership, and explicit exclusions.
 
 | Decision | Required starting point |
 | --- | --- |
-| Visible sender status | Binary `✓ Known sender` (blue) or `Unknown sender` (gray); stored Not known policy remains unchanged |
+| Visible sender status | Binary `✓` (blue, Known sender) or `Unknown sender` (gray); stored Not known policy remains unchanged |
 | Known rule | Active exact approved address/domain plus trusted receiving authentication |
 | New legitimate sender | Delivered and marked Not known; controlled onboarding path |
 | Consumer email provider | Exact approved address only; never provider-wide domain approval |
