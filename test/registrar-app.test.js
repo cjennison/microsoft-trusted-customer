@@ -26,6 +26,7 @@ test('verification details follow the client required-field setting', async () =
     assert.equal(optional.get(id).required, false);
     assert.match(optional.get(`${id}-label`).textContent, /\(optional\)$/);
   }
+  assert.equal(optional.get('operator-alert-count').textContent, '0');
   assert.equal(optional.get('expiry').value, '');
   assert.equal(optional.get('verification-method-blank').textContent, 'Not recorded');
 

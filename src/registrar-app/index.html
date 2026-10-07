@@ -14,11 +14,11 @@
   </header>
   <p class="notice">Known sender means an independently verified business relationship, not a safe email. Native Microsoft email protections remain unchanged.</p>
   <div id="message" role="status" aria-live="polite">Loading your registry...</div>
-  <aside id="operator-alerts" class="notice" aria-labelledby="operator-alerts-heading" hidden>
-    <h2 id="operator-alerts-heading">Operator notifications</h2>
+  <details id="operator-alerts" class="notice" hidden>
+    <summary><h2 id="operator-alerts-heading">Operator notifications</h2> <span id="operator-alert-count" class="badge failed" aria-label="Number of notifications">0</span></summary>
     <p>Processing alerts remain visible here even after a mailbox recovers. These are service notices, not email-safety verdicts.</p>
     <div id="operator-alert-list" aria-live="polite"></div>
-  </aside>
+  </details>
   <nav aria-label="Registry workspace">
     <button type="button" data-panel="senders" aria-current="page">Verified senders</button>
     <button type="button" data-panel="verify">Verify a sender</button>
@@ -61,6 +61,7 @@
         <p id="expiry-help" class="hint">The sender stops showing as Known after this date until renewed.</p>
         <label class="confirmation"><input id="ownership-confirmed" type="checkbox" required> I independently confirmed ownership and understand the scope shown above.</label>
         <button id="verify-submit" type="submit" class="primary">Verify sender</button>
+        <p id="verify-status" class="form-status" role="alert" hidden></p>
         <p class="hint">The server records the actual registrar and verification time. Verification does not bypass spam, phishing, or malware protection.</p>
       </form>
     </section>
@@ -90,6 +91,7 @@
       <label for="revoke-reason">Reason for revocation</label><textarea id="revoke-reason" required maxlength="1000" rows="3"></textarea>
       <p>New assessments must stop recognizing this entry. Existing Outlook labels require successful reassessment; revocation alone does not prove relabeling completed.</p>
       <div class="dialog-actions"><button id="revoke-cancel" type="button">Cancel</button><button id="revoke-submit" type="submit" class="danger">Revoke sender</button></div>
+      <p id="revoke-status" class="form-status" role="alert" hidden></p>
     </form>
   </dialog>
 </body>

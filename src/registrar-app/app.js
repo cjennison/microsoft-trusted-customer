@@ -132,6 +132,7 @@
           state.revoke = sender;
           element('revoke-target').textContent = sender.target;
           element('revoke-reason').value = '';
+          formStatus('revoke-status', '');
           element('revoke-dialog').showModal();
         });
         actions.append(revoke);
@@ -239,6 +240,7 @@
     const panel = element('operator-alert-list');
     panel.replaceChildren();
     element('operator-alerts').hidden = notices.length === 0;
+    element('operator-alert-count').textContent = notices.length >= 10 ? '10+' : String(notices.length);
     for (const notice of notices) {
       const paragraph = document.createElement('p');
       paragraph.textContent = `${dateText(notice.createdon)}: ${notice.body}`;
@@ -255,10 +257,16 @@
       : 'Other addresses at this provider will remain Not known.';
   }
 
+  function formStatus(id, text) {
+    element(id).textContent = text;
+    element(id).hidden = !text;
+  }
+
   async function submitVerification(event) {
     event.preventDefault();
     const button = element('verify-submit');
     button.disabled = true;
+    formStatus('verify-status', '');
     try {
       const data = new FormData(element('verification-form'));
       const body = Object.fromEntries(data);
@@ -272,7 +280,7 @@
       showPanel('senders');
       status(`Sender verified. Configured processing mode: ${state.mode}. Registry approval is not confirmation that Outlook messages have been relabeled.`);
     } catch (error) {
-      status(`Verification failed: ${error.message}`, true);
+      formStatus('verify-status', `Verification failed: ${error.message}`);
     } finally {
       button.disabled = false;
     }
@@ -282,6 +290,7 @@
     event.preventDefault();
     const button = element('revoke-submit');
     button.disabled = true;
+    formStatus('revoke-status', '');
     try {
       if (!state.revoke) throw new Error('Select a sender to revoke.');
       await request('mtc_RevokeSender', 'POST', {
@@ -293,7 +302,7 @@
       await refresh();
       status('Sender revoked in the registry. Existing Outlook labels still require successful reassessment.');
     } catch (error) {
-      status(`Revocation failed: ${error.message}`, true);
+      formStatus('revoke-status', `Revocation failed: ${error.message}`);
     } finally {
       button.disabled = false;
     }

@@ -133,4 +133,6 @@ test('app is dependency-free, avoids HTML injection, and has no mail-content or 
   assert.match(script, /mtc_SetMailboxEnrollment/);
   assert.match(script, /Enrolled: false/);
   assert.match(html, /ownership-confirmed.*required/);
+  assert.match(html, /<details id="operator-alerts"(?![^>]*\bopen\b)[^>]*>/, 'Operator notifications start collapsed.');
+  assert.ok(html.indexOf('id="verify-status"') > html.indexOf('id="verify-submit"'), 'Verification errors appear beside the Verify button.');
 });

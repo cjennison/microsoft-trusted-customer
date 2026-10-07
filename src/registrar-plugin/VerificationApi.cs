@@ -83,6 +83,20 @@ namespace Mtc.Registrar
             return VerificationPolicy.Text(value, name, maximum);
         }
 
+        // Dataverse supplies DateTime.MinValue for an omitted optional DateTime parameter, so that value means "not provided".
+        private static DateTime? OptionalExpiry(IPluginExecutionContext context, DateTime now, bool required)
+        {
+            var value = context.InputParameters.Contains("ExpiresOn") ? context.InputParameters["ExpiresOn"] : null;
+            if (value != null && !(value is DateTime))
+                throw new ArgumentException("Verification expiry must be a date.");
+            if (value == null || ((DateTime)value).Ticks == DateTime.MinValue.Ticks)
+            {
+                if (required) throw new ArgumentException("ExpiresOn is required by this organization's registrar settings.");
+                return null;
+            }
+            return VerificationPolicy.Expiry((DateTime)value, now);
+        }
+
         private static string EntityName(string type)
         {
             if (type == "contact") return "mtc_approvedcontact";
@@ -108,19 +122,13 @@ namespace Mtc.Registrar
 
         private static void Verify(IPluginExecutionContext context, IOrganizationService service, RegistrarRequirements requirements)
         {
+            var now = DateTime.UtcNow;
+            var expiry = OptionalExpiry(context, now, requirements.ExpiryRequired);
             var type = Input(context, "TargetType", 10);
             var target = VerificationPolicy.Target(type, Input(context, "TargetValue", 320));
             var business = Input(context, "BusinessName", 200);
             var evidence = OptionalInput(context, "EvidenceReference", 1000, requirements.EvidenceRequired);
             var method = OptionalInput(context, "VerificationMethod", 200, requirements.MethodRequired);
-            var now = DateTime.UtcNow;
-            DateTime? expiry = null;
-            if (context.InputParameters.Contains("ExpiresOn") && context.InputParameters["ExpiresOn"] is DateTime)
-                expiry = VerificationPolicy.Expiry((DateTime)context.InputParameters["ExpiresOn"], now);
-            else if (context.InputParameters.Contains("ExpiresOn") && context.InputParameters["ExpiresOn"] != null)
-                throw new ArgumentException("Verification expiry must be a date.");
-            else if (requirements.ExpiryRequired)
-                throw new ArgumentException("ExpiresOn is required by this organization's registrar settings.");
             var table = EntityName(type);
             RequireIdentityKey(service, table,
                 type == "contact" ? "mtc_approvedcontactidentity" : "mtc_approveddomainidentity");

@@ -33,6 +33,10 @@ td:first-child { overflow-wrap: anywhere; }
 .badge.approved { color: #155430; background: #dff2e6; }
 .badge.revoked, .badge.failed { color: #a11d22; background: #fbe5e5; }
 .badge.expired { color: #784b00; background: #fff0ce; }
+.form-status { margin: 12px 0 0; color: #a11d22; font-weight: 600; }
+details#operator-alerts { margin-bottom: 14px; }
+details#operator-alerts summary { cursor: pointer; display: flex; align-items: center; gap: 10px; list-style-position: outside; }
+details#operator-alerts summary h2 { margin: 0; font-size: 19px; }
 dl { display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 16px; }
 dd { margin: 0; font-weight: 600; }
 dialog { border: 1px solid #a5b5c4; border-radius: 8px; max-width: 640px; padding: 28px; }

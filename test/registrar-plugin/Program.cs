@@ -302,6 +302,8 @@ internal static class Program
         parameters.Remove("VerificationMethod");
         parameters.Remove("EvidenceReference");
         parameters.Remove("ExpiresOn");
+        // Dataverse passes DateTime.MinValue when the optional ExpiresOn parameter is omitted.
+        parameters["ExpiresOn"] = DateTime.MinValue;
         var provider = new Provider(verification.Value, service);
         parameters["EvidenceReference"] = "  ";
         Reject(() => new VerificationApi().Execute(provider), "EvidenceReference");
@@ -358,6 +360,10 @@ internal static class Program
         setting["defaultvalue"] = "ExpiresOn";
         Check(!known(), "When a client starts requiring expiry, entries without one must stop qualifying until renewed.");
         Reject(() => new VerificationApi().Execute(provider), "ExpiresOn is required");
+        parameters.Remove("ExpiresOn");
+        Reject(() => new VerificationApi().Execute(provider), "ExpiresOn is required");
+        parameters["ExpiresOn"] = DateTime.UtcNow.AddDays(-1);
+        Reject(() => new VerificationApi().Execute(provider), "future");
         parameters["ExpiresOn"] = DateTime.UtcNow.AddDays(30);
         new VerificationApi().Execute(provider);
         Check(known(), "Renewing with the newly required expiry must restore Known.");
