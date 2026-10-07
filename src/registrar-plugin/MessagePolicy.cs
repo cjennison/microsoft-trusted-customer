@@ -56,6 +56,20 @@ namespace Mtc.Registrar
             var authentication = Exact(all, "Authentication-Results");
             var source = Exact(all, "X-MS-Exchange-Organization-AuthSource");
             var direction = Exact(all, "X-MS-Exchange-Organization-MessageDirectionality");
+            // Mail sent by a signed-in user of this organization never crosses the inbound boundary, so it
+            // carries Exchange's own authenticated-submission stamps instead of an inbound DMARC result.
+            // Exchange strips externally supplied organization headers; exact counts reject injected duplicates.
+            var authAs = Exact(all, "X-MS-Exchange-Organization-AuthAs");
+            var crossTenantAuthAs = Exact(all, "X-MS-Exchange-CrossTenant-AuthAs");
+            if (direction.Length == 1 && source.Length == 1 && authAs.Length == 1 && crossTenantAuthAs.Length == 1 &&
+                Is(direction[0], "Originating") && Is(authAs[0], "Internal") && Is(crossTenantAuthAs[0], "Internal") &&
+                Regex.IsMatch((source[0].Value ?? "").Trim(), @"^[a-z0-9.-]+\.(prod\.outlook\.com|outlook\.office365\.com)$", RegexOptions.IgnoreCase))
+            {
+                decision.AuthenticationAligned = true;
+                decision.Known = registryApproved;
+                decision.Reason = registryApproved ? "MTC_ACTIVE_REGISTRY_AND_INTERNAL_AUTHENTICATED_SUBMISSION" : "MTC_REGISTRY_NO_MATCH";
+                return decision;
+            }
             if (authentication.Length != 1 || source.Length != 1 || direction.Length != 1)
             {
                 decision.Reason = "MTC_RECEIVING_BOUNDARY_MISSING_OR_AMBIGUOUS";
@@ -106,6 +120,11 @@ namespace Mtc.Registrar
             decision.Known = registryApproved;
             decision.Reason = registryApproved ? "MTC_ACTIVE_REGISTRY_AND_ALIGNED_RECEIVING_AUTH" : "MTC_REGISTRY_NO_MATCH";
             return decision;
+        }
+
+        private static bool Is(ReceivingHeader header, string value)
+        {
+            return string.Equals((header.Value ?? "").Trim(), value, StringComparison.OrdinalIgnoreCase);
         }
 
         private static ReceivingHeader[] Exact(IEnumerable<ReceivingHeader> headers, string name)

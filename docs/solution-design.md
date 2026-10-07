@@ -167,6 +167,17 @@ An email is `Known sender` only when all applicable conditions pass:
 
 Everything else is `Not known`.
 
+**Internal mail (0.9.4.0):** mail sent by a signed-in user of the same
+organization never crosses the inbound boundary, so it has no inbound DMARC
+result. It qualifies through condition 3/4's alternative only when Exchange's own
+stamps show exactly one `X-MS-Exchange-Organization-MessageDirectionality:
+Originating`, `X-MS-Exchange-Organization-AuthAs: Internal`,
+`X-MS-Exchange-CrossTenant-AuthAs: Internal`, and a Microsoft-hosted
+`AuthSource`. Exchange strips externally supplied organization headers, and
+duplicates fail closed. Sender/Reply-To and registry rules still apply, so the
+organization's own domain is added like any other sender. A compromised internal
+account would still show Known.
+
 The current live proof recognizes the observed Microsoft auth-service marker
 `mx.microsoft.com` and requires SPF, DKIM, DMARC, and composite authentication
 pass. This is bounded development evidence, not yet a generalized production

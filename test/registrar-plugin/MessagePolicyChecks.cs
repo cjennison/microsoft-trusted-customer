@@ -47,6 +47,31 @@ internal static class MessagePolicyChecks
         check(MessagePolicy.Assess("contact@business.example", null, Array.Empty<string>(), headers(multipleDkim), true).Known,
             "Multiple passing DKIM signatures do not invalidate exact DMARC From alignment.");
         var organization = Guid.NewGuid();
+        Func<string, string, string, ReceivingHeader[]> internalHeaders = (direction, authAs, crossTenant) => new[]
+        {
+            new ReceivingHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; dkim=none (message not signed) header.d=none;dmarc=none action=none header.from=business.example;" },
+            new ReceivingHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "sender.namprd20.prod.outlook.com" },
+            new ReceivingHeader { Name = "X-MS-Exchange-Organization-MessageDirectionality", Value = direction },
+            new ReceivingHeader { Name = "X-MS-Exchange-Organization-AuthAs", Value = authAs },
+            new ReceivingHeader { Name = "X-MS-Exchange-CrossTenant-AuthAs", Value = crossTenant }
+        };
+        var internalMail = MessagePolicy.Assess("staff@business.example", "staff@business.example",
+            Array.Empty<string>(), internalHeaders("Originating", "Internal", "Internal"), true);
+        check(internalMail.Known && internalMail.Reason == "MTC_ACTIVE_REGISTRY_AND_INTERNAL_AUTHENTICATED_SUBMISSION",
+            "Authenticated internal submission from an approved domain is Known.");
+        check(!MessagePolicy.Assess("staff@business.example", null, Array.Empty<string>(),
+            internalHeaders("Originating", "Internal", "Internal"), false).Known, "Internal submission alone cannot recognize a sender.");
+        foreach (var external in new[] { internalHeaders("Incoming", "Internal", "Internal"),
+            internalHeaders("Originating", "Anonymous", "Internal"), internalHeaders("Originating", "Internal", "Anonymous"),
+            internalHeaders("Incoming", "Anonymous", "Anonymous") })
+            check(!MessagePolicy.Assess("staff@business.example", null, Array.Empty<string>(), external, true).Known,
+                "Inbound or anonymous mail must not use the internal-submission path.");
+        var injected = internalHeaders("Originating", "Internal", "Internal").Concat(new[]
+            { new ReceivingHeader { Name = "X-MS-Exchange-Organization-AuthAs", Value = "Internal" } }).ToArray();
+        check(!MessagePolicy.Assess("staff@business.example", null, Array.Empty<string>(), injected, true).Known,
+            "Duplicate internal-submission stamps must fail closed.");
+        check(!MessagePolicy.Assess("staff@business.example", "other@business.example", Array.Empty<string>(),
+            internalHeaders("Originating", "Internal", "Internal"), true).Known, "Internal path still enforces Sender identity.");
         check(AssessmentIdentity.ForMessage(organization, "mailbox@customer.example", "AaOpaqueID") !=
             AssessmentIdentity.ForMessage(organization, "mailbox@customer.example", "AAOpaqueID"),
             "Case-distinct Graph IDs must have distinct deterministic assessment keys.");
