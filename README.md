@@ -4,7 +4,20 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Client-showable development MVP, version 0.9.1.0.
+**Status:** Live for the first customer, version 0.9.2.0 (October 6, 2026).
+At customer request, visible labels were enabled for all currently enrolled
+user/shared mailboxes, and the existing environment was converted to
+Production. Everything starts as **Unknown sender** until a registrar approves
+an exact address or business domain. Write/readback failures fail closed and
+retry automatically. Shared-mailbox web and customer-confirmed mobile
+acceptance passed; remaining operating items (retention, measured thresholds,
+rollback rehearsal) are tracked in
+[#1](https://github.com/cjennison/microsoft-trusted-customer/issues/1).
+Known is business context, not a safe-email verdict; native Microsoft
+protections remain authoritative.
+
+The paragraphs below record the pre-cutover development history.
+
 The published **Sender Registry** model-driven Power App now provides guided
 exact-address/business-domain verification, renewal, revocation, mailbox
 onboarding/pause/enrollment, and a basic service-health view. Twelve Dataverse
