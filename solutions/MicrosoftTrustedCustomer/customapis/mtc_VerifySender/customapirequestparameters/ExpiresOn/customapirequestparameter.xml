@@ -3,7 +3,7 @@
     <label description="ExpiresOn" languagecode="1033" />
   </displayname>
   <iscustomizable>0</iscustomizable>
-  <isoptional>0</isoptional>
+  <isoptional>1</isoptional>
   <name>mtc_VerifySender.ExpiresOn</name>
   <type>1</type>
 </customapirequestparameter>

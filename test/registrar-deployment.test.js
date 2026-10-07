@@ -4,7 +4,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { install, resourceNames, guardTables } = require('../src/provisioning/registrar.js');
+const { install, resourceNames, guardTables, reconcileRequestParameters, verifySenderDefinition } = require('../src/provisioning/registrar.js');
 
 const target = {
   environmentOrigin: 'https://synthetic.crm.dynamics.com',
@@ -84,6 +84,40 @@ test('registry guards cover the four approval record types and not mailbox healt
     'mtc_businessparty', 'mtc_approvedcontact', 'mtc_approveddomain', 'mtc_verificationcase'
   ]);
   assert.equal(Object.keys(resourceNames).length, 3);
+});
+
+test('custom API parameter optionality is reconciled by recreation, and other drift stops deployment', async () => {
+  const existing = [
+    ['TargetType', 10, false], ['TargetValue', 10, false], ['BusinessName', 10, false],
+    ['VerificationMethod', 10, false], ['EvidenceReference', 10, true], ['ExpiresOn', 1, false]
+  ].map(([uniquename, type, isoptional], index) => ({ customapirequestparameterid: `p${index}`, uniquename, type, isoptional }));
+  const calls = [];
+  const request = async (path, method = 'GET', body) => {
+    calls.push({ path, method, body });
+    return method === 'GET' ? { value: existing } : null;
+  };
+  const changes = await reconcileRequestParameters(request, verifySenderDefinition, 'api-1');
+  assert.deepEqual(changes, ['mtc_VerifySender.VerificationMethod optional', 'mtc_VerifySender.ExpiresOn optional']);
+  assert.deepEqual(calls.slice(1).map(call => `${call.method} ${call.path}`), [
+    'DELETE customapirequestparameters(p3)', 'POST customapirequestparameters',
+    'DELETE customapirequestparameters(p5)', 'POST customapirequestparameters'
+  ]);
+  assert.equal(calls[2].body.isoptional, true);
+  assert.equal(calls[2].body['CustomAPIId@odata.bind'], '/customapis(api-1)');
+  assert.equal(calls[4].body.type, 1);
+
+  for (const drift of [
+    existing.filter(item => item.uniquename !== 'ExpiresOn'),
+    existing.map(item => item.uniquename === 'ExpiresOn' ? { ...item, type: 10 } : item),
+    [...existing, { customapirequestparameterid: 'extra', uniquename: 'Extra', type: 10, isoptional: true }]
+  ]) {
+    const writes = [];
+    await assert.rejects(reconcileRequestParameters(async (path, method = 'GET') => {
+      if (method !== 'GET') writes.push(path);
+      return { value: drift };
+    }, verifySenderDefinition, 'api-1'), /parameter conflicts|Unexpected custom API parameters/);
+    assert.equal(writes.length, 0, 'Drift must be detected before any parameter is deleted.');
+  }
 });
 
 test('app is dependency-free, avoids HTML injection, and has no mail-content or credential requests', () => {

@@ -2,9 +2,22 @@
 
 (function () {
   const api = `${location.origin}/api/data/v9.2/`;
-  const state = { senders: [], mailboxes: [], revoke: null, mode: null };
+  const state = { senders: [], mailboxes: [], revoke: null, mode: null, required: null };
   const element = id => document.getElementById(id);
   const dateText = value => value ? new Date(value).toLocaleString() : 'Not yet';
+  // Mirrors the server's mtc_RequiredRegistrarFields rule; the server remains authoritative.
+  const optionalFields = [
+    ['VerificationMethod', 'verification-method', 'How did you independently verify ownership?'],
+    ['EvidenceReference', 'evidence-reference', 'Restricted evidence reference'],
+    ['ExpiresOn', 'expiry', 'Review or expiry date']
+  ];
+
+  function requiredFields(value) {
+    const names = (value ?? '').split(',').map(name => name.trim()).filter(Boolean);
+    if (names.some(name => !optionalFields.some(([field]) => field === name)) || new Set(names).size !== names.length)
+      throw new Error('Registrar required-field configuration is invalid.');
+    return new Set(names);
+  }
 
   function status(text, error = false) {
     element('message').textContent = text;
@@ -76,7 +89,7 @@
   function senderStatus(sender) {
     if (sender.mtc_verificationstatus === 100000003) return ['Revoked', 'revoked'];
     if (sender.mtc_verificationstatus !== 100000001) return ['Not approved', ''];
-    if (!sender.mtc_expireson || Date.parse(sender.mtc_expireson) <= Date.now()) return ['Expired', 'expired'];
+    if (sender.mtc_expireson && Date.parse(sender.mtc_expireson) <= Date.now()) return ['Expired', 'expired'];
     return ['Approved', 'approved'];
   }
 
@@ -94,7 +107,7 @@
         : sender.target.startsWith('*.') ? 'Domain and all subdomains' : 'Exact business domain');
       cell(row, sender.business);
       badge(cell(row, ''), ...senderStatus(sender));
-      cell(row, dateText(sender.mtc_expireson));
+      cell(row, sender.mtc_expireson ? dateText(sender.mtc_expireson) : 'No expiry');
       const actions = cell(row, '');
       const renew = document.createElement('button');
       renew.type = 'button';
@@ -182,13 +195,21 @@
         collection('mtc_approveddomains?$select=mtc_approveddomainid,mtc_domain,mtc_expireson,mtc_verificationstatus,_mtc_businessparty_value&$filter=statecode eq 0'),
         collection('mtc_businessparties?$select=mtc_businesspartyid,mtc_name&$filter=statecode eq 0'),
         collection('mtc_mailboxenrollments?$select=mtc_mailboxreference,mtc_mailboxtype,mtc_enrollmentstatus,mtc_lastsuccessfulpollon,mtc_healthstate,mtc_lasterror&$filter=statecode eq 0'),
-        collection("environmentvariabledefinitions?$select=environmentvariabledefinitionid,defaultvalue&$filter=schemaname eq 'mtc_ProcessingMode'&$expand=environmentvariabledefinition_environmentvariablevalue($select=value,statecode)")
+        collection("environmentvariabledefinitions?$select=environmentvariabledefinitionid,schemaname,defaultvalue&$filter=schemaname eq 'mtc_ProcessingMode' or schemaname eq 'mtc_RequiredRegistrarFields'&$expand=environmentvariabledefinition_environmentvariablevalue($select=value,statecode)")
       ]);
-      if (modes.length !== 1) throw new Error('Processing-mode configuration is missing or ambiguous.');
-      const values = modes[0].environmentvariabledefinition_environmentvariablevalue.filter(value => value.statecode === 0);
-      if (values.length > 1) throw new Error('Processing-mode configuration has multiple active values.');
-      const mode = values.length ? values[0].value : modes[0].defaultvalue;
+      const setting = name => {
+        const matches = modes.filter(definition => definition.schemaname === name);
+        if (matches.length > 1) throw new Error(`Configuration ${name} is ambiguous.`);
+        if (!matches.length) return undefined;
+        const values = matches[0].environmentvariabledefinition_environmentvariablevalue.filter(value => value.statecode === 0);
+        if (values.length > 1) throw new Error(`Configuration ${name} has multiple active values.`);
+        return values.length ? values[0].value : matches[0].defaultvalue;
+      };
+      const mode = setting('mtc_ProcessingMode');
+      if (mode === undefined) throw new Error('Processing-mode configuration is missing or ambiguous.');
       if (!['Disabled', 'Shadow', 'Label'].includes(mode)) throw new Error('Processing-mode configuration is invalid.');
+      const required = setting('mtc_RequiredRegistrarFields');
+      applyRequirements(required === undefined ? new Set(optionalFields.map(([field]) => field)) : requiredFields(required));
       const businesses = new Map(parties.map(party => [party.mtc_businesspartyid, party.mtc_name]));
       state.senders = [
         ...contacts.map(sender => ({
@@ -241,7 +262,8 @@
     try {
       const data = new FormData(element('verification-form'));
       const body = Object.fromEntries(data);
-      body.ExpiresOn = new Date(`${body.ExpiresOn}T23:59:59`).toISOString();
+      for (const [field] of optionalFields) if (!body[field]) delete body[field];
+      if (body.ExpiresOn) body.ExpiresOn = new Date(`${body.ExpiresOn}T23:59:59`).toISOString();
       await request('mtc_VerifySender', 'POST', body);
       element('verification-form').reset();
       setExpiry();
@@ -277,11 +299,27 @@
     }
   }
 
+  function applyRequirements(required) {
+    const changed = !state.required || [...required].join() !== [...state.required].join();
+    state.required = required;
+    for (const [field, id, label] of optionalFields) {
+      const isRequired = required.has(field);
+      element(id).required = isRequired;
+      element(`${id}-label`).textContent = isRequired ? label : `${label} (optional)`;
+    }
+    element('verification-method-blank').textContent = required.has('VerificationMethod')
+      ? 'Choose the completed verification' : 'Not recorded';
+    element('expiry-help').textContent = required.has('ExpiresOn')
+      ? 'Required by your organization. The sender stops showing as Known after this date until renewed.'
+      : 'Leave blank for no expiry. If set, the sender stops showing as Known after this date until renewed.';
+    if (changed) setExpiry();
+  }
+
   function setExpiry() {
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 365);
     const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    element('expiry').value = localDate(expiry);
+    element('expiry').value = state.required?.has('ExpiresOn') === false ? '' : localDate(expiry);
     element('expiry').min = localDate(new Date());
   }
 

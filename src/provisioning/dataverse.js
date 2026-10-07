@@ -2,8 +2,8 @@
 
 (function (root) {
   const solutionName = 'MicrosoftTrustedCustomer';
-  const solutionVersion = '0.9.8.0';
-  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0', '0.7.0.0', '0.8.0.0', '0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0', '0.9.6.0', '0.9.7.0']);
+  const solutionVersion = '0.9.9.0';
+  const upgradeableSolutionVersions = new Set(['0.5.0.0', '0.6.0.0', '0.7.0.0', '0.8.0.0', '0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0', '0.9.6.0', '0.9.7.0', '0.9.8.0']);
   const verificationCaseUpgradeColumns = new Set([
     'mtc_TargetType', 'mtc_TargetValue', 'mtc_VerificationMethod', 'mtc_Reason', 'mtc_ExpiresOn'
   ]);
@@ -223,6 +223,11 @@
       schemaname: 'mtc_PolicyVersion', displayname: 'MTC policy version',
       description: 'Deterministic qualification policy version, not an approval or security verdict.',
       defaultvalue: '1', type: 100000000
+    },
+    {
+      schemaname: 'mtc_RequiredRegistrarFields', displayname: 'MTC required registrar fields',
+      description: 'Client choice of verification details a registrar must record: a comma-separated list of VerificationMethod, EvidenceReference and ExpiresOn. Empty makes all three optional. Listed fields are enforced on new approvals and for Known matching.',
+      defaultvalue: '', type: 100000000
     }
   ];
 

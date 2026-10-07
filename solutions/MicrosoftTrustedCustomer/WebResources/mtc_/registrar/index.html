@@ -45,19 +45,20 @@
         <p id="scope-help" class="hint">Other addresses at this provider will remain Not known.</p>
         <label for="business-name">Business or customer name</label>
         <input id="business-name" name="BusinessName" required maxlength="200">
-        <label for="verification-method">How did you independently verify ownership?</label>
+        <label for="verification-method" id="verification-method-label">How did you independently verify ownership?</label>
         <select id="verification-method" name="VerificationMethod" required>
-          <option value="">Choose the completed verification</option>
+          <option value="" id="verification-method-blank">Choose the completed verification</option>
           <option>Callback using an independently established phone number</option>
           <option>In-person confirmation with an established business contact</option>
           <option>Existing independently verified contract or customer record</option>
           <option>Independent business-domain ownership confirmation</option>
         </select>
-        <label for="evidence-reference">Restricted evidence reference</label>
+        <label for="evidence-reference" id="evidence-reference-label">Restricted evidence reference</label>
         <input id="evidence-reference" name="EvidenceReference" required maxlength="1000" placeholder="Reference to the approved record or evidence location">
         <p class="hint">Use an approved restricted record reference. Do not paste email contents, passwords, or evidence documents here.</p>
-        <label for="expiry">Review or expiry date</label>
+        <label for="expiry" id="expiry-label">Review or expiry date</label>
         <input id="expiry" name="ExpiresOn" type="date" required>
+        <p id="expiry-help" class="hint">The sender stops showing as Known after this date until renewed.</p>
         <label class="confirmation"><input id="ownership-confirmed" type="checkbox" required> I independently confirmed ownership and understand the scope shown above.</label>
         <button id="verify-submit" type="submit" class="primary">Verify sender</button>
         <p class="hint">The server records the actual registrar and verification time. Verification does not bypass spam, phishing, or malware protection.</p>

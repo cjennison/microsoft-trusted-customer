@@ -60,6 +60,7 @@ $expectedDefaults = @{
     mtc_PilotMailbox = ''
     mtc_OperatorAlertDestination = ''
     mtc_PolicyVersion = '1'
+    mtc_RequiredRegistrarFields = ''
 }
 $definitionRoot = Join-Path $source 'environmentvariabledefinitions'
 $definitionDirectories = @(Get-ChildItem -LiteralPath $definitionRoot -Directory)
@@ -230,6 +231,8 @@ $apiDefinitions = @{
     mtc_VerifySender = @{
         Type = 'Mtc.Registrar.VerificationApi'
         Inputs = @('TargetType', 'TargetValue', 'BusinessName', 'VerificationMethod', 'EvidenceReference', 'ExpiresOn')
+        # Per-client mtc_RequiredRegistrarFields decides which of these the plug-in requires.
+        Optional = @('VerificationMethod', 'EvidenceReference', 'ExpiresOn')
     }
     mtc_RevokeSender = @{
         Type = 'Mtc.Registrar.VerificationApi'
@@ -294,6 +297,13 @@ foreach ($directory in $apiDirectories) {
     if (($definition.Inputs.Count -eq 0 -and @($parameters).Count -ne 0) -or
         ($definition.Inputs.Count -gt 0 -and (Compare-Object $definition.Inputs @($parameters.Name)))) {
         throw "Unexpected registrar API inputs: $($directory.Name)"
+    }
+    foreach ($parameter in $parameters) {
+        $isOptional = ([xml](Get-Content -LiteralPath (Join-Path $parameter.FullName 'customapirequestparameter.xml') -Raw)).customapirequestparameter.isoptional
+        $expectedOptional = if (@($definition.Optional) -contains $parameter.Name) { '1' } else { '0' }
+        if ($isOptional -ne $expectedOptional) {
+            throw "Unexpected registrar API parameter optionality: $($directory.Name).$($parameter.Name)"
+        }
     }
 }
 $registrarResourceDirectory = Join-Path $source 'WebResources\mtc_\registrar'

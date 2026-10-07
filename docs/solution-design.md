@@ -141,7 +141,9 @@ Required server-side verification behavior:
 1. Trust the authenticated caller context, never actor identifiers supplied in
    a command body.
 2. Enforce the selected single-registrar or independent-review mode.
-3. Require independent evidence and a future expiry.
+3. Require the verification details this client selected in
+   `mtc_RequiredRegistrarFields` (method, evidence reference, expiry). Any
+   expiry given must be in the future; blank means no expiry.
 4. Reject unauthorized approval, self-approval in independent-review mode,
    expired evidence, forged verifier identity, and invalid state transitions.
 5. Revoke or expire records immediately for future Known decisions and enqueue

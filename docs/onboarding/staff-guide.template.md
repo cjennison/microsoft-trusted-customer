@@ -86,9 +86,9 @@ The button only fills in the form. Nothing is approved until you complete it.
 
 - **What are you verifying?** Choose *This email address only* to approve one exact address (use this for Gmail, Outlook.com, Yahoo and other personal providers, or when you only know one person). Choose *This exact business domain* to approve every address at that company domain; subdomains are not included unless you enter it as `*.company.com` (which covers the domain and every subdomain, such as `mail.company.com`), and shared providers such as Gmail cannot be approved this way.
 - **Business or customer name**: who they are, for example "Supplier Inc."
-- **How did you independently verify ownership?** Pick the method you used.
-- **Restricted evidence reference**: a short note of where your proof is kept, such as "Callback 10/6 to number in vendor file, by Mike". Do not paste email content, passwords or documents.
-- **Review or expiry date**: defaults to one year. The approval stops working after this date until renewed.
+- **How did you independently verify ownership?** Pick the method you used.{{OPTIONAL_METHOD}}
+- **Restricted evidence reference**: a short note of where your proof is kept, such as "Callback 10/6 to number in vendor file, by Mike". Do not paste email content, passwords or documents.{{OPTIONAL_EVIDENCE}}
+- **Review or expiry date**: {{EXPIRY_GUIDANCE}} The approval stops working after this date until renewed.
 - Tick the confirmation box and select **Verify sender**.
 
 Within about 15 minutes, that sender's emails from the last 30 days change to

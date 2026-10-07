@@ -24,6 +24,7 @@
     "productionCostDelta": "not-confirmed",
     "processingMode": "Disabled",
     "verificationAuthorityMode": "not-selected",
+    "registrarRequiredFields": "not-selected (comma-separated VerificationMethod, EvidenceReference, ExpiresOn; empty = all optional)",
     "registryRegistrarReferences": [],
     "mailboxScope": [],
     "unsupportedClients": [],

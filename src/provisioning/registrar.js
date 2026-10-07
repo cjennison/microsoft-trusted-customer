@@ -114,10 +114,7 @@
     const apiDefinitions = [
       {
         name: 'mtc_VerifySender', display: 'Verify or renew a sender',
-        parameters: [
-          ['TargetType', 10], ['TargetValue', 10], ['BusinessName', 10],
-          ['VerificationMethod', 10], ['EvidenceReference', 10], ['ExpiresOn', 1]
-        ],
+        parameters: verifySenderDefinition.parameters,
         results: [['RecordId', 12], ['VerificationCaseId', 12]]
       },
       {
@@ -196,9 +193,9 @@
           bindingtype: 0, isfunction: false, isprivate: false, allowedcustomprocessingsteptype: 0,
           iscustomizable: { Value: false },
           'PluginTypeId@odata.bind': `/plugintypes(${definition.pluginType ?? verificationType})`,
-          CustomAPIRequestParameters: definition.parameters.map(([name, type]) => ({
+          CustomAPIRequestParameters: definition.parameters.map(([name, type, optional = false]) => ({
             name: `${definition.name}.${name}`, uniquename: name, displayname: name,
-            type, isoptional: false, iscustomizable: { Value: false }
+            type, isoptional: optional, iscustomizable: { Value: false }
           })),
           CustomAPIResponseProperties: definition.results.map(([name, type]) => ({
             name: `${definition.name}.${name}`, uniquename: name, displayname: name,
@@ -209,6 +206,7 @@
         throw new Error(`Custom API handler conflicts: ${definition.name}`);
       } else {
         await request(`customapis(${api.customapiid})`, 'PATCH', { description });
+        report.components.push(...await reconcileRequestParameters(request, definition, api.customapiid));
       }
       await addComponent(api.customapiid, 10038);
       report.components.push(definition.name);
@@ -391,7 +389,44 @@
     return report;
   }
 
-  const api = { install, solutionName, assemblyName, appName, resourceNames, guardTables };
+  // IsOptional cannot be updated in place, so a parameter whose optionality changed is deleted and
+  // recreated. Any other difference (missing, duplicate, or retyped parameter) stops the deployment.
+  async function reconcileRequestParameters(request, definition, customApiId) {
+    const changes = [];
+    const existing = await request(
+      `customapirequestparameters?$select=customapirequestparameterid,uniquename,type,isoptional&$filter=_customapiid_value eq ${customApiId}`);
+    const plan = definition.parameters.map(([name, type, optional = false]) => {
+      const matches = existing.value.filter(parameter => parameter.uniquename === name);
+      if (matches.length !== 1 || matches[0].type !== type)
+        throw new Error(`Custom API parameter conflicts: ${definition.name}.${name}`);
+      return { name, type, optional, current: matches[0] };
+    });
+    if (existing.value.length !== plan.length) throw new Error(`Unexpected custom API parameters: ${definition.name}`);
+    for (const { name, type, optional, current } of plan) {
+      if (current.isoptional === optional) continue;
+      await request(`customapirequestparameters(${current.customapirequestparameterid})`, 'DELETE');
+      await request('customapirequestparameters', 'POST', {
+        name: `${definition.name}.${name}`, uniquename: name, displayname: name,
+        type, isoptional: optional, iscustomizable: { Value: false },
+        'CustomAPIId@odata.bind': `/customapis(${customApiId})`
+      });
+      changes.push(`${definition.name}.${name} ${optional ? 'optional' : 'required'}`);
+    }
+    return changes;
+  }
+
+  const verifySenderDefinition = {
+    name: 'mtc_VerifySender',
+    parameters: [
+      ['TargetType', 10], ['TargetValue', 10], ['BusinessName', 10],
+      ['VerificationMethod', 10, true], ['EvidenceReference', 10, true], ['ExpiresOn', 1, true]
+    ]
+  };
+
+  const api = {
+    install, solutionName, assemblyName, appName, resourceNames, guardTables,
+    reconcileRequestParameters, verifySenderDefinition
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MtcRegistrarDeployment = api;
 })(globalThis);

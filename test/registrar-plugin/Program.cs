@@ -44,6 +44,7 @@ internal static class Program
             GuardTests();
             LabelTests();
             WildcardTests();
+            RequirementTests();
             LabelLogTests();
             BeginPollTests();
             PagingTests();
@@ -279,6 +280,93 @@ internal static class Program
         }).Value, service));
         Check(!known("a@mail.business.example"), "A revoked narrower entry must not be overridden by a broader wildcard.");
         Check(known("a@other.business.example"), "Other subdomains stay covered by the wildcard.");
+    }
+
+    private static void RequirementTests()
+    {
+        Check(!RegistrarRequirements.Parse("").MethodRequired && !RegistrarRequirements.Parse(null).ExpiryRequired,
+            "An empty setting makes every verification detail optional.");
+        var some = RegistrarRequirements.Parse(" ExpiresOn , EvidenceReference ");
+        Check(some.ExpiryRequired && some.EvidenceRequired && !some.MethodRequired, "Listed fields must be required.");
+        foreach (var invalid in new[] { "Expiry", "expireson", "ExpiresOn,ExpiresOn", "All" })
+            Reject(() => RegistrarRequirements.Parse(invalid), "Invalid mtc_RequiredRegistrarFields");
+
+        var service = new FakeService { HasRegistrarRole = true, HasProcessorRole = true };
+        var setting = new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = RegistrarRequirements.SettingName, ["defaultvalue"] = ""
+        };
+        service.Create(setting);
+        var verification = Verification(service);
+        var parameters = (ParameterCollection)verification.Values["InputParameters"];
+        parameters.Remove("VerificationMethod");
+        parameters.Remove("EvidenceReference");
+        parameters.Remove("ExpiresOn");
+        var provider = new Provider(verification.Value, service);
+        parameters["EvidenceReference"] = "  ";
+        Reject(() => new VerificationApi().Execute(provider), "EvidenceReference");
+        parameters.Remove("EvidenceReference");
+        new VerificationApi().Execute(provider);
+        var contact = service.Rows.Single(row => row.LogicalName == "mtc_approvedcontact");
+        Check(contact.GetAttributeValue<DateTime?>("mtc_expireson") == null &&
+            contact.GetAttributeValue<string>("mtc_evidencereference") == null &&
+            contact.GetAttributeValue<string>("mtc_verificationmethod") == null,
+            "Optional details that were left blank must be stored as blank, with no expiry.");
+
+        service.Create(new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_LabelingMode", ["defaultvalue"] = "Production"
+        });
+        service.Create(new Entity("mtc_mailboxenrollment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_enrollmentstatus"] = new OptionSetValue(100000001), ["mtc_excludedfolderids"] = "sent"
+        });
+        var assessment = new Entity("mtc_messageassessment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_stablemessageid"] = "RequirementID", ["mtc_receivedon"] = DateTime.UtcNow.AddDays(-1)
+        };
+        service.Create(assessment);
+        var plan = new ContextProxy(new Dictionary<string, object>
+        {
+            ["MessageName"] = "mtc_GetMessageLabelPlan", ["UserId"] = service.UserId, ["InitiatingUserId"] = service.UserId,
+            ["InputParameters"] = new ParameterCollection
+            {
+                ["AssessmentId"] = assessment.Id,
+                ["MessageJson"] = Json(new GraphMessage
+                {
+                    Id = "RequirementID", ETag = "etag", ParentFolderId = "inbox", Categories = Array.Empty<string>(),
+                    From = new GraphParty { EmailAddress = new GraphAddress { Address = "proof@business.example" } },
+                    ReplyTo = Array.Empty<GraphParty>(),
+                    Headers = new[] {
+                        new GraphHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; dmarc=pass header.from=business.example; compauth=pass" },
+                        new GraphHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "receiver.prod.outlook.com" },
+                        new GraphHeader { Name = "X-MS-Exchange-Organization-MessageDirectionality", Value = "Incoming" }
+                    }
+                })
+            },
+            ["OutputParameters"] = new ParameterCollection()
+        });
+        Func<bool> known = () =>
+        {
+            new LabelRuntime().Execute(new Provider(plan.Value, service));
+            return ((string)((ParameterCollection)plan.Values["OutputParameters"])["CategoriesJson"]).Contains("Known sender");
+        };
+        Check(known(), "A sender approved without optional details must be Known when this client does not require them.");
+
+        setting["defaultvalue"] = "ExpiresOn";
+        Check(!known(), "When a client starts requiring expiry, entries without one must stop qualifying until renewed.");
+        Reject(() => new VerificationApi().Execute(provider), "ExpiresOn is required");
+        parameters["ExpiresOn"] = DateTime.UtcNow.AddDays(30);
+        new VerificationApi().Execute(provider);
+        Check(known(), "Renewing with the newly required expiry must restore Known.");
+
+        setting["defaultvalue"] = "ExpiresOn,EvidenceReference,VerificationMethod";
+        Check(!known(), "Newly required evidence and method must be present on existing entries.");
+        Reject(() => new VerificationApi().Execute(provider), "EvidenceReference is required");
+        setting["defaultvalue"] = "Bogus";
+        Reject(() => new VerificationApi().Execute(provider), "Invalid mtc_RequiredRegistrarFields");
     }
 
     private static void ApiTests()

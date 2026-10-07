@@ -7,6 +7,8 @@ param(
     [string] $GuideLink = '(link to the guide in your SharePoint)',
     [string] $SenderName = $SupportContact,
     [string] $LookalikeExample = 'supp1ier.com instead of supplier.com',
+    # Must match the client's mtc_RequiredRegistrarFields setting; empty means all optional.
+    [Parameter(Mandatory)] [AllowEmptyString()] [string] $RequiredRegistrarFields,
     [Parameter(Mandatory)] [string] $OutputDirectory
 )
 
@@ -19,10 +21,19 @@ if (-not $output.StartsWith($private, [StringComparison]::OrdinalIgnoreCase)) {
 }
 if ($RegistryLink -cnotmatch '^https://[a-z0-9-]+\.crm[0-9]*\.dynamics\.com/') { throw 'RegistryLink must be the Sender Registry app URL.' }
 
+$required = @($RequiredRegistrarFields.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if (@($required | Where-Object { $_ -cnotin 'VerificationMethod', 'EvidenceReference', 'ExpiresOn' }).Count -or
+    @($required | Select-Object -Unique).Count -ne $required.Count) {
+    throw 'RequiredRegistrarFields must list only VerificationMethod, EvidenceReference and ExpiresOn, or be empty.'
+}
+$optionalNote = ' Optional for your organization; fill it in when you can.'
 $values = @{
     '{{COMPANY}}' = $Company; '{{SUPPORT_CONTACT}}' = $SupportContact; '{{REGISTRARS}}' = $Registrars
     '{{REGISTRY_LINK}}' = $RegistryLink; '{{GUIDE_LINK}}' = $GuideLink; '{{SENDER_NAME}}' = $SenderName
     '{{LOOKALIKE_EXAMPLE}}' = $LookalikeExample
+    '{{OPTIONAL_METHOD}}' = $(if ($required -ccontains 'VerificationMethod') { '' } else { $optionalNote })
+    '{{OPTIONAL_EVIDENCE}}' = $(if ($required -ccontains 'EvidenceReference') { '' } else { $optionalNote })
+    '{{EXPIRY_GUIDANCE}}' = $(if ($required -ccontains 'ExpiresOn') { 'required; defaults to one year.' } else { 'optional; leave blank for no expiry.' })
 }
 function Expand-Template([string] $Text) {
     foreach ($key in $values.Keys) { $Text = $Text.Replace($key, $values[$key]) }

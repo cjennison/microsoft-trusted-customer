@@ -3,7 +3,7 @@
     <label description="VerificationMethod" languagecode="1033" />
   </displayname>
   <iscustomizable>0</iscustomizable>
-  <isoptional>0</isoptional>
+  <isoptional>1</isoptional>
   <name>mtc_VerifySender.VerificationMethod</name>
   <type>10</type>
 </customapirequestparameter>

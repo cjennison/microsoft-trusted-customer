@@ -95,6 +95,11 @@ present the development foundation as a functioning anti-phishing system.
   person to create and verify an entry, never to bypass independent ownership
   evidence. Support multiple registrars through local roles/groups, not
   hardcoded identities. Choice fields and offline fixture IDs are not security.
+- Ask the client which verification details registrars must record (method,
+  evidence reference, expiry) and set `mtc_RequiredRegistrarFields` to match.
+  Do not assume a default for them; record the answer in the private decision
+  record. See "Per-client registrar field requirements" in
+  `docs/replication-pattern.md`.
 - Verify every app user's entitlement and any incident-related account recovery
   before granting app access. Do not assume a maker's license covers other
   registrars or that MFA enrollment alone proves a compromised account recovered.

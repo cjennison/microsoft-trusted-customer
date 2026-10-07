@@ -23,7 +23,7 @@ namespace Mtc.Registrar
                 RequireRole(authority, context.InitiatingUserId, "MTC Registrar");
                 switch (context.MessageName)
                 {
-                    case "mtc_VerifySender": Verify(context, service); break;
+                    case "mtc_VerifySender": Verify(context, service, RegistrarRequirements.Load(authority)); break;
                     case "mtc_RevokeSender": Revoke(context, service); break;
                     default: throw new InvalidPluginExecutionException("Unsupported registry operation.");
                 }
@@ -72,6 +72,17 @@ namespace Mtc.Registrar
                 name, maximum);
         }
 
+        private static string OptionalInput(IPluginExecutionContext context, string name, int maximum, bool required)
+        {
+            var value = context.InputParameters.Contains(name) ? context.InputParameters[name] as string : null;
+            if (string.IsNullOrEmpty(value))
+            {
+                if (required) throw new ArgumentException(name + " is required by this organization's registrar settings.");
+                return null;
+            }
+            return VerificationPolicy.Text(value, name, maximum);
+        }
+
         private static string EntityName(string type)
         {
             if (type == "contact") return "mtc_approvedcontact";
@@ -79,7 +90,7 @@ namespace Mtc.Registrar
             throw new ArgumentException("Choose an exact email address or a business domain.");
         }
 
-        private static Entity Stamp(string table, Guid id, string evidence, string method, DateTime expiry,
+        private static Entity Stamp(string table, Guid id, string evidence, string method, DateTime? expiry,
             Guid actor, DateTime now)
         {
             return new Entity(table, id)
@@ -95,17 +106,21 @@ namespace Mtc.Registrar
 
         private static string EventName(string value) => value.Length > 200 ? value.Substring(0, 200) : value;
 
-        private static void Verify(IPluginExecutionContext context, IOrganizationService service)
+        private static void Verify(IPluginExecutionContext context, IOrganizationService service, RegistrarRequirements requirements)
         {
             var type = Input(context, "TargetType", 10);
             var target = VerificationPolicy.Target(type, Input(context, "TargetValue", 320));
             var business = Input(context, "BusinessName", 200);
-            var evidence = Input(context, "EvidenceReference", 1000);
-            var method = Input(context, "VerificationMethod", 200);
+            var evidence = OptionalInput(context, "EvidenceReference", 1000, requirements.EvidenceRequired);
+            var method = OptionalInput(context, "VerificationMethod", 200, requirements.MethodRequired);
             var now = DateTime.UtcNow;
-            if (!context.InputParameters.Contains("ExpiresOn") || !(context.InputParameters["ExpiresOn"] is DateTime))
-                throw new ArgumentException("Verification expiry is required.");
-            var expiry = VerificationPolicy.Expiry((DateTime)context.InputParameters["ExpiresOn"], now);
+            DateTime? expiry = null;
+            if (context.InputParameters.Contains("ExpiresOn") && context.InputParameters["ExpiresOn"] is DateTime)
+                expiry = VerificationPolicy.Expiry((DateTime)context.InputParameters["ExpiresOn"], now);
+            else if (context.InputParameters.Contains("ExpiresOn") && context.InputParameters["ExpiresOn"] != null)
+                throw new ArgumentException("Verification expiry must be a date.");
+            else if (requirements.ExpiryRequired)
+                throw new ArgumentException("ExpiresOn is required by this organization's registrar settings.");
             var table = EntityName(type);
             RequireIdentityKey(service, table,
                 type == "contact" ? "mtc_approvedcontactidentity" : "mtc_approveddomainidentity");

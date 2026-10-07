@@ -19,6 +19,7 @@ filled-in copies: they contain tenant links and names.
   -Company 'Client Name' -SupportContact 'Name (email)' -Registrars 'A, B and C' `
   -RegistryLink 'https://<org>.crm.dynamics.com/main.aspx?appid=<sender-registry-app-id>' `
   -GuideLink '<SharePoint link to the uploaded guide>' -SenderName 'Name' `
+  -RequiredRegistrarFields '<same value as mtc_RequiredRegistrarFields, e.g. "" or "ExpiresOn,EvidenceReference">' `
   -OutputDirectory '.local\onboarding\<client>'
 ```
 

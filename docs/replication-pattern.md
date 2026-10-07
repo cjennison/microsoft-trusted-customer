@@ -337,12 +337,33 @@ No end-user roles are granted by bootstrap.
 | `mtc_PilotMailbox` | Empty |
 | `mtc_OperatorAlertDestination` | Empty |
 | `mtc_PolicyVersion` | `1` |
+| `mtc_RequiredRegistrarFields` | Empty (all optional) |
 
 The shadow runtime reads processing mode, policy version, and alert destination;
 enrollment rows define its authorized mailbox scope. The presentation runtime
 uses the independent labeling gate. The earlier manual synthetic proofs do not
 read these settings and must remain Off. Definitions alone do not activate the
 service. Keep current values out of publicly exported solution source.
+
+### Per-client registrar field requirements
+
+Agree with each client, at setup, which verification details registrars must
+record, then set `mtc_RequiredRegistrarFields` to a comma-separated list of
+`VerificationMethod`, `EvidenceReference`, and `ExpiresOn` (empty = all
+optional). Record the choice in the private client decision record
+(`registrarRequiredFields`). The same release serves every client:
+
+- The `mtc_VerifySender` plug-in rejects an approval that omits a listed field.
+  The three API parameters are optional at the platform level so the setting,
+  not the schema, decides.
+- Known matching requires listed fields on the registry entry. If a client later
+  adds a requirement, existing entries without that field stop being Known until
+  a registrar renews them, so plan renewals before tightening.
+- A blank expiry means the approval does not expire; revocation still works.
+- An invalid value fails closed (approvals and matching stop with an operator
+  error). If the definition is missing, all three are required.
+- The Sender Registry app reads the same setting and marks fields "(optional)";
+  the server remains authoritative.
 
 ## Export and build
 

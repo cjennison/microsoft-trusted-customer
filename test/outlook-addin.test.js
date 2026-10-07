@@ -53,7 +53,7 @@ async function loadApp(search) {
       const result = endpoint === 'WhoAmI'
         ? { UserId: '11111111-1111-1111-1111-111111111111' }
         : endpoint === 'environmentvariabledefinitions'
-          ? { value: [{ defaultvalue: 'Disabled', environmentvariabledefinition_environmentvariablevalue: [] }] }
+          ? { value: [{ schemaname: 'mtc_ProcessingMode', defaultvalue: 'Disabled', environmentvariabledefinition_environmentvariablevalue: [] }] }
           : { value: [] };
       return { ok: true, status: 200, json: async () => result };
     }

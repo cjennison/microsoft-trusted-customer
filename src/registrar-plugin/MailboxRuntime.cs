@@ -186,20 +186,20 @@ namespace Mtc.Registrar
             context.OutputParameters["LeaseId"] = lease;
         }
 
-        private static bool Verified(Entity row, DateTime now)
+        private static bool Verified(Entity row, DateTime now, RegistrarRequirements requirements)
         {
             return row.GetAttributeValue<OptionSetValue>("statecode")?.Value == 0 &&
                 row.GetAttributeValue<OptionSetValue>("mtc_verificationstatus")?.Value == 100000001 &&
                 row.GetAttributeValue<DateTime>("mtc_verifiedon") <= now &&
                 row.GetAttributeValue<DateTime>("mtc_verifiedon") > DateTime.MinValue &&
-                row.GetAttributeValue<DateTime>("mtc_expireson") > now &&
-                !string.IsNullOrWhiteSpace(row.GetAttributeValue<string>("mtc_evidencereference")) &&
-                !string.IsNullOrWhiteSpace(row.GetAttributeValue<string>("mtc_verificationmethod")) &&
+                requirements.Satisfied(row, now) &&
                 row.GetAttributeValue<EntityReference>("mtc_independentreviewer") != null;
         }
 
-        internal static RegistryMatch Match(IOrganizationService service, string address, DateTime now)
+        internal static RegistryMatch Match(IOrganizationService service, string address, DateTime now,
+            RegistrarRequirements requirements = null)
         {
+            requirements = requirements ?? RegistrarRequirements.Load(service);
             var domain = address.Substring(address.LastIndexOf('@') + 1);
             var contact = FindIdentity(service, "mtc_approvedcontact", "mtc_emailaddress", address);
             Entity matched;
@@ -231,18 +231,20 @@ namespace Mtc.Registrar
                 matched = domains[0];
                 domainReason = wildcard ? "MTC_WILDCARD_DOMAIN_MATCH" : "MTC_EXACT_DOMAIN_MATCH";
             }
-            if (!Verified(matched, now)) return new RegistryMatch { Reason = "MTC_MATCH_NOT_ACTIVE_OR_EVIDENCED" };
+            if (!Verified(matched, now, requirements)) return new RegistryMatch { Reason = "MTC_MATCH_NOT_ACTIVE_OR_EVIDENCED" };
             var partyRef = matched.GetAttributeValue<EntityReference>("mtc_businessparty");
             if (partyRef == null) return new RegistryMatch { Reason = "MTC_PARTY_MISSING" };
             var party = service.Retrieve("mtc_businessparty", partyRef.Id, new ColumnSet(
                 "statecode", "mtc_verificationstatus", "mtc_verifiedon", "mtc_expireson",
                 "mtc_verificationmethod", "mtc_evidencereference", "mtc_independentreviewer", "mtc_verificationcase"));
-            if (!Verified(party, now) || party.GetAttributeValue<EntityReference>("mtc_verificationcase") == null)
+            if (!Verified(party, now, requirements) || party.GetAttributeValue<EntityReference>("mtc_verificationcase") == null)
                 return new RegistryMatch { Reason = "MTC_PARTY_NOT_ACTIVE_OR_EVIDENCED" };
+            var expiries = new[] { party.GetAttributeValue<DateTime?>("mtc_expireson"), matched.GetAttributeValue<DateTime?>("mtc_expireson") }
+                .Where(value => value.HasValue).ToArray();
             return new RegistryMatch
             {
                 Approved = true, Contact = contactMatch,
-                ExpiresOn = new[] { party.GetAttributeValue<DateTime>("mtc_expireson"), matched.GetAttributeValue<DateTime>("mtc_expireson") }.Min(),
+                ExpiresOn = expiries.Length == 0 ? (DateTime?)null : expiries.Min(),
                 Reason = contactMatch ? "MTC_EXACT_CONTACT_MATCH" : domainReason
             };
         }
@@ -275,6 +277,7 @@ namespace Mtc.Registrar
             var seen = new HashSet<string>(StringComparer.Ordinal);
             var processed = 0;
             var known = 0;
+            var requirements = RegistrarRequirements.Load(service);
             foreach (var message in messages)
             {
                 if (message == null || string.IsNullOrEmpty(message.Id) || message.Id.Length > 1000 ||
@@ -293,7 +296,7 @@ namespace Mtc.Registrar
                 string address = null;
                 try { address = VerificationPolicy.Target("contact", from); }
                 catch (ArgumentException) { }
-                registry = address == null ? new RegistryMatch { Reason = "MTC_INVALID_FROM" } : Match(service, address, DateTime.UtcNow);
+                registry = address == null ? new RegistryMatch { Reason = "MTC_INVALID_FROM" } : Match(service, address, DateTime.UtcNow, requirements);
                 var decision = MessagePolicy.Assess(from, message.Sender?.EmailAddress?.Address,
                     message.ReplyTo?.Select(value => value?.EmailAddress?.Address).ToArray(),
                     message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),

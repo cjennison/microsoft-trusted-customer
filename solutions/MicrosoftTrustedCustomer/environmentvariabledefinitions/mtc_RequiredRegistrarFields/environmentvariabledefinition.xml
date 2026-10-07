@@ -1,0 +1,14 @@
+<environmentvariabledefinition schemaname="mtc_RequiredRegistrarFields">
+  <defaultvalue></defaultvalue>
+  <description default="Client choice of verification details a registrar must record: a comma-separated list of VerificationMethod, EvidenceReference and ExpiresOn. Empty makes all three optional. Listed fields are enforced on new approvals and for Known matching.">
+    <label description="Client choice of verification details a registrar must record: a comma-separated list of VerificationMethod, EvidenceReference and ExpiresOn. Empty makes all three optional. Listed fields are enforced on new approvals and for Known matching." languagecode="1033" />
+  </description>
+  <displayname default="MTC required registrar fields">
+    <label description="MTC required registrar fields" languagecode="1033" />
+  </displayname>
+  <introducedversion>0.9.9.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>
