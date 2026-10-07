@@ -84,7 +84,7 @@ The button only fills in the form. Nothing is approved until you complete it.
 
 ## Filling in the form
 
-- **What are you verifying?** Choose *This email address only* to approve one exact address (use this for Gmail, Outlook.com, Yahoo and other personal providers, or when you only know one person). Choose *This exact business domain* to approve every address at that company domain; subdomains are not included and shared providers such as Gmail cannot be approved this way.
+- **What are you verifying?** Choose *This email address only* to approve one exact address (use this for Gmail, Outlook.com, Yahoo and other personal providers, or when you only know one person). Choose *This exact business domain* to approve every address at that company domain; subdomains are not included unless you enter it as `*.company.com` (which covers the domain and every subdomain, such as `mail.company.com`), and shared providers such as Gmail cannot be approved this way.
 - **Business or customer name**: who they are, for example "Supplier Inc."
 - **How did you independently verify ownership?** Pick the method you used.
 - **Restricted evidence reference**: a short note of where your proof is kept, such as "Callback 10/6 to number in vendor file, by Mike". Do not paste email content, passwords or documents.

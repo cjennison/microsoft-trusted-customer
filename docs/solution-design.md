@@ -167,6 +167,13 @@ An email is `Known sender` only when all applicable conditions pass:
 
 Everything else is `Not known`.
 
+**Subdomain wildcards (0.9.5.0):** a domain entry written `*.example.com`
+approves `example.com` and every subdomain. The most specific existing entry
+decides (exact domain, then the nearest wildcard), so revoking a narrower entry
+is never overridden by a broader one. Wildcards are rejected for consumer
+providers, shared multi-tenant platforms (for example `onmicrosoft.com`,
+`sharepointonline.com`, `amazonses.com`), and public suffixes such as `co.uk`.
+
 **Internal mail (0.9.4.0):** mail sent by a signed-in user of the same
 organization never crosses the inbound boundary, so it has no inbound DMARC
 result. It qualifies through condition 3/4's alternative only when Exchange's own

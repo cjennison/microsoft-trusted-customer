@@ -43,6 +43,7 @@ internal static class Program
             ApiTests();
             GuardTests();
             LabelTests();
+            WildcardTests();
             PagingTests();
             MessagePolicyChecks.Run(Check);
             Console.WriteLine("Registrar plugin: " + passed + " checks passed.");
@@ -57,12 +58,18 @@ internal static class Program
 
     private static void PolicyTests()
     {
+        Check(VerificationPolicy.Target("domain", "*.Business.example") == "*.business.example",
+            "A subdomain wildcard must normalize and keep its explicit marker.");
+        foreach (var broad in new[] { "*.gmail.com", "*.co.uk", "*.com.au", "*.onmicrosoft.com", "*.sharepointonline.com" })
+            Reject(() => VerificationPolicy.Target("domain", broad), "");
+        foreach (var malformed in new[] { "*.", "*", "**.business.example", "*.*.business.example", "a.*.business.example", "*business.example", "*.com" })
+            Reject(() => VerificationPolicy.Target("domain", malformed), "");
         Check(VerificationPolicy.Target("contact", "Name+tag@BUSINESS.example") == "Name+tag@business.example",
             "Meaningful local-part characters must be preserved.");
         Check(VerificationPolicy.Target("domain", "BUSINESS.example") == "business.example", "Domain must normalize.");
         foreach (var provider in new[] { "gmail.com", "outlook.com", "yahoo.com", "proton.me" })
             Reject(() => VerificationPolicy.Target("domain", provider), "Shared email providers");
-        foreach (var domain in new[] { "*.business.example", "business.example.", "https://business.example", "127.0.0.1", " business.example" })
+        foreach (var domain in new[] { "business.example.", "https://business.example", "127.0.0.1", " business.example" })
             Reject(() => VerificationPolicy.Target("domain", domain), "");
         foreach (var address in new[] { "a@@business.example", "Name <a@business.example>", "a..b@business.example", "" })
             Reject(() => VerificationPolicy.Target("contact", address), "");
@@ -85,6 +92,81 @@ internal static class Program
             },
             ["OutputParameters"] = new ParameterCollection(), ["SharedVariables"] = new ParameterCollection()
         });
+    }
+
+    private static void WildcardTests()
+    {
+        var service = new FakeService { HasRegistrarRole = true, HasProcessorRole = true };
+        Action<string> verifyDomain = target =>
+        {
+            var verification = Verification(service);
+            var parameters = (ParameterCollection)verification.Values["InputParameters"];
+            parameters["TargetType"] = "domain";
+            parameters["TargetValue"] = target;
+            new VerificationApi().Execute(new Provider(verification.Value, service));
+        };
+        verifyDomain("*.business.example");
+        service.Create(new Entity("environmentvariabledefinition", Guid.NewGuid())
+        {
+            ["schemaname"] = "mtc_LabelingMode", ["defaultvalue"] = "Production"
+        });
+        service.Create(new Entity("mtc_mailboxenrollment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_enrollmentstatus"] = new OptionSetValue(100000001), ["mtc_excludedfolderids"] = "sent"
+        });
+        var assessment = new Entity("mtc_messageassessment", Guid.NewGuid())
+        {
+            ["mtc_mailboxreference"] = "operator@customer.example",
+            ["mtc_stablemessageid"] = "WildcardID", ["mtc_receivedon"] = DateTime.UtcNow.AddDays(-1)
+        };
+        service.Create(assessment);
+        var context = new ContextProxy(new Dictionary<string, object>
+        {
+            ["MessageName"] = "mtc_GetMessageLabelPlan", ["UserId"] = service.UserId,
+            ["InitiatingUserId"] = service.UserId,
+            ["InputParameters"] = new ParameterCollection { ["AssessmentId"] = assessment.Id },
+            ["OutputParameters"] = new ParameterCollection()
+        });
+        var input = (ParameterCollection)context.Values["InputParameters"];
+        var output = (ParameterCollection)context.Values["OutputParameters"];
+        Func<string, bool> known = address =>
+        {
+            var domain = address.Substring(address.IndexOf('@') + 1);
+            input["MessageJson"] = Json(new GraphMessage
+            {
+                Id = "WildcardID", ETag = "etag", ParentFolderId = "inbox", Categories = Array.Empty<string>(),
+                From = new GraphParty { EmailAddress = new GraphAddress { Address = address } },
+                ReplyTo = Array.Empty<GraphParty>(),
+                Headers = new[] {
+                    new GraphHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; spf=pass; dkim=pass; dmarc=pass header.from=" + domain + "; compauth=pass" },
+                    new GraphHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "receiver.prod.outlook.com" },
+                    new GraphHeader { Name = "X-MS-Exchange-Organization-MessageDirectionality", Value = "Incoming" }
+                }
+            });
+            new LabelRuntime().Execute(new Provider(context.Value, service));
+            return ((string)output["CategoriesJson"]).Contains("Known sender");
+        };
+        Check(known("a@business.example"), "A wildcard approval covers its base domain.");
+        Check(known("a@mail.business.example") && known("a@deep.mail.business.example"), "A wildcard approval covers every subdomain.");
+        Check(!known("a@notbusiness.example") && !known("a@business.example.evil.example"),
+            "A wildcard must not match lookalike or suffix-appended domains.");
+        Check(((string)service.Rows.Single(row => row.Id == assessment.Id)["mtc_reasoncodes"]).Contains("MTC_REGISTRY_NO_MATCH"),
+            "Non-matching domains record no registry match.");
+        verifyDomain("mail.business.example");
+        var narrower = service.Rows.Single(row => row.LogicalName == "mtc_approveddomain" &&
+            (string)row["mtc_domain"] == "mail.business.example");
+        new VerificationApi().Execute(new Provider(new ContextProxy(new Dictionary<string, object>
+        {
+            ["MessageName"] = "mtc_RevokeSender", ["UserId"] = service.UserId, ["InitiatingUserId"] = service.UserId,
+            ["InputParameters"] = new ParameterCollection
+            {
+                ["TargetType"] = "domain", ["RecordId"] = narrower.Id, ["Reason"] = "Synthetic narrower revocation"
+            },
+            ["OutputParameters"] = new ParameterCollection(), ["SharedVariables"] = new ParameterCollection()
+        }).Value, service));
+        Check(!known("a@mail.business.example"), "A revoked narrower entry must not be overridden by a broader wildcard.");
+        Check(known("a@other.business.example"), "Other subdomains stay covered by the wildcard.");
     }
 
     private static void ApiTests()

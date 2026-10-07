@@ -90,7 +90,8 @@
     for (const sender of rows) {
       const row = document.createElement('tr');
       cell(row, sender.target);
-      cell(row, sender.type === 'contact' ? 'Exact address' : 'Exact business domain');
+      cell(row, sender.type === 'contact' ? 'Exact address'
+        : sender.target.startsWith('*.') ? 'Domain and all subdomains' : 'Exact business domain');
       cell(row, sender.business);
       badge(cell(row, ''), ...senderStatus(sender));
       cell(row, dateText(sender.mtc_expireson));
@@ -229,7 +230,7 @@
     element('target-label').textContent = domain ? 'Exact business domain' : 'Exact email address';
     element('target-value').placeholder = domain ? 'equipment.example' : 'person@equipment.example';
     element('scope-help').textContent = domain
-      ? 'Covers addresses at this exact business domain only, not subdomains. Shared providers such as Gmail are not allowed.'
+      ? 'Covers this exact domain only. To include every subdomain too, enter *.company.com. Shared providers such as Gmail are not allowed.'
       : 'Other addresses at this provider will remain Not known.';
   }
 
@@ -315,7 +316,7 @@
     if (!target) return;
     const type = query.get('type');
     if (!['contact', 'domain'].includes(type) || target.length > 320 || /\s/.test(target) ||
-        (type === 'contact') !== target.includes('@')) {
+        (type === 'contact') !== target.includes('@') || (type === 'contact' && target.includes('*'))) {
       status('The Outlook prefill was ignored because it was not one exact address or domain.', true);
       return;
     }

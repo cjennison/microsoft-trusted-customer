@@ -12,6 +12,16 @@ namespace Mtc.Registrar
                 "yahoo.com", "icloud.com", "aol.com", "proton.me", "protonmail.com" },
             StringComparer.OrdinalIgnoreCase);
 
+        private static readonly HashSet<string> SharedPlatformDomains = new HashSet<string>(
+            new[] { "onmicrosoft.com", "sharepointonline.com", "sharepoint.com", "azurewebsites.net", "cloudapp.net",
+                "windows.net", "amazonaws.com", "amazonses.com", "googleusercontent.com", "appspot.com",
+                "herokuapp.com", "github.io", "sendgrid.net", "mailgun.org", "mcsv.net", "mailchimpapp.net" },
+            StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> SecondLevelSuffixLabels = new HashSet<string>(
+            new[] { "co", "com", "net", "org", "gov", "edu", "ac", "ltd", "plc", "gen", "or", "ne", "go" },
+            StringComparer.OrdinalIgnoreCase);
+
         public static string Text(string value, string field, int maximum)
         {
             if (string.IsNullOrWhiteSpace(value) || value != value.Trim() || value.Length > maximum ||
@@ -40,10 +50,19 @@ namespace Mtc.Registrar
         {
             if (type == "domain")
             {
-                var domain = Domain(value);
+                // "*.example.com" approves example.com and every subdomain of it.
+                var wildcard = value != null && value.StartsWith("*.", StringComparison.Ordinal);
+                var domain = Domain(wildcard ? value.Substring(2) : value);
                 if (ConsumerDomains.Contains(domain))
                     throw new ArgumentException("Shared email providers cannot be approved as a domain. Verify the exact email address instead.");
-                return domain;
+                if (!wildcard) return domain;
+                var labels = domain.Split('.');
+                if (SharedPlatformDomains.Contains(domain) ||
+                    (labels.Length == 2 && labels[1].Length == 2 && SecondLevelSuffixLabels.Contains(labels[0])))
+                    throw new ArgumentException("This domain is shared by many organizations; a subdomain wildcard cannot be approved for it.");
+                if (domain.Length > 251)
+                    throw new ArgumentException("Unsupported business domain.");
+                return "*." + domain;
             }
 
             if (type != "contact")

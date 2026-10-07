@@ -202,6 +202,7 @@ namespace Mtc.Registrar
             var domain = address.Substring(address.LastIndexOf('@') + 1);
             var contact = FindIdentity(service, "mtc_approvedcontact", "mtc_emailaddress", address);
             Entity matched;
+            var domainReason = "MTC_EXACT_DOMAIN_MATCH";
             var contactMatch = contact.Count == 1;
             if (contact.Count > 1) return new RegistryMatch { Reason = "MTC_DUPLICATE_CONTACT" };
             if (contactMatch)
@@ -213,9 +214,21 @@ namespace Mtc.Registrar
             else
             {
                 if (VerificationPolicy.IsConsumerDomain(domain)) return new RegistryMatch { Reason = "MTC_EXACT_CONSUMER_CONTACT_REQUIRED" };
+                // The most specific existing entry decides: exact domain first, then the nearest wildcard,
+                // so a revoked narrower entry is never overridden by a broader approval.
+                var wildcard = false;
                 var domains = FindIdentity(service, "mtc_approveddomain", "mtc_domain", domain);
+                if (domains.Count == 0)
+                {
+                    var labels = domain.Split('.');
+                    for (var start = 0; start <= labels.Length - 2 && domains.Count == 0; start++)
+                        domains = FindIdentity(service, "mtc_approveddomain", "mtc_domain",
+                            "*." + string.Join(".", labels, start, labels.Length - start));
+                    wildcard = domains.Count > 0;
+                }
                 if (domains.Count != 1) return new RegistryMatch { Reason = domains.Count == 0 ? "MTC_REGISTRY_NO_MATCH" : "MTC_DUPLICATE_DOMAIN" };
                 matched = domains[0];
+                domainReason = wildcard ? "MTC_WILDCARD_DOMAIN_MATCH" : "MTC_EXACT_DOMAIN_MATCH";
             }
             if (!Verified(matched, now)) return new RegistryMatch { Reason = "MTC_MATCH_NOT_ACTIVE_OR_EVIDENCED" };
             var partyRef = matched.GetAttributeValue<EntityReference>("mtc_businessparty");
@@ -229,7 +242,7 @@ namespace Mtc.Registrar
             {
                 Approved = true, Contact = contactMatch,
                 ExpiresOn = new[] { party.GetAttributeValue<DateTime>("mtc_expireson"), matched.GetAttributeValue<DateTime>("mtc_expireson") }.Min(),
-                Reason = contactMatch ? "MTC_EXACT_CONTACT_MATCH" : "MTC_EXACT_DOMAIN_MATCH"
+                Reason = contactMatch ? "MTC_EXACT_CONTACT_MATCH" : domainReason
             };
         }
 
