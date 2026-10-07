@@ -126,6 +126,7 @@ test('public add-in sources carry no tenant identifiers or credentials', () => {
   assert.match(template, /\{\{TASKPANE_URL\}\}/);
   assert.match(template, /MobileMessageReadCommandSurface/);
   assert.match(template, /<Permissions>ReadItem<\/Permissions>/);
+  assert.match(template, /<SupportsSharedFolders>true<\/SupportsSharedFolders>/, 'The button must appear in shared mailboxes.');
   assert.doesNotMatch(template + html + js, /crm\.dynamics\.com\/|sesturbo|onmicrosoft|access_token|clientSecret|Mail\.Send/i);
   assert.doesNotMatch(js, /innerHTML|document\.write|eval\(/);
 });

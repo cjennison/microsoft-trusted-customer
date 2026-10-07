@@ -852,6 +852,11 @@ manifest privately with
 (written beneath `.local`), upload it as an Office Add-in in Microsoft 365 admin
 center > Integrated apps, and assign only the registrar group. The manifest
 includes a mobile form factor; Microsoft notes deployment can take up to 72 hours.
+It also sets `SupportsSharedFolders` (desktop/web form factor) so the button
+appears in shared mailboxes and delegated folders a registrar has opened; without
+it, Outlook hides the add-in there. Mobile apps do not support add-ins in shared
+mailboxes. After a manifest change, update the existing Integrated Apps
+deployment with the regenerated manifest (same add-in ID, higher version).
 The display name shown in the task pane is not identity evidence.
 
 ## Official platform references
