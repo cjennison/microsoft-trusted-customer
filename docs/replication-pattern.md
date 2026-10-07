@@ -804,6 +804,30 @@ DMARC From alignment and supported sender/Reply-To identity, and fails closed on
 missing, duplicate, failed or unsupported evidence. Broader forwarding/internal
 message support is not implicitly accepted by the MVP.
 
+## Registrar group and Outlook "Verify sender" button
+
+Grant registrar access through one Entra security group rather than per-user
+roles. Bind it to a Dataverse group team holding only `MTC Registrar`; the
+protected APIs accept team-inherited roles and still stamp the actual caller.
+If the environment is restricted to a security group, using the same group keeps
+environment access and registrar rights in one membership list. Every member
+needs their own premium Power Apps entitlement because the registry is in
+Dataverse; routing other people's entries through a licensed account is
+multiplexing and does not remove that requirement.
+
+`src/outlook-addin` contains an add-in-only manifest template and a static task
+pane (published by `.github/workflows/outlook-addin-pages.yml`). The task pane
+reads only the open message's sender (`ReadItem`) and links to Sender Registry
+with `type` and `target` query parameters. The app validates them, prefills the
+Verify form, clears the evidence fields, and never submits; a registrar must
+still independently confirm ownership and select Verify. Generate the tenant
+manifest privately with
+`.\scripts\New-OutlookAddinManifest.ps1 -RegistryOrigin https://<org>.crm.dynamics.com`
+(written beneath `.local`), upload it as an Office Add-in in Microsoft 365 admin
+center > Integrated apps, and assign only the registrar group. The manifest
+includes a mobile form factor; Microsoft notes deployment can take up to 72 hours.
+The display name shown in the task pane is not identity evidence.
+
 ## Official platform references
 
 - [Solution-based ALM](https://learn.microsoft.com/en-us/power-platform/alm/solution-concepts-alm).
