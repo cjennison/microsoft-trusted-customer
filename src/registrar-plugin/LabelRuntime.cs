@@ -133,7 +133,8 @@ namespace Mtc.Registrar
                     message.Sender?.EmailAddress?.Address,
                     message.ReplyTo?.Select(reply => reply?.EmailAddress?.Address).ToArray(),
                     message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),
-                    currentRegistry?.Approved == true);
+                    currentRegistry?.Approved == true,
+                    reply => MailboxRuntime.Match(service, reply, DateTime.UtcNow).Approved);
                 var currentLabel = currentDecision.Known ? KnownCategory : UnknownCategory;
                 if (!message.Categories.Contains(currentLabel, StringComparer.Ordinal) ||
                     message.Categories.Any(category => OwnedCategories.Contains(category, StringComparer.Ordinal) && category != currentLabel))
@@ -158,7 +159,8 @@ namespace Mtc.Registrar
             var decision = MessagePolicy.Assess(from, message.Sender?.EmailAddress?.Address,
                 message.ReplyTo?.Select(reply => reply?.EmailAddress?.Address).ToArray(),
                 message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),
-                registry?.Approved == true);
+                registry?.Approved == true,
+                reply => MailboxRuntime.Match(service, reply, DateTime.UtcNow).Approved);
             var label = decision.Known ? KnownCategory : UnknownCategory;
             var categoriesToApply = message.Categories.Where(category => !OwnedCategories.Contains(category, StringComparer.Ordinal))
                 .Concat(new[] { label }).Distinct(StringComparer.Ordinal).ToArray();

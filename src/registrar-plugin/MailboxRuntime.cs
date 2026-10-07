@@ -300,7 +300,8 @@ namespace Mtc.Registrar
                 var decision = MessagePolicy.Assess(from, message.Sender?.EmailAddress?.Address,
                     message.ReplyTo?.Select(value => value?.EmailAddress?.Address).ToArray(),
                     message.Headers?.Select(header => new ReceivingHeader { Name = header.Name, Value = header.Value }).ToArray(),
-                    registry.Approved);
+                    registry.Approved,
+                    reply => Match(service, reply, DateTime.UtcNow, requirements).Approved);
                 var id = AssessmentIdentity.ForMessage(context.OrganizationId, mailboxRef, message.Id);
                 var existing = new QueryExpression("mtc_messageassessment")
                 {

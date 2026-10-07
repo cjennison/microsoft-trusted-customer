@@ -243,14 +243,16 @@ internal static class Program
         });
         var input = (ParameterCollection)context.Values["InputParameters"];
         var output = (ParameterCollection)context.Values["OutputParameters"];
-        Func<string, bool> known = address =>
+        Func<string, string, bool> knownWithReply = null;
+        Func<string, bool> known = address => knownWithReply(address, null);
+        knownWithReply = (address, reply) =>
         {
             var domain = address.Substring(address.IndexOf('@') + 1);
             input["MessageJson"] = Json(new GraphMessage
             {
                 Id = "WildcardID", ETag = "etag", ParentFolderId = "inbox", Categories = Array.Empty<string>(),
                 From = new GraphParty { EmailAddress = new GraphAddress { Address = address } },
-                ReplyTo = Array.Empty<GraphParty>(),
+                ReplyTo = reply == null ? Array.Empty<GraphParty>() : new[] { new GraphParty { EmailAddress = new GraphAddress { Address = reply } } },
                 Headers = new[] {
                     new GraphHeader { Name = "Authentication-Results", Value = "mx.microsoft.com 1; spf=pass; dkim=pass; dmarc=pass header.from=" + domain + "; compauth=pass" },
                     new GraphHeader { Name = "X-MS-Exchange-Organization-AuthSource", Value = "receiver.prod.outlook.com" },
@@ -280,6 +282,12 @@ internal static class Program
         }).Value, service));
         Check(!known("a@mail.business.example"), "A revoked narrower entry must not be overridden by a broader wildcard.");
         Check(known("a@other.business.example"), "Other subdomains stay covered by the wildcard.");
+        Check(knownWithReply("a@other.business.example", "replies@news.business.example"),
+            "A Reply-To covered by an approval (here the wildcard) keeps the sender Known.");
+        Check(!knownWithReply("a@other.business.example", "replies@mail.business.example"),
+            "A Reply-To at a revoked identity is not approved.");
+        Check(!knownWithReply("a@other.business.example", "invoices@business-example.net"),
+            "A Reply-To outside every approval must fail closed.");
     }
 
     private static void RequirementTests()

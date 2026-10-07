@@ -51,6 +51,17 @@ internal static class MessagePolicyChecks
             "Conflicting Sender must fail closed.");
         check(!MessagePolicy.Assess("contact@business.example", null, new[] { "other@business.example" }, headers(result), true).Known,
             "Unapproved Reply-To must fail closed.");
+        Func<string, bool> approved = reply => reply == "billing@business.example" || reply.EndsWith("@partner.example", StringComparison.Ordinal);
+        check(MessagePolicy.Assess("contact@business.example", null, new[] { "billing@BUSINESS.example", "contact@business.example" }, headers(result), true, approved).Known,
+            "A Reply-To that is itself an approved sender must be accepted.");
+        var mixed = MessagePolicy.Assess("contact@business.example", null, new[] { "billing@business.example", "attacker@evil.example" }, headers(result), true, approved);
+        check(!mixed.Known && mixed.Reason == "MTC_UNSUPPORTED_REPLY_TO", "Every differing Reply-To must be approved, not just one.");
+        var queried = false;
+        check(!MessagePolicy.Assess("contact@business.example", null, new[] { "billing@business.example" }, headers(result), false,
+            reply => { queried = true; return true; }).Known && !queried,
+            "An unapproved From never becomes Known through its Reply-To, and is not looked up.");
+        check(!MessagePolicy.Assess("contact@business.example", null, new[] { "Name <billing@business.example>" }, headers(result), true, approved).Known,
+            "A malformed Reply-To must fail closed even when a lookup is available.");
         check(!MessagePolicy.Assess("bad@@business.example", null, Array.Empty<string>(), headers(result), true).Known,
             "Malformed From must fail closed.");
         check(!MessagePolicy.Assess("contact@business.example", null, Array.Empty<string>(), null, true).Known,

@@ -8,7 +8,7 @@
     <Descriptions>
       <Description description="Development Sender Registry app with caller-stamped single-registrar APIs, protected approval records, and paused mailbox onboarding. Automatic Outlook processing remains Off." languagecode="1033" />
     </Descriptions>
-    <Version>0.9.10.0</Version>
+    <Version>0.9.11.0</Version>
     <Managed>2</Managed>
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>

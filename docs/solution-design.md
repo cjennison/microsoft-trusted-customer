@@ -164,8 +164,10 @@ An email is `Known sender` only when all applicable conditions pass:
    domain matches one active explicitly approved business domain.
 6. The matched record and party are approved, independently evidenced, not
    expired or revoked, and unambiguous.
-7. Sender/Reply-To evidence required by the configured rule is supported and
-   non-conflicting.
+7. Any Sender header equals From. Every Reply-To address either equals From or
+   is itself an active approved sender (exact address, domain, or wildcard), so
+   replies can never be diverted to an unverified party. A malformed Reply-To
+   fails closed.
 
 Everything else is `Not known`.
 

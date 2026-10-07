@@ -121,7 +121,7 @@ function fakeDataverse() {
 }
 
 test('schema has seven runtime record types and six safe configuration definitions', () => {
-  assert.equal(solutionVersion, '0.9.10.0');
+  assert.equal(solutionVersion, '0.9.11.0');
   assert.equal(tables.length, 7);
   assert.equal(environmentVariables.length, 6);
   assert.equal(environmentVariables.find(item => item.schemaname === 'mtc_RequiredRegistrarFields').defaultvalue, '');
@@ -229,7 +229,7 @@ test('bootstrap upgrades the reviewed 0.5 solution only after publishing the new
   const publishIndex = state.writes.findIndex(item => item.path === 'PublishXml');
   const upgradeIndex = state.writes.findIndex(item => item.path.startsWith('solutions('));
   assert.ok(publishIndex >= 0 && upgradeIndex > publishIndex);
-  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.9.10.0']);
+  assert.deepEqual(report.updated, ['solution 0.5.0.0 -> 0.9.11.0']);
 });
 
 test('0.6 migration adds only the new immutable verification event columns', async () => {
@@ -323,7 +323,7 @@ test('explicit development migration preserves current settings without writing 
   }
   const report = await bootstrap(target, { ...context, preserveOperationalSettings: true });
   assert.equal(report.published, true);
-  assert.deepEqual(report.updated, ['solution 0.8.0.0 -> 0.9.10.0']);
+  assert.deepEqual(report.updated, ['solution 0.8.0.0 -> 0.9.11.0']);
   assert.ok(!state.writes.some(write => write.path.startsWith('environmentvariablevalues')));
   state.writes.length = 0;
   await assert.rejects(bootstrap({ ...target, environmentType: 'Production' },
@@ -351,7 +351,7 @@ test('0.9.7 migration adds run log, message log columns, Not applicable, and per
   assert.deepEqual(report.updated.sort(), [
     'mtc_MessageAssessment.IsAuditEnabled', 'mtc_MessageAssessment.mtc_FirstPresentedOn',
     'mtc_MessageAssessment.mtc_LastPresentationError', 'mtc_MessageAssessment.mtc_PresentationStatus=100000003',
-    'solution 0.9.6.0 -> 0.9.10.0'
+    'solution 0.9.6.0 -> 0.9.11.0'
   ].sort());
   assert.equal(state.tables.get('mtc_messageassessment').IsAuditEnabled.Value, false);
   state.writes.length = 0;
@@ -376,18 +376,18 @@ test('production accepts only an explicitly flagged versioned upgrade of the exi
   assert.equal(state.writes.length, 0);
   state.setSolutionVersion('0.9.6.0');
   const report = await bootstrap(production, { origin: target.environmentOrigin, fetch: state.fetch, productionMigration: true });
-  assert.deepEqual(report.updated, ['solution 0.9.6.0 -> 0.9.10.0']);
+  assert.deepEqual(report.updated, ['solution 0.9.6.0 -> 0.9.11.0']);
 });
 
 test('presentation release migrations only publish and version unchanged schema', async () => {
-  for (const previous of ['0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0', '0.9.6.0', '0.9.7.0', '0.9.8.0', '0.9.9.0']) {
+  for (const previous of ['0.9.0.0', '0.9.1.0', '0.9.2.0', '0.9.3.0', '0.9.4.0', '0.9.5.0', '0.9.6.0', '0.9.7.0', '0.9.8.0', '0.9.9.0', '0.9.10.0']) {
     const state = fakeDataverse();
     const context = { origin: target.environmentOrigin, fetch: state.fetch };
     await bootstrap(target, context);
     state.setSolutionVersion(previous);
     state.writes.length = 0;
     const report = await bootstrap(target, context);
-    assert.deepEqual(report.updated, [`solution ${previous} -> 0.9.10.0`]);
+    assert.deepEqual(report.updated, [`solution ${previous} -> 0.9.11.0`]);
     assert.ok(state.writes.every(write => ['AddSolutionComponent', 'PublishXml'].includes(write.path) ||
       write.path.startsWith('solutions(')));
   }

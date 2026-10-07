@@ -20,8 +20,10 @@ namespace Mtc.Registrar
 
     public static class MessagePolicy
     {
+        // A Reply-To that differs from From is accepted only when that reply address is itself an
+        // approved sender (replyToApproved), so replies can never be diverted to an unverified party.
         public static MessageDecision Assess(string from, string sender, string[] replyTo,
-            ReceivingHeader[] headers, bool registryApproved)
+            ReceivingHeader[] headers, bool registryApproved, Func<string, bool> replyToApproved = null)
         {
             var decision = new MessageDecision { Reason = "MTC_REGISTRY_NO_MATCH" };
             string address;
@@ -42,15 +44,15 @@ namespace Mtc.Registrar
             }
             foreach (var reply in replyTo ?? Array.Empty<string>())
             {
-                try
-                {
-                    if (!string.Equals(VerificationPolicy.Target("contact", reply), address, StringComparison.Ordinal))
-                    {
-                        decision.Reason = "MTC_UNSUPPORTED_REPLY_TO";
-                        return decision;
-                    }
-                }
+                string canonicalReply;
+                try { canonicalReply = VerificationPolicy.Target("contact", reply); }
                 catch (ArgumentException) { decision.Reason = "MTC_INVALID_REPLY_TO"; return decision; }
+                if (string.Equals(canonicalReply, address, StringComparison.Ordinal)) continue;
+                if (!registryApproved || replyToApproved == null || !replyToApproved(canonicalReply))
+                {
+                    decision.Reason = "MTC_UNSUPPORTED_REPLY_TO";
+                    return decision;
+                }
             }
             var all = headers ?? Array.Empty<ReceivingHeader>();
             var authentication = Exact(all, "Authentication-Results");
