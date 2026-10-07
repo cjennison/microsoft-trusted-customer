@@ -7,6 +7,8 @@ param(
     [string] $GuideLink = '(link to the guide in your SharePoint)',
     [string] $SenderName = $SupportContact,
     [string] $LookalikeExample = 'supp1ier.com instead of supplier.com',
+    # The Defender user-reported-settings reporting mailbox for this client.
+    [Parameter(Mandatory)] [string] $ReportingMailbox,
     # Must match the client's mtc_RequiredRegistrarFields setting; empty means all optional.
     [Parameter(Mandatory)] [AllowEmptyString()] [string] $RequiredRegistrarFields,
     [Parameter(Mandatory)] [string] $OutputDirectory
@@ -30,7 +32,7 @@ $optionalNote = ' Optional for your organization; fill it in when you can.'
 $values = @{
     '{{COMPANY}}' = $Company; '{{SUPPORT_CONTACT}}' = $SupportContact; '{{REGISTRARS}}' = $Registrars
     '{{REGISTRY_LINK}}' = $RegistryLink; '{{GUIDE_LINK}}' = $GuideLink; '{{SENDER_NAME}}' = $SenderName
-    '{{LOOKALIKE_EXAMPLE}}' = $LookalikeExample
+    '{{LOOKALIKE_EXAMPLE}}' = $LookalikeExample; '{{REPORTING_MAILBOX}}' = $ReportingMailbox
     '{{OPTIONAL_METHOD}}' = $(if ($required -ccontains 'VerificationMethod') { '' } else { $optionalNote })
     '{{OPTIONAL_EVIDENCE}}' = $(if ($required -ccontains 'EvidenceReference') { '' } else { $optionalNote })
     '{{EXPIRY_GUIDANCE}}' = $(if ($required -ccontains 'ExpiresOn') { 'required; defaults to one year.' } else { 'optional; leave blank for no expiry.' })

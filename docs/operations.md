@@ -43,6 +43,32 @@ Message assessments and run logs are deliberately not audited (high volume).
   authentication reason (DMARC, receiving boundary) wins over registry approval.
 - Repeated alerts: read `LastPresentationError` on the failed assessments.
 
+## Phishing reports (native Microsoft, not MTC)
+
+MTC only labels verified senders; blocking attackers uses Microsoft's own tools.
+Per client, with Exchange admin approval:
+
+1. Create a shared mailbox such as `phish-reports@<domain>` (no license) and give
+   the registrars Full Access only (no Send As).
+2. Register it as a SecOps mailbox (`New-SecOpsOverridePolicy -SentTo` plus
+   `New-ExoSecOpsOverrideRule`) so reported phish is delivered unfiltered.
+3. Route the built-in **Report** button to Microsoft and that mailbox
+   (`Set-ReportSubmissionPolicy -EnableReportToMicrosoft $true` with the
+   `Report*Addresses` set, plus `DefaultReportSubmissionRule -SentTo`). Record the
+   previous destination first; the default is the global admin's mailbox.
+4. Optional fast alert: a cloud flow (outside the MTC solution) triggered by
+   *When a new email arrives in a shared mailbox (V2)* that posts the reporter,
+   HTML-escaped subject, and the Defender Submissions link to the registrars'
+   Teams chat as Flow bot. Never copy the reported body or links into Teams.
+5. Registrars review in Defender > Submissions > User reported and **Block**
+   (Tenant Allow/Block List). Do not auto-block from user reports; one mistaken
+   report would block a real supplier. Revoke the sender in Sender Registry too
+   if it was a verified supplier.
+
+Business Standard tenants lack the Defender alert policy *Email reported by user
+as malware or phish* (Business Premium / Defender for Office 365 Plan 1); the
+reporting mailbox plus flow provides the notification instead.
+
 ## Changing mailbox exclusions
 
 `mtc_SetMailboxFolderScope` accepts 4 to 16 distinct folder IDs: Sent Items,

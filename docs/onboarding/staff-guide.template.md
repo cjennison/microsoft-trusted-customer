@@ -32,7 +32,7 @@ it is not a Microsoft security badge.
 1. **Never change bank details, payment instructions or remit-to addresses based on an email alone**, even from a Known sender.
 2. **Call to confirm** using a phone number you already had on file (from a contract, an old invoice or our records), never a number in the email.
 3. **Be extra careful with Unknown sender emails that look like an existing supplier.** Criminals register lookalike domains that differ by a single letter (for example {{LOOKALIKE_EXAMPLE}}). Read the actual email address, not just the display name.
-4. **Report anything suspicious** using Outlook's **Report** button (Report phishing) and tell {{SUPPORT_CONTACT}}.
+4. **Report anything suspicious** using Outlook's **Report** button (**Report phishing**). The registrars are alerted within about a minute. If money or passwords are involved, also call {{SUPPORT_CONTACT}}.
 
 ## Common questions
 
@@ -100,6 +100,20 @@ the blue **✓** (Known sender), and new emails arrive with it.
 - **Revoke**: select **Revoke**, give a reason, and confirm. Do this immediately if a supplier reports a hacked mailbox, changes ownership, or you are unsure. Their emails return to **Unknown sender** within about 15 minutes.
 
 When in doubt, revoke. You can always verify again later.
+
+## Handling phishing reports
+
+When anyone uses **Report phishing** or **Report junk**, a copy goes to Microsoft
+and to the **{{REPORTING_MAILBOX}}** mailbox, and an alert is posted to the
+registrars' Teams chat.
+
+1. Open the alert or the reporting mailbox. Do not open links or attachments in the report.
+2. Go to the [Microsoft Defender portal > Submissions > User reported](https://security.microsoft.com/reportsubmission?viewid=user), select the report and review Microsoft's result.
+3. If it is malicious, choose **Block** (block the sender address, or the whole domain if it is a lookalike). This rejects that sender for everyone. For a long-term attacker, set the block to never expire.
+4. If the sender is in Sender Registry (a verified supplier whose mailbox was hacked), **Revoke** it there as well, and call the supplier on a number you already have.
+
+Never block a real supplier because of a single report without checking. A
+blocked sender cannot email anyone in the company.
 
 ## Mailboxes and service health
 

@@ -20,6 +20,7 @@ filled-in copies: they contain tenant links and names.
   -RegistryLink 'https://<org>.crm.dynamics.com/main.aspx?appid=<sender-registry-app-id>' `
   -GuideLink '<SharePoint link to the uploaded guide>' -SenderName 'Name' `
   -RequiredRegistrarFields '<same value as mtc_RequiredRegistrarFields, e.g. "" or "ExpiresOn,EvidenceReference">' `
+  -ReportingMailbox 'phish-reports@<client domain>' `
   -OutputDirectory '.local\onboarding\<client>'
 ```
 
