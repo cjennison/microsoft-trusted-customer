@@ -108,6 +108,9 @@ can be compromised, and a genuine email can contain a malicious link.
 - [MVP operationalization tracker #1](https://github.com/cjennison/microsoft-trusted-customer/issues/1):
   remaining Outlook web acceptance, business-administrator access, operational
   handover, and separately approved activation gates; update across sessions.
+- [Customer onboarding package](docs/onboarding/README.md): staff guide,
+  registrar instructions, and announcement email templates, plus the script
+  that renders a client's Word copy privately.
 - [Solution design](docs/solution-design.md): trust model, architecture,
   data model, qualification rules, limitations, and Microsoft sources.
 - [Client pilot plan](docs/pilot-plan.md): first-day checklist, decisions,

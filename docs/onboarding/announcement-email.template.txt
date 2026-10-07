@@ -1,0 +1,21 @@
+Subject: New in Outlook: "Known sender" and "Unknown sender" labels
+
+Hi everyone,
+
+Starting today, incoming email in Outlook shows one of two labels:
+
+- ✓ Known sender (blue): a sender we have personally verified.
+- Unknown sender (gray): not verified yet. Normal for new contacts; it does not mean the email is bad.
+
+Three things to remember:
+
+1. A Known sender is not a guarantee of safety. Real suppliers' mailboxes can be hacked.
+2. Never change bank or payment details from an email alone. Call to confirm using a number you already have on file.
+3. Watch for lookalike addresses (one letter different from a real supplier). Report anything suspicious with Outlook's Report button and tell {{SUPPORT_CONTACT}}.
+
+If a contact you trust shows Unknown sender, ask a registrar ({{REGISTRARS}}) to verify them.
+
+The full guide (5-minute read) is here: {{GUIDE_LINK}}
+
+Thanks,
+{{SENDER_NAME}}

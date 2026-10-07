@@ -185,6 +185,10 @@ present the development foundation as a functioning anti-phishing system.
   rights, operating ownership, monitoring, retention, and rollback.
 - Supply a restricted customer handover with release/hash, licensed users,
   configured scope, limitations, ongoing costs, runbook, and revocation process.
+- Render the staff/registrar guide and announcement email with
+  `scripts/New-OnboardingPackage.ps1` (see `docs/onboarding/README.md`), upload
+  the Word copy to the client's SharePoint, and share an organization-only view
+  link. Keep filled-in copies out of Git.
 - Report each stage as completed, failed, blocked, or not started, with evidence.
   No optimistic completion claims.
 
