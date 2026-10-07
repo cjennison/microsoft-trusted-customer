@@ -83,23 +83,24 @@ namespace Mtc.Registrar
                 return decision;
             }
             var result = Regex.Replace(authentication[0].Value ?? "", @"\r?\n[ \t]+", " ").Trim();
-            if (!Regex.IsMatch(result, @"^mx\.microsoft\.com(?:[ \t]+1)?[ \t]*;", RegexOptions.IgnoreCase))
+            // Microsoft's receiving result appears with the mx.microsoft.com authserv-id or, on some paths, without one.
+            // Any other authserv-id is foreign and rejected; the exactly-one-header boundary above prevents injection.
+            if (!Regex.IsMatch(result, @"^mx\.microsoft\.com(?:[ \t]+1)?[ \t]*;", RegexOptions.IgnoreCase) &&
+                !Regex.IsMatch(result, @"^(?:spf|dkim|dmarc|compauth|arc)=", RegexOptions.IgnoreCase))
             {
                 decision.Reason = "MTC_AUTH_SERVICE_UNSUPPORTED";
                 return decision;
             }
             result = Regex.Replace(result, @"\([^()]*\)", " ");
-            if (result.Contains("(") || result.Contains(")") ||
-                !SinglePass(result, "spf") || !SinglePass(result, "dmarc") ||
+            // DMARC pass means SPF or DKIM aligned with the visible From domain. bestguesspass is the same aligned
+            // result for a domain that has not published a DMARC policy. Microsoft's composite verdict must also pass.
+            var dmarc = Tokens(result, "dmarc");
+            if (result.Contains("(") || result.Contains(")") || dmarc.Length != 1 ||
+                !(string.Equals(dmarc[0], "pass", StringComparison.OrdinalIgnoreCase) ||
+                  string.Equals(dmarc[0], "bestguesspass", StringComparison.OrdinalIgnoreCase)) ||
                 !SinglePass(result, "compauth"))
             {
                 decision.Reason = "MTC_AUTHENTICATION_FAILED_OR_AMBIGUOUS";
-                return decision;
-            }
-            var dkim = Tokens(result, "dkim");
-            if (dkim.Length == 0 || dkim.Any(value => !string.Equals(value, "pass", StringComparison.OrdinalIgnoreCase)))
-            {
-                decision.Reason = "MTC_DKIM_FAILED_OR_UNSUPPORTED";
                 return decision;
             }
             var headerFrom = Tokens(result, "header.from");

@@ -21,16 +21,29 @@ internal static class MessagePolicyChecks
         foreach (var invalid in new[]
         {
             result.Replace("mx.microsoft.com 1", "mx.microsoft.com.evil.example"),
-            result.Replace("spf=pass", "spf=passx"),
-            result.Replace("dkim=pass", "dkim=fail"),
+            result.Replace("mx.microsoft.com 1", "evil.example"),
             result.Replace("dmarc=pass", "dmarc=fail"),
+            result.Replace("dmarc=pass", "dmarc=none"),
+            result.Replace("dmarc=pass", "dmarc=bestguessfail"),
             result.Replace("compauth=pass", "compauth=none"),
+            result.Replace("compauth=pass", "compauth=fail").Replace("dmarc=pass", "dmarc=bestguesspass"),
             result.Replace("header.from=business.example", "header.from=other.example"),
             result + "; dmarc=pass",
             result + "; header.from=other.example"
         })
             check(!MessagePolicy.Assess("contact@business.example", "contact@business.example",
-                Array.Empty<string>(), headers(invalid), true).Known, "Malformed, failed, duplicate, or misaligned authentication must not be Known.");
+                Array.Empty<string>(), headers(invalid), true).Known, "Foreign, failed, duplicate, or misaligned authentication must not be Known.");
+        foreach (var accepted in new[]
+        {
+            result.Replace("mx.microsoft.com 1; ", ""),
+            result.Replace("dmarc=pass", "dmarc=bestguesspass"),
+            result.Replace("spf=pass", "spf=temperror"),
+            result.Replace("dkim=pass", "dkim=fail"),
+            result.Replace("dkim=pass (signature was verified) header.d=business.example; ", "")
+        })
+            check(MessagePolicy.Assess("contact@business.example", "contact@business.example",
+                Array.Empty<string>(), headers(accepted), true).Known,
+                "Microsoft's result without an authserv-id, best-guess DMARC, or DMARC pass via either SPF or DKIM is aligned authentication.");
         var duplicated = headers(result).Concat(new[] { new ReceivingHeader { Name = "Authentication-Results", Value = "mx.microsoft.com; spf=fail" } }).ToArray();
         check(!MessagePolicy.Assess("contact@business.example", null, Array.Empty<string>(), duplicated, true).Known,
             "Count all Authentication-Results headers, not only passing ones.");

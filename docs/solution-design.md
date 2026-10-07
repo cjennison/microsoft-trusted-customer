@@ -185,10 +185,14 @@ duplicates fail closed. Sender/Reply-To and registry rules still apply, so the
 organization's own domain is added like any other sender. A compromised internal
 account would still show Known.
 
-The current live proof recognizes the observed Microsoft auth-service marker
-`mx.microsoft.com` and requires SPF, DKIM, DMARC, and composite authentication
-pass. This is bounded development evidence, not yet a generalized production
-parser.
+The live parser (0.9.8.0) accepts exactly one Microsoft receiving
+`Authentication-Results` header, with the `mx.microsoft.com` authserv-id or with
+none (Microsoft omits it on some delivery paths; any other authserv-id is
+rejected). It requires `dmarc=pass`, or `dmarc=bestguesspass` for a sender with
+no published DMARC policy, plus `compauth=pass` and exact `header.from`
+alignment with the visible From domain. DMARC pass already means SPF or DKIM
+aligned, so SPF and DKIM are not separately required. Spoofed mail still fails
+DMARC and compauth.
 
 ## 6. Outlook presentation
 
