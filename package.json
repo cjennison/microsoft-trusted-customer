@@ -1,7 +1,8 @@
 {
-  "name": "microsoft-trusted-customer",
+  "name": "trusted-sender-solution",
   "version": "0.9.12",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "description": "Repeatable Microsoft email qualification development pattern",
   "scripts": {
     "test": "node --test",

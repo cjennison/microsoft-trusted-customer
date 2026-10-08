@@ -1,4 +1,4 @@
-# Microsoft Trusted Customer
+# Trusted Sender Solution
 
 - Read the implementation status in README.md and docs/replication-pattern.md.
   Schema provisioning is not a working email classifier or production approval.

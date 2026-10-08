@@ -3,7 +3,7 @@
   <SolutionManifest>
     <UniqueName>MicrosoftTrustedCustomer</UniqueName>
     <LocalizedNames>
-      <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
+      <LocalizedName description="Trusted Sender Solution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
       <Description description="Development Sender Registry app with caller-stamped single-registrar APIs, protected approval records, and paused mailbox onboarding. Automatic Outlook processing remains Off." languagecode="1033" />
@@ -13,7 +13,7 @@
     <Publisher>
       <UniqueName>MicrosoftTrustedCustomer</UniqueName>
       <LocalizedNames>
-        <LocalizedName description="Microsoft Trusted Customer" languagecode="1033" />
+        <LocalizedName description="Trusted Sender Solution" languagecode="1033" />
       </LocalizedNames>
       <Descriptions />
       <EMailAddress xsi:nil="true"></EMailAddress>

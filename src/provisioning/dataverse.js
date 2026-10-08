@@ -319,7 +319,7 @@
     if (publisher && publisher.customizationprefix !== prefix) throw new Error('Existing publisher prefix conflicts.');
     if (!publisher) {
       publisher = await request('publishers', 'POST', {
-        uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
+        uniquename: solutionName, friendlyname: 'Trusted Sender Solution',
         customizationprefix: prefix, customizationoptionvalueprefix: 10740
       });
       report.created.push('publisher');
@@ -341,7 +341,7 @@
       throw new Error('Production accepts only a versioned upgrade of the existing solution; no writes performed.');
     if (!existingSolution) {
       await request('solutions', 'POST', {
-        uniquename: solutionName, friendlyname: 'Microsoft Trusted Customer',
+        uniquename: solutionName, friendlyname: 'Trusted Sender Solution',
         version: solutionVersion,
         description: 'Development known/not-known sender registry and disabled shadow-runtime foundation. No active mailbox automation.',
         'publisherid@odata.bind': `/publishers(${publisher.publisherid})`

@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Authors>Microsoft Trusted Customer</Authors>
+    <Authors>Chris Jennison</Authors>
     <Description>Caller-stamped sender verification and registry write enforcement for Dataverse.</Description>
   </PropertyGroup>
 

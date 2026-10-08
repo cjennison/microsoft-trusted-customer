@@ -5,8 +5,8 @@
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xsi:type="MailApp">
   <Id>{{ADDIN_ID}}</Id>
-  <Version>1.0.1.0</Version>
-  <ProviderName>Microsoft Trusted Customer</ProviderName>
+  <Version>1.0.2.0</Version>
+  <ProviderName>Trusted Sender Solution</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Sender Registry"/>
   <Description DefaultValue="Open Sender Registry prefilled with this message's sender. Approval still requires independent verification."/>

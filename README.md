@@ -1,8 +1,17 @@
-# Microsoft Trusted Customer
+# Trusted Sender Solution
 
 A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
+
+Formerly "Microsoft Trusted Customer". It is not a Microsoft product. Internal
+identifiers keep the original `mtc_` prefix and `MicrosoftTrustedCustomer`
+solution name so existing deployments upgrade in place.
+
+**License:** [PolyForm Noncommercial 1.0.0](LICENSE.md). You may use, study and
+modify it for noncommercial purposes. Commercial use, including selling,
+hosting or deploying it as a paid service, requires a separate license from
+Chris Jennison.
 
 **Status:** Live in Production for the first customer, version 0.9.12.0
 (October 7, 2026), and accepted by the customer as ready for operation.
