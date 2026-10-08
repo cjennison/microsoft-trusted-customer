@@ -4,14 +4,29 @@ A proposed Microsoft 365 and Power Platform system for qualifying incoming
 business email against an independently verified client and subcontractor
 registry.
 
-**Status:** Live for the first customer, version 0.9.2.0 (October 6, 2026).
-At customer request, visible labels were enabled for all currently enrolled
-user/shared mailboxes, and the existing environment was converted to
-Production. Everything starts as **Unknown sender** until a registrar approves
-an exact address or business domain. Write/readback failures fail closed and
-retry automatically. Shared-mailbox web and customer-confirmed mobile
-acceptance passed; remaining operating items (retention, measured thresholds,
-rollback rehearsal) are tracked in
+**Status:** Live in Production for the first customer, version 0.9.12.0
+(October 7, 2026), and accepted by the customer as ready for operation.
+
+- **Coverage:** all 12 user and shared mailboxes. New mail is labeled within
+  minutes, and history covers the last 30 days. Known mail shows a blue **✓**;
+  everything else shows **Unknown sender**.
+- **Known rule:** an active approved address, domain or `*.domain` wildcard,
+  plus Microsoft's receiving authentication: DMARC pass (or best-guess pass)
+  and compauth pass, aligned to the visible From address. Internal mail uses
+  Exchange's authenticated-submission stamps. A Reply-To must be From itself or
+  another approved sender.
+- **Registrars:** they approve senders with the Sender Registry app or the
+  Outlook **Verify sender** add-in, which also works in shared mailboxes. Which
+  verification details are required is a per-client setting
+  (`mtc_RequiredRegistrarFields`).
+- **Operations:** run and per-message logs, registry auditing and in-app alerts.
+  Failures fail closed and retry automatically.
+- **Phishing:** this is handled by native Microsoft tools, not MTC. The Report
+  button sends to Microsoft and a SecOps reporting mailbox, a Teams alert posts
+  each report, and registrars block senders in the Tenant Allow/Block List.
+
+Remaining operating items (retention, measured thresholds, rollback rehearsal)
+are tracked in
 [#1](https://github.com/cjennison/microsoft-trusted-customer/issues/1).
 Known is business context, not a safe-email verdict; native Microsoft
 protections remain authoritative.
