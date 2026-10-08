@@ -833,8 +833,12 @@ message support is not implicitly accepted by the MVP.
 ## Registrar group and Outlook "Verify sender" button
 
 Grant registrar access through one Entra security group rather than per-user
-roles. Bind it to a Dataverse group team holding only `MTC Registrar`; the
-protected APIs accept team-inherited roles and still stamp the actual caller.
+roles. Bind it to a Dataverse group team holding `MTC Registrar` plus the
+built-in `Basic User` role; the protected APIs accept team-inherited roles and
+still stamp the actual caller. `MTC Registrar` grants only registry access, not
+the platform privileges an app needs, so without `Basic User` a non-admin
+member gets HTTP 403 `prvReadWebResource` when opening the registry. Test with
+a non-admin member; a System Administrator never hits this.
 If the environment is restricted to a security group, using the same group keeps
 environment access and registrar rights in one membership list. Every member
 needs their own premium Power Apps entitlement because the registry is in
