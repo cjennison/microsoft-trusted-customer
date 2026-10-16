@@ -139,6 +139,9 @@ can be compromised, and a genuine email can contain a malicious link.
   that renders a client's Word copy privately.
 - [Solution design](docs/solution-design.md): trust model, architecture,
   data model, qualification rules, limitations, and Microsoft sources.
+- [Version 2 design (proposed)](docs/v2-azure-design.md): the same product on
+  Azure Functions and Table Storage, with no Dataverse or Power Platform
+  licenses (under $2 per customer per month), plus migration and rollback.
 - [Client pilot plan](docs/pilot-plan.md): first-day checklist, decisions,
   phased delivery, acceptance scenarios, and rollback.
 - [Email verification workflow](docs/email-verification-workflow.md): simple
