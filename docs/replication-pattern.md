@@ -841,7 +841,10 @@ member gets HTTP 403 `prvReadWebResource` when opening the registry. Test with
 a non-admin member; a System Administrator never hits this.
 If the environment is restricted to a security group, using the same group keeps
 environment access and registrar rights in one membership list. Every member
-needs their own premium Power Apps entitlement because the registry is in
+needs their own premium Power Apps entitlement, either a Power Apps Premium seat or
+the environment's pay-as-you-go Power Apps meter (see the
+[licensing section](email-verification-workflow.md#licensing-and-all-mailbox-operation)),
+because the registry is in
 Dataverse; routing other people's entries through a licensed account is
 multiplexing and does not remove that requirement.
 

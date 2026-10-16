@@ -13,7 +13,7 @@ modify it for noncommercial purposes. Commercial use, including selling,
 hosting or deploying it as a paid service, requires a separate license from
 Chris Jennison.
 
-**Status:** Live in Production for the first customer, version 0.9.12.0
+**Status:** Live in Production for the first customer, version 0.9.13.0
 (October 7, 2026), and accepted by the customer as ready for operation.
 
 - **Coverage:** all 12 user and shared mailboxes. New mail is labeled within

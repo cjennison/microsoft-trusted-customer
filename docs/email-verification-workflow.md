@@ -146,6 +146,20 @@ assignments, and enabled service plans privately. Confirm the exact order
 before submission; reuse existing suitable entitlements rather than buying
 duplicates. Purchasing a license does not prove assignment or runtime readiness.
 
+**Pay-as-you-go for registrars (preferred for small teams).** Registrars use the
+registry occasionally, so link the environment to an Azure billing plan with
+**Power Apps only** selected instead of buying a Power Apps Premium seat per
+registrar. Each registrar who opens Sender Registry in a month is billed once
+($10 list per active user per app), and months without use cost nothing.
+Don't select Power Automate in the plan: the processor flows are owned by a
+user with Power Automate Premium, and selecting the meter adds no benefit and
+only risks per-run charges for any premium flow not covered by that license. A pay-as-you-go
+environment gets 1 GB of database and 1 GB of file storage free; storage above that is
+billed, and **all log (audit) storage is billed**, so keep high-volume telemetry
+tables unaudited (see [operations](operations.md#audit-trail)). An Azure front end
+that reads or writes Dataverse for unlicensed users is multiplexing and doesn't
+remove the per-user requirement.
+
 ## Additional acceptance gates
 
 Add observed results to private pilot evidence, not this public document.

@@ -30,10 +30,14 @@ rescans keep an already-applied label when the decision has not changed.
 ## Audit trail
 
 Dataverse auditing is on (365-day retention) for business parties, approved
-contacts and domains, verification cases, and mailbox enrollments: who
-approved, renewed, or revoked what, and when. Verification cases also store
-the caller-stamped registrar, method, evidence reference, and expiry.
-Message assessments and run logs are deliberately not audited (high volume).
+contacts and domains, and verification cases: who approved, renewed, or
+revoked what, and when. Verification cases also store the caller-stamped
+registrar, method, evidence reference, and expiry. Message assessments, run
+logs and (from 0.9.13.0) mailbox enrollments are deliberately not audited:
+the processor updates every enrollment's checkpoint each minute, which wrote
+about 15,500 audit rows a day for 12 mailboxes and filled log capacity, which
+is billed per GB in a pay-as-you-go environment. Enrollment changes (pause,
+exclusion) are recorded in the customer's decision log instead.
 
 ## Common checks
 
